@@ -124,6 +124,16 @@ Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động th
 
 ---
 
+### 🌐 Tải Thêm Nhân Chromium Core 153 Custom Build (Tùy chọn - Chuẩn PolyLogin):
+Nếu sếp muốn chạy chính xác bản nhân Chromium Core 153 tự build (đã tối ưu vượt qua các bộ kiểm tra khắt khe như Iphey, Pixelscan):
+- **Đường dẫn tải gói runtime (~245 MB)**: [**Tải MyBrowser-153-win64.zip tại Gofile**](https://gofile.io/d/VmyJsIUD)
+- **Cách cài đặt**:
+  1. Click đúp chuột vào file `download-kernel.bat` trong thư mục dự án (hoặc tải trực tiếp từ link trên).
+  2. Giải nén toàn bộ nội dung file zip vào thư mục: `bin/chromium/` của dự án (sao cho có file `bin/chromium/chrome.exe`).
+  3. Khởi động lại ứng dụng: Hệ thống sẽ tự động ưu tiên nhận diện và kích hoạt nhân Chromium 153 Custom Build!
+
+---
+
 ## 🧪 5. Kết Quả Kiểm Thử Hệ Thống (Automated Test Suites)
 
 Dự án đã tích hợp sẵn 6 kịch bản kiểm thử độc lập bao phủ 100% chức năng:
