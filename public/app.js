@@ -3465,6 +3465,15 @@ setInterval(() => {
   fetchSyncStatus();
 }, 1200);
 
+// Delegate external link clicks to open in default system browser
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a[href^="http"]');
+  if (link && window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+    e.preventDefault();
+    window.electronAPI.openExternal(link.href);
+  }
+});
+
 // Init
 initTheme();
 fetchStatus();

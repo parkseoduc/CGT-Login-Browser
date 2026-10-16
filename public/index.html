@@ -88,6 +88,10 @@
             <span>CORE KERNEL</span>
           </div>
           <div class="kernel-name" id="core-kernel-label">MyBrowser (Chromium 153)</div>
+          <a href="https://gofile.io/d/VmyJsIUD" target="_blank" style="margin-top: 6px; font-size: 11px; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Tải gói nhân Chromium Core 153 (~245MB)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>📥 Tải nhân Custom 153</span>
+          </a>
         </div>
       </div>
     </aside>
@@ -101,6 +105,12 @@
         </div>
 
         <div class="topbar-actions">
+          <!-- Download Kernel Link -->
+          <a href="https://gofile.io/d/VmyJsIUD" target="_blank" class="btn btn-secondary btn-sm" id="btn-download-kernel-topbar" title="Tải gói nhân Chromium Core 153 Custom Build (~245MB)" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--primary); background: rgba(56, 103, 244, 0.1); border-color: rgba(56, 103, 244, 0.3);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span style="font-weight: 600;">Tải Kernel 153</span>
+          </a>
+
           <!-- Theme Toggle Button -->
           <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Chuyển đổi giao diện Sáng / Tối" style="display: inline-flex; align-items: center; gap: 6px;">
             <svg id="theme-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -781,10 +791,19 @@ async function automateProfile(profileId) {
 
             <!-- Browser Kernel Selector -->
             <div class="form-group" style="margin-top: 10px;">
-              <label>Nhân Trình Duyệt (Browser Kernel)</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <label style="margin: 0;">Nhân Trình Duyệt (Browser Kernel)</label>
+                <a href="https://gofile.io/d/VmyJsIUD" target="_blank" style="font-size: 11px; color: var(--primary); text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; background: rgba(56, 103, 244, 0.12); border: 1px solid rgba(56, 103, 244, 0.3);" title="Tải gói nhân Chromium Core 153 Custom Build">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>📥 Tải nhân Custom 153 (~245MB)</span>
+                </a>
+              </div>
               <select id="form-kernel" class="form-control" style="font-weight: 600;">
                 <option value="">⚡ Đang tự động nhận diện nhân Chromium trên máy...</option>
               </select>
+              <div style="font-size: 11px; color: var(--text-muted); margin-top: 5px; display: flex; align-items: center; gap: 4px;">
+                <span>💡 Tải về giải nén vào thư mục <code>bin/chromium/</code> để kích hoạt nhân Custom Core 153.</span>
+              </div>
             </div>
 
             <!-- OS Picker Cards (PolyLogin Style) -->
