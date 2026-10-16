@@ -61,10 +61,16 @@ async function startProfile(profileId, overrides = {}) {
     }
   }
 
-  // Xác định file thực thi Chromium
-  const kernelPath = overrides.kernel_path || profile.kernel_path || getDefaultKernelPath();
+  // Xác định file thực thi Chromium (Hỗ trợ tự động fallback khi chuyển máy)
+  let kernelPath = overrides.kernel_path || profile.kernel_path;
   if (!kernelPath || !fs.existsSync(kernelPath)) {
-    throw new Error(`Chromium executable not found at: ${kernelPath}`);
+    const fallbackKernel = getDefaultKernelPath();
+    if (fallbackKernel && fs.existsSync(fallbackKernel)) {
+      console.log(`[Launcher] Nhân trình duyệt của profile "${profile.name}" (${kernelPath || 'chưa gán'}) không có trên máy này. Tự động chuyển sang: ${fallbackKernel}`);
+      kernelPath = fallbackKernel;
+    } else {
+      throw new Error(`Không tìm thấy trình duyệt Chromium/Chrome/Edge nào trên máy tính! Vui lòng cài đặt Google Chrome hoặc Microsoft Edge để khởi chạy.`);
+    }
   }
 
   // Lấy hoặc sinh bộ Fingerprint cho Profile

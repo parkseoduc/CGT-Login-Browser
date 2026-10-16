@@ -126,9 +126,9 @@ async function runIpheyAudit(profileId) {
  * Kích hoạt kịch bản Facebook Auto Post (Playwright) kết nối với profile này
  */
 async function triggerFacebookAutomation(profileId) {
-  const fbDir = 'E:\\fb-real-estate-auto-post';
+  const fbDir = process.env.FB_AUTO_DIR || path.resolve(__dirname, '../../fb-real-estate-auto-post');
   if (!fs.existsSync(fbDir)) {
-    throw new Error(`Không tìm thấy thư mục dự án Facebook tại ${fbDir}`);
+    throw new Error(`Chưa cài đặt kịch bản Facebook automation (Đường dẫn kiểm tra: ${fbDir}). Vui lòng cấu hình biến môi trường FB_AUTO_DIR nếu cần sử dụng.`);
   }
 
   // Đảm bảo profile đang chạy để CDP sẵn sàng

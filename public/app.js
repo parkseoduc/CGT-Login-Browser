@@ -338,14 +338,55 @@ window.copyText = function(text, event) {
   showToast(`Đã sao chép ID: ${text.slice(0, 12)}...`, 'info');
 };
 
+function populateKernelSelect(kernels, defaultKernel) {
+  if (!formKernel) return;
+  formKernel.innerHTML = '';
+
+  const available = kernels.filter(k => k.exists);
+  const unavailable = kernels.filter(k => !k.exists);
+
+  if (available.length === 0) {
+    const opt = document.createElement('option');
+    opt.value = '';
+    opt.text = '⚠️ Chưa tìm thấy Google Chrome hoặc Microsoft Edge trên máy';
+    formKernel.appendChild(opt);
+    return;
+  }
+
+  available.forEach((k) => {
+    const opt = document.createElement('option');
+    opt.value = k.path;
+    opt.text = `⚡ ${k.name} (Sẵn sàng)`;
+    if (k.path === defaultKernel || (!defaultKernel && k.isPrimary)) {
+      opt.selected = true;
+    }
+    formKernel.appendChild(opt);
+  });
+
+  if (formKernel.selectedIndex < 0 && formKernel.options.length > 0) {
+    formKernel.options[0].selected = true;
+  }
+
+  unavailable.slice(0, 2).forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k.path;
+    opt.text = `⚠️ ${k.name} (Chưa cài đặt)`;
+    opt.disabled = true;
+    formKernel.appendChild(opt);
+  });
+
+  updateProfileSummary();
+}
+
 // Fetch Initial Data
 async function fetchStatus() {
   try {
     const res = await fetch(`${API_BASE}/status`);
     const data = await res.json();
     if (data.kernels && data.kernels.length > 0) {
-      const primary = data.kernels.find(k => k.isPrimary) || data.kernels[0];
+      const primary = data.kernels.find(k => k.exists) || data.kernels[0];
       kernelLabel.innerText = primary.name + (primary.exists ? ' (Sẵn sàng)' : ' (Thiếu file)');
+      populateKernelSelect(data.kernels, data.defaultKernel);
     }
   } catch (err) {
     console.error('Error fetching status:', err);
@@ -1261,7 +1302,12 @@ window.editProfile = function(id) {
   formId.value = p.id;
   formName.value = p.name;
   formGroupId.value = p.group_id || '';
-  if (formKernel) formKernel.value = p.kernel_path;
+  if (formKernel) {
+    formKernel.value = p.kernel_path;
+    if (formKernel.selectedIndex < 0 && formKernel.options.length > 0) {
+      formKernel.options[0].selected = true;
+    }
+  }
 
   // Cấu hình Proxy
   if (p.proxy_id) {

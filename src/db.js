@@ -15,6 +15,7 @@ function getDb() {
     _db.exec('PRAGMA synchronous = FULL;');
     _db.exec('PRAGMA foreign_keys = ON;');
     initSchema();
+    autoRepairKernelPaths();
   }
   return _db;
 }
@@ -90,6 +91,26 @@ function initSchema() {
   try { _db.exec("ALTER TABLE proxies ADD COLUMN isp TEXT DEFAULT '';"); } catch {}
 }
 
+function autoRepairKernelPaths() {
+  try {
+    const defaultKernel = getDefaultKernelPath();
+    if (!defaultKernel) return;
+
+    const rows = _db.prepare('SELECT id, name, kernel_path FROM profiles').all();
+    const updateStmt = _db.prepare('UPDATE profiles SET kernel_path = ?, updated_at = ? WHERE id = ?');
+    const now = new Date().toISOString();
+
+    for (const r of rows) {
+      if (!r.kernel_path || !fs.existsSync(r.kernel_path)) {
+        console.log(`[DB Auto-Repair] Cập nhật profile "${r.name}" (${r.id.slice(0, 8)}) sang nhân Chromium khả dụng: ${defaultKernel}`);
+        updateStmt.run(defaultKernel, now, r.id);
+      }
+    }
+  } catch (err) {
+    console.warn('[DB Auto-Repair] Không thể tự động vá đường dẫn kernel:', err.message);
+  }
+}
+
 // ---------------- Profiles API ---------------- //
 
 function listProfiles() {
@@ -122,7 +143,10 @@ function createProfile(data) {
   const db = getDb();
   const id = data.id || crypto.randomUUID();
   const now = new Date().toISOString();
-  const kernelPath = data.kernel_path || getDefaultKernelPath();
+  let kernelPath = data.kernel_path;
+  if (!kernelPath || !fs.existsSync(kernelPath)) {
+    kernelPath = getDefaultKernelPath();
+  }
 
   // Generate cohesive fingerprint if not explicitly provided
   let fp = data.fingerprint;
@@ -252,10 +276,15 @@ function updateProfile(id, data) {
     proxyId = null;
   }
 
+  let targetKernel = data.kernel_path ?? current.kernel_path;
+  if (!targetKernel || !fs.existsSync(targetKernel)) {
+    targetKernel = getDefaultKernelPath();
+  }
+
   stmt.run(
     data.name ?? current.name,
     data.group_id !== undefined ? data.group_id : current.group_id,
-    data.kernel_path ?? current.kernel_path,
+    targetKernel,
     proxyId,
     data.user_agent ?? current.user_agent,
     data.canvas_noise !== undefined ? (data.canvas_noise ? 1 : 0) : current.canvas_noise,

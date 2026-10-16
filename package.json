@@ -5,9 +5,13 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "desktop": "node \"E:\\\\License-CGT\\\\windows-tool\\\\node_modules\\\\electron\\\\cli.js\" desktop/main.js",
+    "desktop": "npx electron desktop/main.js",
     "test:core": "node test/test-core.js",
-    "test:api": "node test/test-api.js"
+    "test:api": "node test/test-api.js",
+    "test:web": "node test/test-web-ui-full.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
   },
   "keywords": [
     "antidetect",

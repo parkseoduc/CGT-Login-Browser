@@ -101,24 +101,26 @@ antidetect-manager/
 
 ---
 
-## 🚀 4. Hướng Dẫn Cài Đặt & Khởi Chạy (Quick Start)
+---
+
+## 🚀 4. Hướng Dẫn Cài Đặt & Khởi Chạy Trên Mọi Máy Tính (Zero Configuration)
+
+Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động thích ứng với bất kỳ máy tính nào ngay khi vừa `git clone` về:
+- **Tự động dò tìm nhân trình duyệt**: Tự động phát hiện Google Chrome (64/32-bit, LocalAppData), Microsoft Edge (có sẵn 100% trên Windows 10/11), Brave, Cốc Cốc hoặc Chromium trên macOS/Linux.
+- **Tự động sửa lỗi đường dẫn (Auto-Repair)**: Tự động chuyển đổi các hồ sơ sang trình duyệt có sẵn trên máy hiện tại, tuyệt đối không bị lỗi đường dẫn cố định ổ đĩa.
 
 ### Yêu cầu môi trường:
-- **Node.js**: Phiên bản 18+ (Đã tối ưu trên Node v24).
-- **Hệ điều hành**: Windows 10 / 11 64-bit.
-- **Trình duyệt hạt nhân**: Chromium Core 153 (hoặc Google Chrome mặc định).
+- **Node.js**: Phiên bản 22+ LTS (khuyên dùng Node v22 hoặc v24). Tải miễn phí tại [nodejs.org](https://nodejs.org).
+- **Trình duyệt**: Bất kỳ trình duyệt nhân Chromium nào (Google Chrome, Microsoft Edge, Brave, v.v.).
 
-### Khởi chạy ứng dụng:
-1. **Chế độ Desktop (Khuyên dùng)**:
-   ```bash
-   npm run desktop
-   # Hoặc click đúp chuột vào file: start-desktop.bat
-   ```
-2. **Chế độ Web Server (Trình duyệt truy cập `http://localhost:51888`)**:
-   ```bash
-   npm start
-   # Hoặc click đúp chuột vào file: start-web.bat
-   ```
+### Khởi chạy 1-Click:
+1. **Bản Web (Dễ dùng nhất, chạy ngay trên trình duyệt)**:
+   - Click đúp chuột vào file: `start-web.bat` (hoặc chạy lệnh: `npm start`).
+   - Giao diện quản lý sẽ tự động mở tại: `http://127.0.0.1:51888`.
+2. **Bản Desktop (Cửa sổ Electron độc lập)**:
+   - Click đúp chuột vào file: `start-desktop.bat` (hoặc chạy lệnh: `npm run desktop`).
+3. **Trên macOS / Linux**:
+   - Mở Terminal và chạy: `bash start-web.sh`.
 
 ---
 

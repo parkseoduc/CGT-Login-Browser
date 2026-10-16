@@ -101,6 +101,7 @@ function createServer() {
           name: 'Antidetect Profile Manager API',
           version: '1.0.0',
           kernels: config.getAvailableKernels(),
+          defaultKernel: config.getDefaultKernelPath(),
           runningProfiles: launcher.getRunningProfiles(),
         });
       }
