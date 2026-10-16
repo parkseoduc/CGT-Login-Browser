@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Facebook Token Extractor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 360px; min-height: 400px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 14px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+    .title { font-size: 14px; font-weight: 700; color: #3b82f6; display: flex; align-items: center; gap: 6px; }
+    .info-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+    .label { font-size: 11px; color: #94a3b8; font-weight: 600; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .val { font-family: monospace; font-size: 11px; color: #60a5fa; word-break: break-all; background: #0f172a; padding: 6px; border-radius: 4px; max-height: 50px; overflow-y: auto; }
+    button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    button:hover { background: #1d4ed8; }
+    .btn-copy { background: #334155; color: #cbd5e1; font-size: 10px; padding: 2px 6px; }
+    .btn-copy:hover { background: #475569; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">🔵 FB Token & UID Extractor</div>
+    <button id="btn-refresh" style="background:#334155; padding:4px 8px;">🔄</button>
+  </div>
+
+  <div class="info-box">
+    <div class="label">
+      <span>User ID (UID):</span>
+      <button class="btn-copy" id="btn-copy-uid">Chép UID</button>
+    </div>
+    <div class="val" id="val-uid">Đang quét...</div>
+  </div>
+
+  <div class="info-box">
+    <div class="label">
+      <span>Cookie String:</span>
+      <button class="btn-copy" id="btn-copy-cookie">Chép Cookie</button>
+    </div>
+    <div class="val" id="val-cookie">Đang quét...</div>
+  </div>
+
+  <div class="info-box">
+    <div class="label">
+      <span>User-Agent Profile:</span>
+      <button class="btn-copy" id="btn-copy-ua">Chép UA</button>
+    </div>
+    <div class="val" id="val-ua">...</div>
+  </div>
+
+  <div style="margin-top:12px; text-align:center;">
+    <button id="btn-copy-all" style="width:100%; padding:8px; font-size:12px;">📋 Sao Chép Toàn Bộ Sang Facebook Tool</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

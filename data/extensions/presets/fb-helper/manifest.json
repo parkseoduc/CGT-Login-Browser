@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "FB Token & UID Extractor",
+  "version": "2.1.0",
+  "description": "Trích xuất Access Token (EAAB/EAAA...), User ID (c_user) và chuỗi Cookie cho Facebook Auto-Post.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FB Token & UID Extractor"
+  },
+  "permissions": [
+    "cookies",
+    "activeTab"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Proxy & IP Inspector",
+  "version": "1.2.0",
+  "description": "Kiểm tra IP công khai, quốc gia, ISP và trạng thái WebRTC trực tiếp trên tab.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Proxy & IP Inspector"
+  },
+  "permissions": [
+    "activeTab"
+  ]
+}

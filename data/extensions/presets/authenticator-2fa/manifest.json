@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "2FA Authenticator MMO",
+  "version": "1.6.0",
+  "description": "Tạo mã xác thực 2FA 6 số tự động theo thời gian (TOTP) an toàn cho tài khoản Facebook / Google.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "2FA Authenticator MMO"
+  },
+  "permissions": [
+    "storage"
+  ]
+}

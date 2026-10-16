@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Proxy & IP Inspector</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 340px; min-height: 320px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 14px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+    .title { font-size: 14px; font-weight: 700; color: #a855f7; display: flex; align-items: center; gap: 6px; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 8px; background: #1e293b; padding: 8px 10px; border-radius: 6px; font-size: 11px; }
+    .row-title { color: #94a3b8; font-weight: 600; }
+    .row-val { color: #38bdf8; font-weight: 700; font-family: monospace; }
+    button { background: #7e22ce; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+    button:hover { background: #6b21a8; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">🌐 Proxy & IP Inspector</div>
+  </div>
+
+  <div class="row">
+    <span class="row-title">Địa chỉ IP:</span>
+    <span class="row-val" id="ip-val">Đang kiểm tra...</span>
+  </div>
+  <div class="row">
+    <span class="row-title">Quốc gia:</span>
+    <span class="row-val" id="country-val">...</span>
+  </div>
+  <div class="row">
+    <span class="row-title">Thành phố:</span>
+    <span class="row-val" id="city-val">...</span>
+  </div>
+  <div class="row">
+    <span class="row-title">Nhà mạng (ISP):</span>
+    <span class="row-val" id="isp-val">...</span>
+  </div>
+  <div class="row">
+    <span class="row-title">WebRTC Leak:</span>
+    <span class="row-val" id="webrtc-val" style="color:#10b981;">Bảo vệ an toàn</span>
+  </div>
+
+  <button id="btn-recheck">Kiểm tra lại</button>
+
+  <script src="popup.js"></script>
+</body>
+</html>

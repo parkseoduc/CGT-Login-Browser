@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>2FA Authenticator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { width: 350px; min-height: 420px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #f8fafc; padding: 14px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }
+    .title { font-size: 14px; font-weight: 700; color: #10b981; display: flex; align-items: center; gap: 6px; }
+    button { background: #1e293b; color: #f8fafc; border: 1px solid #475569; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    button:hover { background: #334155; }
+    button.btn-primary { background: #059669; border-color: #10b981; }
+    button.btn-primary:hover { background: #047857; }
+    .card-list { display: flex; flex-direction: column; gap: 8px; max-height: 280px; overflow-y: auto; }
+    .auth-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .auth-card:hover { border-color: #10b981; }
+    .auth-label { font-size: 11px; color: #94a3b8; margin-bottom: 2px; }
+    .auth-code { font-size: 22px; font-weight: 800; font-family: monospace; letter-spacing: 2px; color: #34d399; }
+    .timer-ring { font-size: 11px; font-weight: 700; color: #94a3b8; }
+    .add-form { display: none; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 10px; margin-top: 10px; }
+    .add-form input { width: 100%; padding: 6px 8px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; font-size: 12px; margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">🔐 2FA Authenticator MMO</div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span id="countdown" class="timer-ring">30s</span>
+      <button id="btn-add-toggle" class="btn-primary">+ Thêm</button>
+    </div>
+  </div>
+
+  <div id="add-form" class="add-form">
+    <input type="text" id="input-label" placeholder="Tên tài khoản (VD: FB Nick 1)">
+    <input type="text" id="input-secret" placeholder="Mã bảo mật 2FA (Secret Key)">
+    <div style="display:flex; justify-content:flex-end; gap:6px;">
+      <button id="btn-cancel-add">Hủy</button>
+      <button id="btn-save-key" class="btn-primary">Lưu Khóa</button>
+    </div>
+  </div>
+
+  <div class="card-list" id="keys-container"></div>
+
+  <div style="text-align:center; margin-top:12px; font-size:10px; color:#64748b;">
+    Nhấp vào mã 6 số để tự động sao chép
+  </div>
+
+  <script src="totp.js"></script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Cookie-Editor MMO",
+  "version": "1.12.2",
+  "description": "Quản lý Cookie chuyên sâu cho Facebook, TikTok: Xuất/Nhập JSON cookies 1-click.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Cookie-Editor MMO"
+  },
+  "permissions": [
+    "cookies",
+    "activeTab",
+    "storage"
+  ]
+}

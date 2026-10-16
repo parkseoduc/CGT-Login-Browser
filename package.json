@@ -1,0 +1,21 @@
+{
+  "name": "antidetect-manager",
+  "version": "1.0.0",
+  "description": "Next-gen Antidetect Chromium Profile Manager & Automation Hub",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "desktop": "node \"E:\\\\License-CGT\\\\windows-tool\\\\node_modules\\\\electron\\\\cli.js\" desktop/main.js",
+    "test:core": "node test/test-core.js",
+    "test:api": "node test/test-api.js"
+  },
+  "keywords": [
+    "antidetect",
+    "chromium",
+    "profile-manager",
+    "automation",
+    "cdp"
+  ],
+  "author": "",
+  "license": "MIT"
+}
