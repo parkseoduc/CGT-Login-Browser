@@ -61,7 +61,7 @@ const MIME_TYPES = {
   '.ico': 'image/x-icon',
 };
 
-function serveStatic(res, filePath) {
+function serveStatic(res, filePath, isHead = false) {
   if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
     return false;
   }
@@ -71,7 +71,11 @@ function serveStatic(res, filePath) {
     'Content-Type': mime,
     'Access-Control-Allow-Origin': '*',
   });
-  fs.createReadStream(filePath).pipe(res);
+  if (isHead) {
+    res.end();
+  } else {
+    fs.createReadStream(filePath).pipe(res);
+  }
   return true;
 }
 
@@ -81,7 +85,7 @@ function createServer() {
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, HEAD',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       });
       return res.end();
@@ -93,9 +97,9 @@ function createServer() {
 
     try {
       // 1. Static file serving
-      if (method === 'GET' && !pathname.startsWith('/api/')) {
+      if ((method === 'GET' || method === 'HEAD') && !pathname.startsWith('/api/')) {
         const targetFile = pathname === '/' ? path.join(PUBLIC_DIR, 'index.html') : path.join(PUBLIC_DIR, pathname);
-        if (serveStatic(res, targetFile)) {
+        if (serveStatic(res, targetFile, method === 'HEAD')) {
           return;
         }
       }
