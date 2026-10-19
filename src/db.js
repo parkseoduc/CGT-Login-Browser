@@ -85,10 +85,12 @@ function initSchema() {
   // Migrate schema
   try { _db.exec('ALTER TABLE profiles ADD COLUMN fingerprint TEXT;'); } catch {}
   try { _db.exec("ALTER TABLE profiles ADD COLUMN extension_ids TEXT DEFAULT '[]';"); } catch {}
+  try { _db.exec("ALTER TABLE profiles ADD COLUMN auto_rotate_proxy INTEGER DEFAULT 0;"); } catch {}
   try { _db.exec("ALTER TABLE groups ADD COLUMN notes TEXT DEFAULT '';"); } catch {}
   try { _db.exec('ALTER TABLE proxies ADD COLUMN ping INTEGER DEFAULT 0;'); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN city TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN isp TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE proxies ADD COLUMN rotation_api_url TEXT DEFAULT '';"); } catch {}
 }
 
 function autoRepairKernelPaths() {
@@ -118,7 +120,8 @@ function listProfiles() {
   return db.prepare(`
     SELECT p.*, g.name AS group_name, g.color AS group_color,
            pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
-           pr.username AS proxy_user, pr.password AS proxy_pass
+           pr.username AS proxy_user, pr.password AS proxy_pass,
+           pr.rotation_api_url AS proxy_rotation_api_url
     FROM profiles p
     LEFT JOIN groups g ON p.group_id = g.id
     LEFT JOIN proxies pr ON p.proxy_id = pr.id
@@ -131,7 +134,8 @@ function getProfile(id) {
   return db.prepare(`
     SELECT p.*, g.name AS group_name, g.color AS group_color,
            pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
-           pr.username AS proxy_user, pr.password AS proxy_pass
+           pr.username AS proxy_user, pr.password AS proxy_pass,
+           pr.rotation_api_url AS proxy_rotation_api_url
     FROM profiles p
     LEFT JOIN groups g ON p.group_id = g.id
     LEFT JOIN proxies pr ON p.proxy_id = pr.id
@@ -196,12 +200,12 @@ function createProfile(data) {
       id, name, group_id, kernel_path, proxy_id, user_agent,
       canvas_noise, webgl_noise, audio_noise, webrtc_mode,
       cpu_cores, ram_gb, screen_width, screen_height,
-      custom_flags, start_url, notes, fingerprint, extension_ids, created_at, updated_at
+      custom_flags, start_url, notes, fingerprint, extension_ids, auto_rotate_proxy, created_at, updated_at
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?,
       ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -225,6 +229,7 @@ function createProfile(data) {
     data.notes || '',
     fpJson,
     extensionIds,
+    data.auto_rotate_proxy ? 1 : 0,
     now,
     now
   );
@@ -253,7 +258,7 @@ function updateProfile(id, data) {
       name = ?, group_id = ?, kernel_path = ?, proxy_id = ?, user_agent = ?,
       canvas_noise = ?, webgl_noise = ?, audio_noise = ?, webrtc_mode = ?,
       cpu_cores = ?, ram_gb = ?, screen_width = ?, screen_height = ?,
-      custom_flags = ?, start_url = ?, notes = ?, fingerprint = ?, extension_ids = ?, updated_at = ?
+      custom_flags = ?, start_url = ?, notes = ?, fingerprint = ?, extension_ids = ?, auto_rotate_proxy = ?, updated_at = ?
     WHERE id = ?
   `);
 
@@ -300,6 +305,7 @@ function updateProfile(id, data) {
     data.notes ?? current.notes,
     fpJson,
     extensionIds,
+    data.auto_rotate_proxy !== undefined ? (data.auto_rotate_proxy ? 1 : 0) : (current.auto_rotate_proxy || 0),
     now,
     id
   );
@@ -316,6 +322,86 @@ function updateProfileLastRun(id) {
 function deleteProfile(id) {
   const db = getDb();
   return db.prepare('DELETE FROM profiles WHERE id = ?').run(id);
+}
+
+function bulkCreateProfiles(options = {}) {
+  const count = Math.max(1, Math.min(Number(options.count) || 5, 200));
+  const namePrefix = (options.namePrefix || 'Profile').trim();
+  const groupId = options.groupId || null;
+  const osOption = options.os || 'windows';
+  const webrtcMode = options.webrtc_mode || 'fake_ip';
+  const startUrl = options.start_url || 'https://iphey.com';
+  const notes = options.notes || '';
+  const extensionIds = Array.isArray(options.extension_ids) ? options.extension_ids : [];
+
+  let assignedProxies = [];
+  if (Array.isArray(options.proxyIds) && options.proxyIds.length > 0) {
+    assignedProxies = options.proxyIds;
+  } else if (Array.isArray(options.proxyList) && options.proxyList.length > 0) {
+    const proxyModule = require('./proxy');
+    for (let i = 0; i < options.proxyList.length; i++) {
+      const pStr = options.proxyList[i];
+      const parsed = proxyModule.parseProxyString(pStr);
+      if (parsed) {
+        const created = createProxy({
+          name: `${namePrefix}_Proxy_${i + 1}`,
+          type: parsed.type,
+          host: parsed.host,
+          port: parsed.port,
+          username: parsed.username,
+          password: parsed.password,
+        });
+        assignedProxies.push(created.id);
+      }
+    }
+  }
+
+  const createdList = [];
+  const padLength = count >= 100 ? 3 : 2;
+
+  for (let i = 1; i <= count; i++) {
+    const profileName = `${namePrefix}_${String(i).padStart(padLength, '0')}`;
+    let targetOs = osOption;
+    if (osOption === 'random') {
+      const osChoices = ['windows', 'windows', 'windows', 'mac', 'linux'];
+      targetOs = osChoices[Math.floor(Math.random() * osChoices.length)];
+    }
+
+    const assignedProxyId = assignedProxies.length > 0
+      ? assignedProxies[(i - 1) % assignedProxies.length]
+      : null;
+
+    const fp = fingerprint.generateFingerprint({
+      os: targetOs,
+      canvasMode: options.canvas_noise === 0 ? 'real' : 'noise',
+      audioMode: options.audio_noise === 0 ? 'real' : 'noise',
+      webrtcMode: webrtcMode,
+    });
+
+    const profile = createProfile({
+      name: profileName,
+      group_id: groupId,
+      proxy_id: assignedProxyId,
+      user_agent: fp.userAgent,
+      cpu_cores: fp.hardwareConcurrency,
+      ram_gb: fp.deviceMemory,
+      screen_width: fp.screen ? fp.screen.width : 1920,
+      screen_height: fp.screen ? fp.screen.height : 1080,
+      canvas_noise: options.canvas_noise !== undefined ? options.canvas_noise : 1,
+      webgl_noise: options.webgl_noise !== undefined ? options.webgl_noise : 1,
+      audio_noise: options.audio_noise !== undefined ? options.audio_noise : 1,
+      webrtc_mode: webrtcMode,
+      start_url: startUrl,
+      notes: notes,
+      fingerprint: fp,
+      extension_ids: extensionIds,
+      auto_rotate_proxy: options.auto_rotate_proxy ? 1 : 0,
+    });
+
+    createdList.push(profile);
+  }
+
+  return createdList;
 }
 
 // ---------------- Groups & Proxies ---------------- //
@@ -387,8 +473,8 @@ function createProxy(data) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   db.prepare(`
-    INSERT INTO proxies (id, name, type, host, port, username, password, status, ping, ip, country, city, isp, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO proxies (id, name, type, host, port, username, password, rotation_api_url, status, ping, ip, country, city, isp, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     data.name || `${data.host}:${data.port}`,
@@ -397,6 +483,7 @@ function createProxy(data) {
     Number(data.port),
     data.username || '',
     data.password || '',
+    data.rotation_api_url || '',
     data.status || 'unknown',
     data.ping || 0,
     data.ip || '',
@@ -414,7 +501,7 @@ function updateProxy(id, data) {
   if (!cur) return null;
   db.prepare(`
     UPDATE proxies SET
-      name = ?, type = ?, host = ?, port = ?, username = ?, password = ?,
+      name = ?, type = ?, host = ?, port = ?, username = ?, password = ?, rotation_api_url = ?,
       status = ?, ping = ?, ip = ?, country = ?, city = ?, isp = ?
     WHERE id = ?
   `).run(
@@ -424,6 +511,7 @@ function updateProxy(id, data) {
     data.port !== undefined ? Number(data.port) : cur.port,
     data.username !== undefined ? data.username : cur.username,
     data.password !== undefined ? data.password : cur.password,
+    data.rotation_api_url !== undefined ? data.rotation_api_url : (cur.rotation_api_url || ''),
     data.status ?? cur.status,
     data.ping !== undefined ? Number(data.ping) : cur.ping,
     data.ip ?? cur.ip,
@@ -558,6 +646,7 @@ module.exports = {
   listProfiles,
   getProfile,
   createProfile,
+  bulkCreateProfiles,
   updateProfile,
   updateProfileLastRun,
   deleteProfile,

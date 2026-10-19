@@ -1689,5 +1689,44 @@ body::after {
   box-shadow: 0 2px 6px var(--primary-glow);
 }
 
+/* Animations & Proxy Rotation */
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
 
+.spinning {
+  animation: spin 0.8s linear infinite !important;
+  color: var(--primary) !important;
+}
 
+.btn-rotate-proxy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  background: rgba(56, 103, 244, 0.12);
+  border: 1px solid rgba(56, 103, 244, 0.25);
+  color: var(--primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 6px;
+}
+
+.btn-rotate-proxy:hover {
+  background: var(--primary);
+  color: #ffffff;
+  transform: scale(1.1);
+}
+
+.btn-rotate-proxy:active {
+  transform: scale(0.95);
+}
+
+/* Kernel Progress Bar animation */
+#kernel-progress-bar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

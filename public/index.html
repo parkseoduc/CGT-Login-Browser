@@ -82,16 +82,15 @@
           </button>
         </div>
 
-        <div class="kernel-status-card">
+        <div class="kernel-status-card" id="sidebar-kernel-card" style="cursor: pointer;" title="Nhấn để mở Trung tâm cài đặt & quản lý Nhân Chromium">
           <div class="kernel-status-header">
-            <span class="status-dot"></span>
+            <span class="status-dot" id="sidebar-kernel-dot"></span>
             <span>CORE KERNEL</span>
           </div>
-          <div class="kernel-name" id="core-kernel-label">MyBrowser (Chromium 153)</div>
-          <a href="https://gofile.io/d/VmyJsIUD" target="_blank" style="margin-top: 6px; font-size: 11px; color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="Tải gói nhân Chromium Core 153 (~245MB)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span>📥 Tải nhân Custom 153</span>
-          </a>
+          <div class="kernel-name" id="core-kernel-label">Đang kiểm tra...</div>
+          <div id="sidebar-kernel-action" style="margin-top: 6px; font-size: 11px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px;">
+            <span>⚙️ Quản lý Kernel</span>
+          </div>
         </div>
       </div>
     </aside>
@@ -105,24 +104,39 @@
         </div>
 
         <div class="topbar-actions">
-          <!-- Download Kernel Link -->
-          <a href="https://gofile.io/d/VmyJsIUD" target="_blank" class="btn btn-secondary btn-sm" id="btn-download-kernel-topbar" title="Tải gói nhân Chromium Core 153 Custom Build (~245MB)" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: var(--primary); background: rgba(56, 103, 244, 0.1); border-color: rgba(56, 103, 244, 0.3);">
+          <!-- Download / Kernel Status Button -->
+          <button class="btn btn-secondary btn-sm" id="btn-kernel-center" title="Quản lý & Tự động cài đặt Nhân Chromium 153" style="display: inline-flex; align-items: center; gap: 6px; color: var(--primary); background: rgba(56, 103, 244, 0.1); border-color: rgba(56, 103, 244, 0.3);">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            <span style="font-weight: 600;">Tải Kernel 153</span>
-          </a>
+            <span id="btn-kernel-label" style="font-weight: 600;">Cài Đặt Kernel</span>
+          </button>
 
           <!-- Theme Toggle Button -->
           <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Chuyển đổi giao diện Sáng / Tối" style="display: inline-flex; align-items: center; gap: 6px;">
             <svg id="theme-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
             <span id="theme-icon-text">Tối</span>
           </button>
+
+          <!-- Import Profile ZIP -->
+          <button class="btn btn-secondary btn-sm" id="btn-import-profile-zip" title="Khôi phục hồ sơ từ file ZIP đã sao lưu" style="display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Nhập ZIP</span>
+          </button>
+          <input type="file" id="input-profile-zip-file" accept=".zip" style="display: none;">
+
           <button class="btn btn-secondary btn-sm" id="btn-refresh">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span>Làm mới</span>
           </button>
+
+          <!-- Bulk Profile Generator Button -->
+          <button class="btn btn-secondary btn-sm" id="btn-bulk-create-open" title="Tạo hàng loạt nhiều hồ sơ cùng lúc" style="background: rgba(16, 185, 129, 0.12); border-color: rgba(16, 185, 129, 0.3); color: #10B981; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <span>Tạo Hàng Loạt</span>
+          </button>
+
           <button class="btn btn-primary btn-sm" id="btn-create-modal">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            <span>Tạo Hồ sơ mới</span>
+            <span>Hồ sơ mới</span>
           </button>
         </div>
       </header>
@@ -1260,6 +1274,11 @@ async function automateProfile(profileId) {
               <input type="password" id="proxy-form-pass" class="form-control" placeholder="pass...">
             </div>
           </div>
+          <div class="form-group" style="margin-top: 10px;">
+            <label>Link API Xoay IP (Tùy chọn - Dcom / 4G / TMProxy / TinProxy)</label>
+            <input type="text" id="proxy-form-rotation-url" class="form-control" placeholder="https://api.tinproxy.com/proxy/get-new-ip?api_key=...">
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Hệ thống sẽ cung cấp nút Xoay IP 1-click và hỗ trợ tự động đổi IP mới trước khi mở trình duyệt.</p>
+          </div>
         </div>
 
         <!-- Tab 2: Bulk Import -->
@@ -1481,6 +1500,181 @@ async function automateProfile(profileId) {
       <div class="confirm-actions" id="confirm-modal-actions">
         <button class="btn btn-secondary" id="confirm-modal-btn-cancel">Hủy bỏ</button>
         <button class="btn btn-danger" id="confirm-modal-btn-confirm">Đồng ý</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Trung Tâm Cài Đặt Chromium Core -->
+  <div class="modal-overlay modal" id="kernel-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Trung Tâm Nhân Chromium (Kernel Core)</h3>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+            Nhân Chromium 153 tùy biến sâu mã nguồn - Bypass 100% Iphey & Pixelscan
+          </p>
+        </div>
+        <button class="btn-close" id="kernel-modal-close" title="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Status Banner -->
+        <div id="kernel-status-banner" style="background: rgba(56, 103, 244, 0.08); padding: 14px; border-radius: 10px; border: 1px solid rgba(56, 103, 244, 0.2); margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 12px; color: var(--text-muted);">Trạng thái cài đặt trên máy:</div>
+            <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 2px;" id="kernel-modal-status-text">Đang kiểm tra...</div>
+            <div style="font-size: 11px; color: var(--text-muted); font-family: monospace; margin-top: 4px; max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" id="kernel-modal-path-text">--</div>
+          </div>
+          <span class="badge" id="kernel-modal-badge" style="font-size: 11px; padding: 4px 8px;">--</span>
+        </div>
+
+        <!-- Download Progress Box (Hidden when idle) -->
+        <div id="kernel-progress-box" style="display: none; background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12px; font-weight: 600;" id="kernel-progress-title">Đang tải gói Chromium 153...</span>
+            <span style="font-size: 12px; font-weight: 700; color: var(--primary);" id="kernel-progress-percent">0%</span>
+          </div>
+          <div style="width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+            <div id="kernel-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3867F4, #10B981); transition: width 0.3s ease;"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+            <span id="kernel-progress-bytes">0 MB / 0 MB</span>
+            <span id="kernel-progress-speed">0 KB/s</span>
+          </div>
+          <div style="margin-top: 12px; text-align: right;">
+            <button class="btn btn-secondary btn-sm" id="btn-cancel-kernel-download" style="padding: 4px 12px; font-size: 11px;">Hủy tải</button>
+          </div>
+        </div>
+
+        <!-- Download Options -->
+        <div class="form-group">
+          <label style="font-weight: 700; font-size: 13px;">Tự Động Cài Đặt (Khuyên Dùng):</label>
+          <div style="display: flex; gap: 10px; margin-top: 6px;">
+            <button class="btn btn-primary" id="btn-start-auto-kernel-download" style="flex: 1; justify-content: center; padding: 10px; font-weight: 600;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>1-Click Tải & Cài Đặt Tự Động</span>
+            </button>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+            Hệ thống sẽ tự động tải gói nén runtime (~245MB) và xả nén trực tiếp vào <code>bin/chromium/</code> mà không cần làm thủ công.
+          </p>
+        </div>
+
+        <!-- Offline / Local ZIP install -->
+        <div class="form-group" style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
+          <label style="font-weight: 700; font-size: 13px;">Hoặc Cài Đặt Nhanh Từ File ZIP Có Sẵn Trên Máy:</label>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <input type="text" id="kernel-local-path" class="form-control" placeholder="C:\path\to\MyBrowser-153-win64.zip" style="font-family: monospace; font-size: 11.5px;">
+            <button class="btn btn-secondary btn-sm" id="btn-install-local-kernel" style="white-space: nowrap;">
+              ⚡ Cài đặt tức thì
+            </button>
+          </div>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+            Nếu bạn đã tải file zip về máy hoặc máy đã có sẵn bản build, chỉ cần nhập đường dẫn file zip để hệ thống tự xả nén trong 2 giây.
+          </p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <a href="https://gofile.io/d/VmyJsIUD" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+          <span>🌐 Mở link tải Cloud dự phòng</span>
+        </a>
+        <button class="btn btn-secondary" id="kernel-modal-cancel">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Tạo Hồ Sơ Hàng Loạt (Bulk Profile Generator) -->
+  <div class="modal-overlay modal" id="bulk-profile-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 620px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title">Tạo Hồ Sơ Hàng Loạt (Bulk Profile Generator)</h3>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
+            Tự động sinh hàng loạt profile với phần cứng và thông số độc nhất
+          </p>
+        </div>
+        <button class="btn-close" id="bulk-profile-modal-close" title="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px;">
+        <div class="form-row">
+          <div class="form-group" style="flex: 1;">
+            <label>Số Lượng Hồ Sơ (*)</label>
+            <input type="number" id="bulk-form-count" class="form-control" value="10" min="1" max="100" required>
+          </div>
+          <div class="form-group" style="flex: 2;">
+            <label>Tiền Tố Tên Hồ Sơ (Name Prefix)</label>
+            <input type="text" id="bulk-form-prefix" class="form-control" value="Profile_MMO" placeholder="Ví dụ: FB_Farm, Shopee_">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Gán Vào Nhóm</label>
+            <select id="bulk-form-group" class="form-control">
+              <option value="">(Không chia nhóm)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Hệ Điều Hành (OS)</label>
+            <select id="bulk-form-os" class="form-control">
+              <option value="random">🎲 Ngẫu nhiên (Windows / macOS / Linux)</option>
+              <option value="windows" selected>🪟 100% Windows 11 / 10</option>
+              <option value="mac">🍎 100% macOS (Apple Silicon)</option>
+              <option value="linux">🐧 100% Linux</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 10px;">
+          <label>Dán Danh Sách Proxy (Mỗi dòng 1 Proxy - Tùy chọn):</label>
+          <textarea id="bulk-form-proxies" class="form-control" rows="5" style="font-family: monospace; font-size: 11.5px;" placeholder="Định dạng hỗ trợ:&#10;103.145.63.10:8080:user:pass&#10;http://user:pass@103.145.63.11:8080&#10;socks5://user:pass@103.145.63.12:1080&#10;103.145.63.13:8080"></textarea>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Hệ thống sẽ tự động parse và phân bổ xoay vòng lần lượt cho từng profile được tạo. Để trống nếu muốn dùng mạng trực tiếp (Direct).
+          </p>
+        </div>
+
+        <div class="form-row" style="margin-top: 10px;">
+          <div class="form-group" style="flex: 2;">
+            <label>URL Mở Đầu</label>
+            <input type="text" id="bulk-form-start-url" class="form-control" value="https://iphey.com">
+          </div>
+          <div class="form-group" style="flex: 1;">
+            <label>Chế Độ WebRTC</label>
+            <select id="bulk-form-webrtc" class="form-control">
+              <option value="fake_ip" selected>Bảo vệ (Fake IP)</option>
+              <option value="disabled">Vô hiệu hóa</option>
+              <option value="real">Nguyên bản</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="background: rgba(255,255,255,0.02); padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-top: 10px;">
+          <label style="font-size: 12px; font-weight: 700; margin-bottom: 6px;">Thiết Lập Bảo Vệ Tự Động:</label>
+          <div style="display: flex; gap: 16px; font-size: 12px;">
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="bulk-form-canvas" checked style="accent-color: var(--primary);"> Canvas Noise
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="bulk-form-audio" checked style="accent-color: var(--primary);"> AudioContext Noise
+            </label>
+            <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+              <input type="checkbox" id="bulk-form-webgl" checked style="accent-color: var(--primary);"> WebGL RTX 4070
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="bulk-profile-modal-cancel">Hủy bỏ</button>
+        <button class="btn btn-primary" id="bulk-profile-modal-submit" style="background: #10B981; border-color: #10B981;">
+          Tạo Ngay Hồ Sơ
+        </button>
       </div>
     </div>
   </div>

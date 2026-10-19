@@ -16,12 +16,12 @@ function getKernelCandidates() {
 
   const candidates = [];
 
-  // 1. Nhân Chromium di động đặt trong dự án (nếu có)
+  // 1. Nhân Chromium di động đặt trong dự án (nếu có - ưu tiên cao nhất)
   candidates.push({
     id: 'local-portable-chromium',
-    name: 'Portable Chromium (Thư mục dự án)',
+    name: 'MyBrowser 153 Portable (bin/chromium)',
     path: path.join(BASE_DIR, 'bin', 'chromium', isWin ? 'chrome.exe' : 'chrome'),
-    isPrimary: false,
+    isPrimary: true,
   });
 
   if (isWin) {
@@ -213,7 +213,9 @@ function getAvailableKernels() {
 function getDefaultKernelPath() {
   const available = getAvailableKernels().filter(k => k.exists);
   if (available.length > 0) {
-    // Ưu tiên: Custom Build -> Google Chrome -> Microsoft Edge -> Khác
+    // Ưu tiên: Portable Chromium trong bin/chromium -> Custom Build ngoài -> Google Chrome -> Microsoft Edge -> Khác
+    const portable = available.find(k => k.id === 'local-portable-chromium');
+    if (portable) return portable.path;
     const custom = available.find(k => k.id.includes('custom'));
     if (custom) return custom.path;
     const chrome = available.find(k => k.id.includes('chrome'));

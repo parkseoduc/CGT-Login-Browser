@@ -11,6 +11,8 @@ const synchronizer = require('./synchronizer');
 const extensions = require('./extensions');
 const automation = require('./automation');
 const cookiesModule = require('./cookies');
+const kernelDownloader = require('./kernel-downloader');
+const profileBackup = require('./profile-backup');
 
 function sendJson(res, statusCode, data) {
   res.writeHead(statusCode, {
@@ -33,6 +35,14 @@ function parseJsonBody(req) {
         resolve({});
       }
     });
+  });
+}
+
+function parseBufferBody(req) {
+  return new Promise((resolve) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
   });
 }
 
@@ -104,6 +114,89 @@ function createServer() {
           defaultKernel: config.getDefaultKernelPath(),
           runningProfiles: launcher.getRunningProfiles(),
         });
+      }
+
+      // Kernel Management & In-App Auto Downloader API
+      if (pathname === '/api/v1/kernel/status' && method === 'GET') {
+        return sendJson(res, 200, {
+          success: true,
+          ...kernelDownloader.getKernelStatus(),
+          kernels: config.getAvailableKernels(),
+          defaultKernel: config.getDefaultKernelPath(),
+        });
+      }
+
+      if (pathname === '/api/v1/kernel/download' && method === 'POST') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = kernelDownloader.startDownload(body.url);
+          return sendJson(res, 200, result);
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (pathname === '/api/v1/kernel/cancel' && method === 'POST') {
+        const result = kernelDownloader.cancelDownload();
+        return sendJson(res, 200, result);
+      }
+
+      if (pathname === '/api/v1/kernel/install-local' && method === 'POST') {
+        const body = await parseJsonBody(req);
+        const targetPath = body.path || 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\MyBrowser-153-win64.zip';
+        try {
+          const result = await kernelDownloader.installFromLocalZip(targetPath);
+          return sendJson(res, 200, result);
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // Bulk Profiles Creation API
+      if (method === 'POST' && pathname === '/api/v1/profiles/bulk-create') {
+        const body = await parseJsonBody(req);
+        const reqCount = Math.max(1, Math.min(Number(body.count) || 5, 200));
+        const quota = license.canCreateProfile(reqCount);
+        if (!quota.allowed) {
+          return sendJson(res, 403, {
+            success: false,
+            error: quota.reason,
+            limitExceeded: true,
+            max_profiles: quota.max_profiles,
+            current_profiles: quota.current_profiles,
+            available_slots: quota.available_slots,
+          });
+        }
+        try {
+          const createdList = db.bulkCreateProfiles(body);
+          return sendJson(res, 201, { success: true, count: createdList.length, profiles: createdList });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
+      // Profile ZIP Import
+      if (pathname === '/api/v1/profiles/import-zip' && method === 'POST') {
+        const contentType = req.headers['content-type'] || '';
+        try {
+          let created = null;
+          if (contentType.includes('application/json')) {
+            const body = await parseJsonBody(req);
+            if (!body.filePath) {
+              return sendJson(res, 400, { success: false, error: 'Đường dẫn file zip (filePath) là bắt buộc' });
+            }
+            created = await profileBackup.importProfileFromZip(body.filePath, body.name);
+          } else {
+            const buffer = await parseBufferBody(req);
+            if (!buffer || buffer.length === 0) {
+              return sendJson(res, 400, { success: false, error: 'Dữ liệu file zip trống' });
+            }
+            created = await profileBackup.importProfileFromZip(buffer);
+          }
+          return sendJson(res, 201, { success: true, profile: created });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
       }
 
       // 2. Profiles CRUD
@@ -294,10 +387,51 @@ function createServer() {
       }
 
       // Profiles with :id
-      const profileMatch = pathname.match(/^\/api\/v1\/profiles\/([a-zA-Z0-9_-]+)(?:\/(start|stop|active|cookies))?$/);
+      const profileMatch = pathname.match(/^\/api\/v1\/profiles\/([a-zA-Z0-9_-]+)(?:\/(start|stop|active|cookies|export-zip|rotate-proxy))?$/);
       if (profileMatch) {
         const profileId = profileMatch[1];
         const action = profileMatch[2];
+
+        // Export Profile to ZIP
+        if (method === 'GET' && action === 'export-zip') {
+          try {
+            const { zipFilePath, zipFileName } = await profileBackup.exportProfileToZip(profileId);
+            res.writeHead(200, {
+              'Content-Type': 'application/zip',
+              'Content-Disposition': `attachment; filename="${zipFileName}"`,
+              'Access-Control-Allow-Origin': '*',
+            });
+            fs.createReadStream(zipFilePath).pipe(res);
+            return;
+          } catch (err) {
+            return sendJson(res, 500, { success: false, error: err.message });
+          }
+        }
+
+        // Rotate Proxy for Profile
+        if (method === 'POST' && action === 'rotate-proxy') {
+          try {
+            const profile = db.getProfile(profileId);
+            if (!profile) return sendJson(res, 404, { success: false, error: 'Profile not found' });
+            if (!profile.proxy_id) return sendJson(res, 400, { success: false, error: 'Profile này chưa được gắn Proxy nào' });
+            const p = db.getProxy(profile.proxy_id);
+            if (!p) return sendJson(res, 404, { success: false, error: 'Proxy không tồn tại' });
+            if (!p.rotation_api_url) return sendJson(res, 400, { success: false, error: 'Proxy này chưa được cài đặt link API Xoay IP (rotation_api_url)' });
+
+            const rotRes = await proxy.triggerProxyRotation(p);
+            const updated = db.updateProxy(p.id, {
+              status: rotRes.newProxyInfo?.live ? 'live' : 'dead',
+              ping: rotRes.newProxyInfo?.ping,
+              ip: rotRes.newProxyInfo?.ip,
+              country: rotRes.newProxyInfo?.country,
+              city: rotRes.newProxyInfo?.city,
+              isp: rotRes.newProxyInfo?.isp,
+            });
+            return sendJson(res, 200, { success: true, proxy: updated, result: rotRes });
+          } catch (err) {
+            return sendJson(res, 500, { success: false, error: err.message });
+          }
+        }
 
         // Cookies Export
         if (method === 'GET' && action === 'cookies') {
@@ -428,10 +562,31 @@ function createServer() {
         return sendJson(res, 200, { success: true, total: results.length, liveCount, proxies: results });
       }
 
-      const proxyMatch = pathname.match(/^\/api\/v1\/proxies(?:\/([a-zA-Z0-9_-]+)(?:\/(check))?)?$/);
+      const proxyMatch = pathname.match(/^\/api\/v1\/proxies(?:\/([a-zA-Z0-9_-]+)(?:\/(check|rotate))?)?$/);
       if (proxyMatch) {
         const proxyId = proxyMatch[1];
         const subAction = proxyMatch[2];
+
+        // Rotate single proxy via API
+        if (method === 'POST' && proxyId && subAction === 'rotate') {
+          const cur = db.getProxy(proxyId);
+          if (!cur) return sendJson(res, 404, { success: false, error: 'Proxy not found' });
+          if (!cur.rotation_api_url) return sendJson(res, 400, { success: false, error: 'Proxy này chưa được cài đặt link API Xoay IP (rotation_api_url)' });
+          try {
+            const rotRes = await proxy.triggerProxyRotation(cur);
+            const updated = db.updateProxy(proxyId, {
+              status: rotRes.newProxyInfo?.live ? 'live' : 'dead',
+              ping: rotRes.newProxyInfo?.ping,
+              ip: rotRes.newProxyInfo?.ip,
+              country: rotRes.newProxyInfo?.country,
+              city: rotRes.newProxyInfo?.city,
+              isp: rotRes.newProxyInfo?.isp,
+            });
+            return sendJson(res, 200, { success: true, proxy: updated, result: rotRes });
+          } catch (err) {
+            return sendJson(res, 500, { success: false, error: err.message });
+          }
+        }
 
         // Check single proxy
         if (method === 'POST' && proxyId && subAction === 'check') {

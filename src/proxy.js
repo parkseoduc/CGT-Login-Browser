@@ -435,23 +435,68 @@ function createLocalProxyForwarder(remoteProxy) {
       }
     });
 
-    server.listen(0, '127.0.0.1', () => {
-      const port = server.address().port;
-      resolve({
-        port,
-        url: `http://127.0.0.1:${port}`,
-        close: () => new Promise((res) => {
-          server.close(() => res());
-        }),
+      server.listen(0, '127.0.0.1', () => {
+        const port = server.address().port;
+        resolve({
+          port,
+          url: `http://127.0.0.1:${port}`,
+          close: () => new Promise((res) => {
+            server.close(() => res());
+          }),
+        });
+      });
+
+      server.on('error', reject);
+    });
+  }
+
+async function triggerProxyRotation(proxyObj) {
+  const rotationUrl = proxyObj.rotation_api_url;
+  if (!rotationUrl || !rotationUrl.trim()) {
+    throw new Error('Proxy này chưa được cấu hình Link API Xoay IP (rotation_api_url)');
+  }
+
+  const client = rotationUrl.startsWith('https:') ? require('node:https') : require('node:http');
+
+  const apiRes = await new Promise((resolve, reject) => {
+    const req = client.get(rotationUrl, { timeout: 15000 }, (res) => {
+      let body = '';
+      res.on('data', chunk => { body += chunk; });
+      res.on('end', () => {
+        resolve({ statusCode: res.statusCode, body: body.trim() });
       });
     });
-
-    server.on('error', reject);
+    req.on('error', (err) => reject(new Error(`Lỗi kết nối API xoay IP: ${err.message}`)));
+    req.on('timeout', () => {
+      req.destroy();
+      reject(new Error('Yêu cầu đổi IP qua API bị quá thời gian chờ (15s)'));
+    });
   });
+
+  let parsed = null;
+  try {
+    parsed = JSON.parse(apiRes.body);
+  } catch {
+    parsed = { raw: apiRes.body };
+  }
+
+  // Đợi 1.5 giây để modem/gateway hoàn tất đổi IP
+  await new Promise(r => setTimeout(r, 1500));
+
+  // Kiểm tra lại IP mới
+  const checkRes = await checkProxy(proxyObj);
+
+  return {
+    success: true,
+    statusCode: apiRes.statusCode,
+    apiResponse: parsed,
+    newProxyInfo: checkRes,
+  };
 }
 
 module.exports = {
   parseProxyString,
   checkProxy,
   createLocalProxyForwarder,
+  triggerProxyRotation,
 };

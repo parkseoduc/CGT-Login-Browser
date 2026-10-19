@@ -103,15 +103,17 @@ async function deactivateLicense() {
   return getLicenseStatus();
 }
 
-function canCreateProfile() {
+function canCreateProfile(requestedCount = 1) {
   const status = getLicenseStatus();
   const currentCount = status.current_profiles;
-  if (currentCount >= status.max_profiles) {
+  if (currentCount + requestedCount > status.max_profiles) {
+    const available = Math.max(0, status.max_profiles - currentCount);
     return {
       allowed: false,
-      reason: `Bạn đã đạt giới hạn tối đa ${status.max_profiles} hồ sơ của gói ${status.plan}. Vui lòng nâng cấp gói hoặc kích hoạt License để tạo thêm.`,
+      reason: `Bạn đã đạt giới hạn tối đa ${status.max_profiles} hồ sơ của gói ${status.plan}. Yêu cầu tạo ${requestedCount} hồ sơ nhưng hiện chỉ còn trống ${available} vị trí. Vui lòng nâng cấp gói để tạo thêm.`,
       max_profiles: status.max_profiles,
       current_profiles: currentCount,
+      available_slots: available,
     };
   }
   return { allowed: true };

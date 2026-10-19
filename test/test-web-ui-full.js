@@ -44,6 +44,16 @@ async function runWebUITest() {
   const tmpUserData = path.join(__dirname, '..', 'data', 'temp_web_test_profile');
   if (!fs.existsSync(tmpUserData)) fs.mkdirSync(tmpUserData, { recursive: true });
 
+  const { startServer } = require('../src/server');
+  let internalServer = null;
+  try {
+    const isRunning = await fetch('http://127.0.0.1:51888/api/health').then(r => r.ok).catch(() => false);
+    if (!isRunning) {
+      console.log('⚡ Server 51888 chưa chạy, tự động khởi động server kiểm thử...');
+      internalServer = await startServer(51888);
+    }
+  } catch {}
+
   console.log('[1/8] Khởi chạy trình duyệt kiểm thử truy cập Bản Web...');
   const proc = spawn(CHROME_PATH, [
     '--no-sandbox',
@@ -399,6 +409,9 @@ async function runWebUITest() {
   } finally {
     if (client) client.close();
     proc.kill();
+    if (internalServer) {
+      try { internalServer.close(); } catch {}
+    }
     try {
       if (fs.existsSync(tmpUserData)) {
         fs.rmSync(tmpUserData, { recursive: true, force: true });

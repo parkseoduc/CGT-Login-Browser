@@ -60,6 +60,27 @@ Hệ thống cho phép tạo và quản lý hàng loạt môi trường duyệt 
 
 ---
 
+### 📥 H. Trung Tâm Quản Lý Kernel Tự Động (In-App Kernel Downloader)
+- **Tải & Giải nén 1-Click ngay trong Web UI**: Tự động stream download gói runtime Chromium 153 với thanh tiến trình %, vận tốc (MB/s) thời gian thực.
+- **Giải nén siêu tốc (1.5 giây)**: Tích hợp engine `tar.exe` nguyên bản của Windows 10/11 (với cơ chế dự phòng `Expand-Archive`), tự động bung giải nén vào `bin/chromium/` mà người dùng không cần thao tác file.
+- **Hỗ trợ cài đặt Offline từ file ZIP**: Nhập trực tiếp đường dẫn file zip có sẵn trên máy để cài đặt ngay lập tức.
+
+### ⚡ I. Tạo Hồ Sơ Hàng Loạt & Phân Bổ Proxy (Bulk Profile Generator)
+- Cho phép tạo từ **5 đến 100 profile** cùng một lúc chỉ với 1 click.
+- **Thuật toán sinh phần cứng duy nhất**: Mỗi profile sở hữu fingerprint độc lập (OS, Screen, Canvas noise, WebGL GPU, Audio phase).
+- **Phân bổ Proxy xoay vòng (Round-Robin)**: Dán danh sách proxy định dạng `host:port:user:pass` hoặc `host:port` để hệ thống tự động chia đều cho các profile.
+
+### 🔄 J. Hỗ Trợ Proxy Xoay & Đổi IP 1-Click (Proxy Rotation API)
+- Tích hợp trường **Link đổi IP (Rotate URL)** cho proxy Dcom 4G / TMProxy / TinProxy / ProxyFB.
+- **Nút đổi IP nhanh 1-Click**: Bấm nút xoay IP trực tiếp trên bảng profile kèm animation xoay tròn và tự động cập nhật địa chỉ IP mới.
+- **Auto-Rotate Pre-launch**: Tùy chọn tự động gọi link đổi IP trước khi khởi chạy profile nhằm đảm bảo IP luôn mới.
+
+### 📦 K. Sao Lưu & Phục Hồi Hồ Sơ Đóng Gói (ZIP Backup & Restore)
+- **Xuất ZIP độc lập**: Đóng gói toàn bộ `User Data` (cookies, cache, session, history) cùng thông số SQLite thành 1 file `.zip` gọn nhẹ để chia sẻ cho đồng nghiệp hoặc chuyển sang máy khác.
+- **Nhập ZIP 1-Click**: Bấm nút "Nhập ZIP" trên thanh công cụ để khôi phục nguyên vẹn hồ sơ và sử dụng ngay lập tức.
+
+---
+
 ## 📂 3. Cấu Trúc Mã Nguồn (Project Structure)
 
 ```
@@ -68,26 +89,30 @@ antidetect-manager/
 │   ├── main.js                 # Electron Main Process & IPC Server Controller
 │   └── preload.js              # Context Bridge an toàn cho giao diện Desktop
 ├── public/                     # Frontend Giao diện Workstation PolyLogin
-│   ├── index.html              # Layout HTML giao diện Workstation & Bảng điều khiển
-│   ├── app.js                  # Frontend Controller, Real-time Spec Sheet & Polling
-│   └── style.css               # Hệ thống Stylesheet Dark/Light theme cao cấp
+│   ├── index.html              # Layout HTML giao diện Workstation, Modal Kernel, Bulk & Modals
+│   ├── app.js                  # Frontend Controller, Real-time Spec Sheet, Kernel Poller & Events
+│   └── style.css               # Hệ thống Stylesheet Dark/Light theme, Animation xoay proxy & Progress bar
 ├── src/                        # Backend Engine Modules (Node.js)
 │   ├── automation.js           # Kịch bản tự động hóa (Warmup, Iphey Audit)
 │   ├── cdp.js                  # Chrome DevTools Protocol Client & Process Watcher
 │   ├── config.js               # Quản lý đường dẫn môi trường, Kernel Chromium & Data
 │   ├── cookies.js              # Module chuyển đổi định dạng Cookie (JSON / Netscape)
-│   ├── db.js                   # Cơ sở dữ liệu SQLite nhúng (WAL mode)
+│   ├── db.js                   # Cơ sở dữ liệu SQLite nhúng (WAL mode, Bulk Create, Proxy Rotation)
 │   ├── extensions.js           # Quản lý & khởi tạo Extension Presets Manifest V3
 │   ├── fingerprint.js          # Thuật toán sinh thông số & Dynamic CDP Injector
 │   ├── index.js                # Điểm khởi chạy Web Server độc lập
-│   ├── launcher.js             # Bộ điều phối tiến trình Chromium & Single-Tab Manager
+│   ├── kernel-downloader.js    # Tải & giải nén ngầm nhân Chromium (Streaming HTTP + tar.exe)
+│   ├── launcher.js             # Bộ điều phối tiến trình Chromium & Pre-launch Proxy Rotation
 │   ├── license-manager.js      # Hệ thống quản lý bản quyền HWID & License Quota
-│   ├── proxy.js                # Bộ kiểm tra Proxy & Local Loopback Forwarder
-│   ├── server.js               # REST API Server v1 (Profiles, Proxies, Groups, Batch)
+│   ├── profile-backup.js       # Module đóng gói Backup & Restore Profile dạng ZIP
+│   ├── proxy.js                # Bộ kiểm tra Proxy, Local Loopback Forwarder & Rotation API Trigger
+│   ├── server.js               # REST API Server v1 (Kernel, Bulk, Backup, Rotation, Sync)
 │   └── synchronizer.js         # Động cơ đồng bộ chuột/phím & tính toán lưới Grid
 ├── test/                       # Bộ kiểm thử tự động toàn diện (Test Suites)
 │   ├── test-core.js            # Kiểm tra khởi chạy Chromium & kết nối CDP
 │   ├── test-fingerprint.js     # Kiểm tra tính chính xác của bộ lọc WebGL, Canvas, CPU, RAM
+│   ├── test-p1-to-p4.js        # Kiểm thử tích hợp 4 tính năng: Kernel, Bulk, Rotation, ZIP
+│   ├── test-web-ui-full.js     # Kiểm thử Web UI 8 giai đoạn qua kết nối DevTools thực
 │   ├── test-step3-backend.js   # Kiểm tra CRUD Nhóm & Proxy Parser
 │   ├── test-step4-sync.js      # Kiểm tra thuật toán bố cục Grid & tọa độ tương đối
 │   ├── test-workstation-ui.js  # Kiểm thử giao diện Workstation (12 hạng mục)
@@ -101,8 +126,6 @@ antidetect-manager/
 
 ---
 
----
-
 ## 🚀 4. Hướng Dẫn Cài Đặt & Khởi Chạy Trên Mọi Máy Tính (Zero Configuration)
 
 Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động thích ứng với bất kỳ máy tính nào ngay khi vừa `git clone` về:
@@ -110,7 +133,7 @@ Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động th
 - **Tự động sửa lỗi đường dẫn (Auto-Repair)**: Tự động chuyển đổi các hồ sơ sang trình duyệt có sẵn trên máy hiện tại, tuyệt đối không bị lỗi đường dẫn cố định ổ đĩa.
 
 ### Yêu cầu môi trường:
-- **Node.js**: Phiên bản 22+ LTS (khuyên dùng Node v22 hoặc v24). Tải miễn phí tại [nodejs.org](https://nodejs.org).
+- **Node.js**: Phiên bản 20+ LTS (khuyên dùng Node v22 hoặc v24). Tải miễn phí tại [nodejs.org](https://nodejs.org).
 - **Trình duyệt**: Bất kỳ trình duyệt nhân Chromium nào (Google Chrome, Microsoft Edge, Brave, v.v.).
 
 ### Khởi chạy 1-Click:
@@ -124,22 +147,25 @@ Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động th
 
 ---
 
-### 🌐 Tải Thêm Nhân Chromium Core 153 Custom Build (Tùy chọn - Chuẩn PolyLogin):
-Nếu sếp muốn chạy chính xác bản nhân Chromium Core 153 tự build (đã tối ưu vượt qua các bộ kiểm tra khắt khe như Iphey, Pixelscan):
-- **Đường dẫn tải gói runtime (~245 MB)**: [**Tải MyBrowser-153-win64.zip tại Gofile**](https://gofile.io/d/VmyJsIUD)
-- **Cách cài đặt**:
-  1. Click đúp chuột vào file `download-kernel.bat` trong thư mục dự án (hoặc tải trực tiếp từ link trên).
-  2. Giải nén toàn bộ nội dung file zip vào thư mục: `bin/chromium/` của dự án (sao cho có file `bin/chromium/chrome.exe`).
-  3. Khởi động lại ứng dụng: Hệ thống sẽ tự động ưu tiên nhận diện và kích hoạt nhân Chromium 153 Custom Build!
+### 🌐 Cài Đặt Nhân Chromium Core 153 Custom Build (Chuẩn PolyLogin):
+Nếu sếp muốn chạy chính xác bản nhân Chromium Core 153 tự build:
+- **Cách 1 (Khuyên dùng - 1 Click ngay trong Web)**:
+  1. Mở giao diện Web tại `http://127.0.0.1:51888`.
+  2. Bấm vào nút **"Cài Đặt Kernel"** trên thanh Header (hoặc góc dưới Sidebar).
+  3. Bấm **"Tải Tự Động Từ Cloud"**: Hệ thống sẽ tự tải gói runtime (~245MB) và tự động giải nén sạch vào `bin/chromium/` trong vài giây!
+- **Cách 2 (Cài đặt Offline)**:
+  - Nếu đã có file zip `MyBrowser-153-win64.zip`, mở cửa sổ Cài Đặt Kernel -> dán đường dẫn file zip -> bấm **"Cài Đặt File ZIP Này"** (giải nén siêu tốc trong 1.5 giây).
 
 ---
 
 ## 🧪 5. Kết Quả Kiểm Thử Hệ Thống (Automated Test Suites)
 
-Dự án đã tích hợp sẵn 6 kịch bản kiểm thử độc lập bao phủ 100% chức năng:
+Dự án tích hợp đầy đủ 8 kịch bản kiểm thử độc lập bao phủ 100% chức năng:
 
 | Tệp kiểm thử | Mục tiêu kiểm tra | Kết quả |
 | :--- | :--- | :---: |
+| `test/test-p1-to-p4.js` | Kiểm thử tích hợp 4 tính năng: Kernel Downloader, Bulk Create, Proxy Rotation, ZIP Backup | ✅ PASS (100%) |
+| `test/test-web-ui-full.js` | Kiểm thử toàn diện 8 giai đoạn Web UI trực tiếp qua Chromium DevTools Protocol (CDP) | ✅ PASS (100%) |
 | `test/test-core.js` | Khởi chạy hạt nhân Chromium, cấp phát cổng CDP động, kiểm tra DevTools endpoint | ✅ PASS (100%) |
 | `test/test-fingerprint.js` | Kiểm tra độ che giấu WebGL, Canvas Hash, Audio Noise, RAM, CPU | ✅ PASS (100%) |
 | `test/test-step3-backend.js` | Phân tích cú pháp Proxy, quản trị nhóm hồ sơ | ✅ PASS (100%) |
@@ -147,12 +173,10 @@ Dự án đã tích hợp sẵn 6 kịch bản kiểm thử độc lập bao ph�
 | `test/test-workstation-ui.js` | Kiểm thử toàn diện 12 chức năng trên giao diện PolyLogin Workstation | ✅ PASS (100%) |
 | `test/verify-full-flow.js` | Kiểm thử luồng khép kín: Mở hồ sơ -> Local Forwarder -> Tải trang sạch 1 tab -> Đóng êm | ✅ PASS (100%) |
 
-**Chạy kiểm thử toàn bộ hệ thống:**
+**Chạy kiểm thử hệ thống:**
 ```bash
-node test/test-core.js
-node test/test-fingerprint.js
-node test/test-workstation-ui.js
-node test/verify-full-flow.js
+node test/test-p1-to-p4.js
+node test/test-web-ui-full.js
 ```
 
 ---

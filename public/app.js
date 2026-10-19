@@ -384,9 +384,10 @@ async function fetchStatus() {
     const res = await fetch(`${API_BASE}/status`);
     const data = await res.json();
     if (data.kernels && data.kernels.length > 0) {
-      const primary = data.kernels.find(k => k.exists) || data.kernels[0];
-      kernelLabel.innerText = primary.name + (primary.exists ? ' (Sẵn sàng)' : ' (Thiếu file)');
       populateKernelSelect(data.kernels, data.defaultKernel);
+    }
+    if (typeof pollKernelStatus === 'function') {
+      pollKernelStatus();
     }
   } catch (err) {
     console.error('Error fetching status:', err);
@@ -732,11 +733,17 @@ function renderProfiles() {
             <div style="display: flex; flex-direction: column; gap: 2px;">
               <div style="display: flex; align-items: center; gap: 6px;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span style="font-family: monospace; font-size: 12px; font-weight: 600; color: var(--text-main);">${escapeHtml(p.proxy_host)}:${p.proxy_port}</span>
+                <span style="font-family: monospace; font-size: 12px; font-weight: 600; color: var(--text-main);" id="proxy-ip-display-${p.id}">${escapeHtml(p.proxy_host)}:${p.proxy_port}</span>
+                ${p.proxy_rotation_api_url ? `
+                  <button class="btn-rotate-proxy" onclick="rotateProfileProxy('${p.id}', event)" title="Xoay đổi IP mới ngay lập tức qua API" id="btn-rotate-${p.id}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  </button>
+                ` : ''}
               </div>
               <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted);">
                 <span style="text-transform: uppercase; font-weight: 700; color: var(--accent);">${p.proxy_type || 'HTTP'}</span>
                 ${p.proxy_user ? '<span>• Auth 🔒</span>' : ''}
+                ${p.proxy_rotation_api_url ? '<span style="color: #10B981; font-weight: 600;">• Xoay IP 4G</span>' : ''}
               </div>
             </div>
           ` : `
@@ -764,6 +771,9 @@ function renderProfiles() {
               ? `<button class="btn btn-sm btn-danger" style="padding: 5px 14px; font-weight: 600; border-radius: 7px;" onclick="stopProfile('${p.id}')">Đóng</button>`
               : `<button class="btn btn-sm btn-primary" style="padding: 5px 14px; font-weight: 600; border-radius: 7px;" onclick="startProfile('${p.id}')">Mở</button>`
             }
+            <button class="btn-icon-action" onclick="exportProfileZip('${p.id}', event)" title="Xuất toàn bộ Profile thành file ZIP (Backup & Restore)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
             <button class="btn-icon-action" onclick="openCookieModal('${p.id}')" title="Quản lý / Xuất / Nhập Cookie">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></svg>
             </button>
@@ -2465,6 +2475,8 @@ if (btnAddProxy) {
     proxyFormPort.value = '';
     proxyFormUser.value = '';
     proxyFormPass.value = '';
+    const rotInput = document.getElementById('proxy-form-rotation-url');
+    if (rotInput) rotInput.value = '';
     proxyFormBulk.value = '';
     proxyModal.classList.add('open');
   });
@@ -2511,6 +2523,7 @@ if (proxyModalSaveBtn) {
         return;
       }
       const id = proxyFormId.value;
+      const rotInput = document.getElementById('proxy-form-rotation-url');
       const payload = {
         name: proxyFormName.value.trim() || undefined,
         type: proxyFormType.value,
@@ -2518,6 +2531,7 @@ if (proxyModalSaveBtn) {
         port,
         username: proxyFormUser.value.trim() || undefined,
         password: proxyFormPass.value.trim() || undefined,
+        rotation_api_url: rotInput ? rotInput.value.trim() : '',
       };
       try {
         const res = await fetch(`${API_BASE}/proxies${id ? '/' + id : ''}`, {
@@ -2550,6 +2564,8 @@ window.editProxy = function(id) {
   proxyFormPort.value = p.port || '';
   proxyFormUser.value = p.username || '';
   proxyFormPass.value = p.password || '';
+  const rotInput = document.getElementById('proxy-form-rotation-url');
+  if (rotInput) rotInput.value = p.rotation_api_url || '';
   proxyModal.classList.add('open');
 };
 
@@ -3473,6 +3489,330 @@ document.addEventListener('click', (e) => {
     window.electronAPI.openExternal(link.href);
   }
 });
+
+// -------------------------------------------------------------
+// P3: Proxy Rotation Handlers
+// -------------------------------------------------------------
+window.rotateProfileProxy = async function(profileId, event) {
+  if (event) event.stopPropagation();
+  const btn = document.getElementById(`btn-rotate-${profileId}`);
+  if (btn) btn.classList.add('spinning');
+  showToast('Đang gọi API đổi IP mới qua Gateway...', 'info');
+
+  try {
+    const res = await fetch(`${API_BASE}/profiles/${profileId}/rotate-proxy`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success && data.result) {
+      const newIp = data.result.newProxyInfo?.ip || data.proxy?.ip || 'Mới';
+      showToast(`🎉 Xoay IP thành công! Địa chỉ mới: ${newIp}`, 'success');
+      const ipDisplay = document.getElementById(`proxy-ip-display-${profileId}`);
+      if (ipDisplay) {
+        ipDisplay.innerText = `${data.proxy?.host}:${data.proxy?.port} (${newIp})`;
+        ipDisplay.style.color = '#10B981';
+      }
+      await fetchProxies();
+      fetchProfiles();
+    } else {
+      showToast(`Xoay IP thất bại: ${data.error}`, 'danger');
+    }
+  } catch (err) {
+    showToast(`Lỗi khi gọi API xoay IP: ${err.message}`, 'danger');
+  } finally {
+    if (btn) btn.classList.remove('spinning');
+  }
+};
+
+// -------------------------------------------------------------
+// P4: Profile Backup & Restore (Export / Import ZIP)
+// -------------------------------------------------------------
+window.exportProfileZip = function(profileId, event) {
+  if (event) event.stopPropagation();
+  showToast('Đang đóng gói và tải xuống file ZIP của hồ sơ...', 'info');
+  window.location.href = `${API_BASE}/profiles/${profileId}/export-zip`;
+};
+
+// Import Profile ZIP
+const btnImportZip = document.getElementById('btn-import-profile-zip');
+const inputProfileZip = document.getElementById('input-profile-zip-file');
+
+if (btnImportZip && inputProfileZip) {
+  btnImportZip.addEventListener('click', () => {
+    inputProfileZip.value = '';
+    inputProfileZip.click();
+  });
+
+  inputProfileZip.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    showToast(`Đang tải lên và giải nén hồ sơ: ${file.name}...`, 'info');
+    try {
+      const buffer = await file.arrayBuffer();
+      const res = await fetch(`${API_BASE}/profiles/import-zip`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: buffer,
+      });
+      const data = await res.json();
+      if (data.success && data.profile) {
+        showToast(`🎉 Khôi phục hồ sơ "${data.profile.name}" thành công!`, 'success');
+        await fetchProfiles();
+      } else {
+        showToast(`Khôi phục hồ sơ thất bại: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi nhập file ZIP: ${err.message}`, 'danger');
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// P1: In-App Kernel Center & Auto-Downloader
+// -------------------------------------------------------------
+const btnKernelCenter = document.getElementById('btn-kernel-center');
+const btnKernelLabel = document.getElementById('btn-kernel-label');
+const sidebarKernelCard = document.getElementById('sidebar-kernel-card');
+const sidebarKernelDot = document.getElementById('sidebar-kernel-dot');
+
+const kernelModal = document.getElementById('kernel-modal');
+const kernelModalClose = document.getElementById('kernel-modal-close');
+const kernelModalCancel = document.getElementById('kernel-modal-cancel');
+const btnStartAutoKernel = document.getElementById('btn-start-auto-kernel-download');
+const btnCancelKernel = document.getElementById('btn-cancel-kernel-download');
+const btnInstallLocalKernel = document.getElementById('btn-install-local-kernel');
+const kernelLocalPath = document.getElementById('kernel-local-path');
+
+let kernelPollTimer = null;
+
+function openKernelModal() {
+  if (kernelModal) {
+    kernelModal.classList.add('open');
+    pollKernelStatus();
+  }
+}
+
+function closeKernelModal() {
+  if (kernelModal) kernelModal.classList.remove('open');
+}
+
+if (btnKernelCenter) btnKernelCenter.addEventListener('click', openKernelModal);
+if (sidebarKernelCard) sidebarKernelCard.addEventListener('click', openKernelModal);
+if (kernelModalClose) kernelModalClose.addEventListener('click', closeKernelModal);
+if (kernelModalCancel) kernelModalCancel.addEventListener('click', closeKernelModal);
+
+async function pollKernelStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/kernel/status`);
+    const data = await res.json();
+
+    // Update Status Banner in Modal
+    const statusTextEl = document.getElementById('kernel-modal-status-text');
+    const pathTextEl = document.getElementById('kernel-modal-path-text');
+    const badgeEl = document.getElementById('kernel-modal-badge');
+    const progressBox = document.getElementById('kernel-progress-box');
+    const progressBar = document.getElementById('kernel-progress-bar');
+    const progressPercent = document.getElementById('kernel-progress-percent');
+    const progressBytes = document.getElementById('kernel-progress-bytes');
+    const progressSpeed = document.getElementById('kernel-progress-speed');
+    const progressTitle = document.getElementById('kernel-progress-title');
+
+    if (data.isInstalled) {
+      if (statusTextEl) statusTextEl.innerText = 'Đã cài đặt MyBrowser 153 Core (Portable)';
+      if (pathTextEl) pathTextEl.innerText = data.kernelPath;
+      if (badgeEl) {
+        badgeEl.className = 'badge badge-running';
+        badgeEl.innerText = 'Sẵn sàng';
+      }
+      if (kernelLabel) kernelLabel.innerText = 'MyBrowser 153 (Sẵn sàng)';
+      if (sidebarKernelDot) {
+        sidebarKernelDot.style.background = '#10B981';
+        sidebarKernelDot.style.boxShadow = '0 0 8px #10B981';
+      }
+      if (btnKernelLabel) btnKernelLabel.innerText = 'Kernel 153: Sẵn Sàng';
+      if (btnKernelCenter) {
+        btnKernelCenter.style.color = '#10B981';
+        btnKernelCenter.style.background = 'rgba(16, 185, 129, 0.12)';
+        btnKernelCenter.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+      }
+    } else {
+      if (statusTextEl) statusTextEl.innerText = 'Chưa cài đặt MyBrowser 153 Core';
+      if (pathTextEl) pathTextEl.innerText = 'bin/chromium/chrome.exe (Chưa tồn tại)';
+      if (badgeEl) {
+        badgeEl.className = 'badge badge-stopped';
+        badgeEl.innerText = 'Chưa cài';
+      }
+      if (kernelLabel) kernelLabel.innerText = 'Chưa cài MyBrowser 153';
+      if (sidebarKernelDot) {
+        sidebarKernelDot.style.background = '#F59E0B';
+        sidebarKernelDot.style.boxShadow = '0 0 8px #F59E0B';
+      }
+      if (btnKernelLabel) btnKernelLabel.innerText = 'Cài Đặt Kernel';
+      if (btnKernelCenter) {
+        btnKernelCenter.style.color = 'var(--primary)';
+        btnKernelCenter.style.background = 'rgba(56, 103, 244, 0.1)';
+        btnKernelCenter.style.borderColor = 'rgba(56, 103, 244, 0.3)';
+      }
+    }
+
+    const task = data.downloadTask;
+    if (task && (task.status === 'downloading' || task.status === 'extracting')) {
+      if (progressBox) progressBox.style.display = 'block';
+      if (progressTitle) {
+        progressTitle.innerText = task.status === 'extracting' ? 'Đang giải nén Chromium Engine...' : 'Đang tải gói Chromium 153...';
+      }
+      if (progressBar) progressBar.style.width = `${task.progress}%`;
+      if (progressPercent) progressPercent.innerText = `${task.progress}%`;
+      if (progressBytes) {
+        const mbDown = (task.downloadedBytes / 1024 / 1024).toFixed(1);
+        const mbTotal = (task.totalBytes / 1024 / 1024).toFixed(1);
+        progressBytes.innerText = task.totalBytes > 0 ? `${mbDown} MB / ${mbTotal} MB` : `${mbDown} MB`;
+      }
+      if (progressSpeed) progressSpeed.innerText = task.speed;
+
+      clearTimeout(kernelPollTimer);
+      kernelPollTimer = setTimeout(pollKernelStatus, 700);
+    } else {
+      if (progressBox) progressBox.style.display = 'none';
+      if (task && task.status === 'completed' && !data.isInstalled) {
+        showToast('🎉 Cài đặt Chromium Kernel thành công!', 'success');
+      }
+    }
+  } catch (err) {
+    console.error('Error polling kernel status:', err);
+  }
+}
+
+if (btnStartAutoKernel) {
+  btnStartAutoKernel.addEventListener('click', async () => {
+    showToast('Đang kết nối tải Chromium Core 153...', 'info');
+    try {
+      const res = await fetch(`${API_BASE}/kernel/download`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (data.success) {
+        pollKernelStatus();
+      } else {
+        showToast(`Lỗi: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi kết nối: ${err.message}`, 'danger');
+    }
+  });
+}
+
+if (btnCancelKernel) {
+  btnCancelKernel.addEventListener('click', async () => {
+    try {
+      await fetch(`${API_BASE}/kernel/cancel`, { method: 'POST' });
+      showToast('Đã dừng tiến trình tải kernel', 'info');
+      pollKernelStatus();
+    } catch {}
+  });
+}
+
+if (btnInstallLocalKernel) {
+  btnInstallLocalKernel.addEventListener('click', async () => {
+    const p = (kernelLocalPath?.value || '').trim() || 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\MyBrowser-153-win64.zip';
+    showToast(`Đang giải nén trực tiếp từ: ${p}...`, 'info');
+    try {
+      const res = await fetch(`${API_BASE}/kernel/install-local`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: p })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast('🎉 Đã cài đặt Chromium Core 153 thành công!', 'success');
+        pollKernelStatus();
+        fetchStatus();
+      } else {
+        showToast(`Cài đặt thất bại: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi: ${err.message}`, 'danger');
+    }
+  });
+}
+
+// -------------------------------------------------------------
+// P2: Bulk Profile Creation Modal & Generator
+// -------------------------------------------------------------
+const btnBulkCreateOpen = document.getElementById('btn-bulk-create-open');
+const bulkProfileModal = document.getElementById('bulk-profile-modal');
+const bulkProfileModalClose = document.getElementById('bulk-profile-modal-close');
+const bulkProfileModalCancel = document.getElementById('bulk-profile-modal-cancel');
+const bulkProfileModalSubmit = document.getElementById('bulk-profile-modal-submit');
+
+function openBulkProfileModal() {
+  if (!bulkProfileModal) return;
+  const groupSelect = document.getElementById('bulk-form-group');
+  if (groupSelect) {
+    groupSelect.innerHTML = '<option value="">(Không chia nhóm)</option>' +
+      allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
+  }
+  bulkProfileModal.classList.add('open');
+}
+
+function closeBulkProfileModal() {
+  if (bulkProfileModal) bulkProfileModal.classList.remove('open');
+}
+
+if (btnBulkCreateOpen) btnBulkCreateOpen.addEventListener('click', openBulkProfileModal);
+if (bulkProfileModalClose) bulkProfileModalClose.addEventListener('click', closeBulkProfileModal);
+if (bulkProfileModalCancel) bulkProfileModalCancel.addEventListener('click', closeBulkProfileModal);
+
+if (bulkProfileModalSubmit) {
+  bulkProfileModalSubmit.addEventListener('click', async () => {
+    const count = parseInt(document.getElementById('bulk-form-count').value, 10) || 5;
+    const namePrefix = document.getElementById('bulk-form-prefix').value.trim() || 'Profile';
+    const groupId = document.getElementById('bulk-form-group').value || null;
+    const os = document.getElementById('bulk-form-os').value;
+    const rawProxies = document.getElementById('bulk-form-proxies').value.trim();
+    const startUrl = document.getElementById('bulk-form-start-url').value.trim() || 'https://iphey.com';
+    const webrtc = document.getElementById('bulk-form-webrtc').value;
+    const canvas = document.getElementById('bulk-form-canvas').checked ? 1 : 0;
+    const audio = document.getElementById('bulk-form-audio').checked ? 1 : 0;
+    const webgl = document.getElementById('bulk-form-webgl').checked ? 1 : 0;
+
+    let proxyList = [];
+    if (rawProxies) {
+      proxyList = rawProxies.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    }
+
+    showToast(`Đang sinh ${count} hồ sơ với cấu hình độc lập...`, 'info');
+    try {
+      const res = await fetch(`${API_BASE}/profiles/bulk-create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          count,
+          namePrefix,
+          groupId,
+          os,
+          proxyList,
+          start_url: startUrl,
+          webrtc_mode: webrtc,
+          canvas_noise: canvas,
+          audio_noise: audio,
+          webgl_noise: webgl,
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`🎉 Tạo thành công ${data.count} hồ sơ mới!`, 'success');
+        closeBulkProfileModal();
+        await fetchProfiles();
+      } else {
+        showToast(`Lỗi tạo hàng loạt: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi kết nối: ${err.message}`, 'danger');
+    }
+  });
+}
 
 // Init
 initTheme();

@@ -137,6 +137,20 @@ async function startProfile(profileId, overrides = {}) {
     args.push(`--window-position=${overrides.window_x},${overrides.window_y}`);
   }
 
+  // Tự động xoay IP trước khi mở nếu profile bật auto_rotate_proxy
+  if (profile.auto_rotate_proxy && profile.proxy_id) {
+    const proxyRecord = db.getProxy(profile.proxy_id);
+    if (proxyRecord && proxyRecord.rotation_api_url) {
+      try {
+        console.log(`[Launcher] Profile "${profile.name}" yêu cầu tự động đổi IP mới qua API trước khi mở...`);
+        const rotRes = await proxy.triggerProxyRotation(proxyRecord);
+        console.log(`[Launcher] Xoay IP thành công cho "${profile.name}": IP mới ${rotRes.newProxyInfo?.ip || 'N/A'}`);
+      } catch (rotErr) {
+        console.warn(`[Launcher] Tự động xoay IP thất bại: ${rotErr.message}`);
+      }
+    }
+  }
+
   // Cấu hình Proxy nếu có
   let proxyForwarder = null;
   let proxyUrl = overrides.proxy_url;
