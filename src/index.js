@@ -32,8 +32,17 @@ async function main() {
   }
 
   // Khởi chạy REST API Server
-  await server.startServer(config.API_PORT);
-  console.log(`\n[API Ready] Endpoint: http://127.0.0.1:${config.API_PORT}`);
+  try {
+    await server.startServer(config.API_PORT);
+    console.log(`\n[API Ready] Endpoint: http://127.0.0.1:${config.API_PORT}`);
+  } catch (err) {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`\n⚠️  [Thông Báo] Máy chủ OmniBrowser đã đang chạy sẵn tại: http://127.0.0.1:${config.API_PORT}`);
+      console.log(`   (Cổng 51888 đang hoạt động, bạn có thể sử dụng bình thường trên trình duyệt)`);
+      return;
+    }
+    throw err;
+  }
 
   // Dọn dẹp an toàn khi tắt app
   const cleanExit = async () => {

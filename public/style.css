@@ -549,8 +549,8 @@ body::after {
   display: flex !important;
 }
 
-.modal-overlay[style*="display: none"],
-.modal[style*="display: none"] {
+.modal-overlay[style*="display: none"]:not(.open),
+.modal[style*="display: none"]:not(.open) {
   display: none !important;
   opacity: 0 !important;
   pointer-events: none !important;

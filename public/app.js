@@ -3586,13 +3586,18 @@ let kernelPollTimer = null;
 
 function openKernelModal() {
   if (kernelModal) {
+    kernelModal.style.removeProperty('display');
+    kernelModal.style.display = 'flex';
     kernelModal.classList.add('open');
     pollKernelStatus();
   }
 }
 
 function closeKernelModal() {
-  if (kernelModal) kernelModal.classList.remove('open');
+  if (kernelModal) {
+    kernelModal.classList.remove('open');
+    kernelModal.style.display = 'none';
+  }
 }
 
 if (btnKernelCenter) btnKernelCenter.addEventListener('click', openKernelModal);
@@ -3753,11 +3758,16 @@ function openBulkProfileModal() {
     groupSelect.innerHTML = '<option value="">(Không chia nhóm)</option>' +
       allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)}</option>`).join('');
   }
+  bulkProfileModal.style.removeProperty('display');
+  bulkProfileModal.style.display = 'flex';
   bulkProfileModal.classList.add('open');
 }
 
 function closeBulkProfileModal() {
-  if (bulkProfileModal) bulkProfileModal.classList.remove('open');
+  if (bulkProfileModal) {
+    bulkProfileModal.classList.remove('open');
+    bulkProfileModal.style.display = 'none';
+  }
 }
 
 if (btnBulkCreateOpen) btnBulkCreateOpen.addEventListener('click', openBulkProfileModal);
