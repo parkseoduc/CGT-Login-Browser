@@ -1,25 +1,26 @@
 @echo off
-chcp 65001 >nul
-title OmniBrowser - Web Server Launcher
+title OmniBrowser Antidetect Hub - Web Server
 cd /d "%~dp0"
-echo ============================================================
-echo   🚀 OmniBrowser Antidetect Hub - Web Interface Launcher
-echo ============================================================
-echo.
 
 where node >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo [LỖI] Máy tính chưa cài đặt Node.js!
-    echo Vui lòng tải và cài đặt Node.js v22 (LTS) tại: https://nodejs.org
-    echo.
-    pause
-    exit /b 1
-)
+if errorlevel 1 goto :no_node
 
-echo [1/2] Đang kiểm tra nhân trình duyệt Chromium trên máy tính...
-node -e "const c = require('./src/config'); const k = c.getDefaultKernelPath(); if (!k) { console.warn('⚠️ Chưa phát hiện Chrome/Edge. Vui lòng cài Google Chrome hoặc Microsoft Edge!'); } else { console.log('  -> Đã tìm thấy trình duyệt khả dụng:', k); }"
-echo.
-echo [2/2] Khởi chạy máy chủ tại http://127.0.0.1:51888 ...
 start http://127.0.0.1:51888
 node src/index.js
+if errorlevel 1 goto :error_exit
+exit /b 0
+
+:no_node
+echo ============================================================
+echo [ERROR] Node.js is not installed!
+echo Please download and install Node.js LTS from https://nodejs.org
+echo ============================================================
+echo.
 pause
+exit /b 1
+
+:error_exit
+echo.
+echo [Info] Web server stopped.
+pause
+exit /b 1
