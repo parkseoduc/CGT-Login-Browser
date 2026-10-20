@@ -122,6 +122,20 @@ async function startProfile(profileId, overrides = {}) {
     '--no-session-restore',
     '--disable-session-crashed-bubble',
     '--disable-restore-session-state',
+    // === CÁC CỜ TỐI ƯU HÓA TÀI NGUYÊN RAM / CPU & CHỐNG TẢI RÁC NGẦM ===
+    '--disable-component-update',
+    '--disable-background-networking',
+    '--disable-sync',
+    '--disable-default-apps',
+    '--disable-client-side-phishing-detection',
+    '--disable-hang-monitor',
+    '--disable-popup-blocking',
+    '--disable-prompt-on-repost',
+    '--disable-domain-reliability',
+    '--disable-features=OptimizationGuideModelDownloading,OptimizationHints,MediaRouter,DialMediaRouteProvider,CalculateNativeWinOcclusion,FlashDeprecationWarning',
+    '--disk-cache-size=20971520', // Khống chế bộ đệm ổ đĩa tối đa 20MB
+    '--media-cache-size=10485760', // Khống chế cache đa phương tiện 10MB
+    '--js-flags=--max-old-space-size=256', // Khống chế heap engine V8 chống phình RAM
   ];
 
   if (fp.languages && fp.languages[0]) {
