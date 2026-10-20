@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "desktop": "npx electron desktop/main.js",
+    "desktop": "node desktop/launcher.js",
     "test:core": "node test/test-core.js",
     "test:api": "node test/test-api.js",
     "test:web": "node test/test-web-ui-full.js"
@@ -21,5 +21,8 @@
     "cdp"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^33.4.11"
+  }
 }
