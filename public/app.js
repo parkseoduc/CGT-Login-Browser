@@ -3581,8 +3581,12 @@ const btnStartAutoKernel = document.getElementById('btn-start-auto-kernel-downlo
 const btnCancelKernel = document.getElementById('btn-cancel-kernel-download');
 const btnInstallLocalKernel = document.getElementById('btn-install-local-kernel');
 const kernelLocalPath = document.getElementById('kernel-local-path');
+const kernelSuccessBox = document.getElementById('kernel-success-box');
+const btnOpenKernelFolder = document.getElementById('btn-open-kernel-folder');
+const btnCopyKernelPath = document.getElementById('btn-copy-kernel-path');
 
 let kernelPollTimer = null;
+let isDownloadingKernel = false;
 
 function openKernelModal() {
   if (kernelModal) {
@@ -3605,6 +3609,36 @@ if (sidebarKernelCard) sidebarKernelCard.addEventListener('click', openKernelMod
 if (kernelModalClose) kernelModalClose.addEventListener('click', closeKernelModal);
 if (kernelModalCancel) kernelModalCancel.addEventListener('click', closeKernelModal);
 
+if (btnOpenKernelFolder) {
+  btnOpenKernelFolder.addEventListener('click', async () => {
+    showToast('Đang mở thư mục chứa Kernel trong File Explorer...', 'info');
+    try {
+      const res = await fetch(`${API_BASE}/kernel/open-folder`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showToast(`Đã mở thư mục: ${data.path}`, 'success');
+      } else {
+        showToast(`Không mở được: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi mở thư mục: ${err.message}`, 'danger');
+    }
+  });
+}
+
+if (btnCopyKernelPath) {
+  btnCopyKernelPath.addEventListener('click', () => {
+    const pathTextEl = document.getElementById('kernel-modal-path-text');
+    const p = pathTextEl ? pathTextEl.innerText.trim() : '';
+    if (p && p !== '--') {
+      navigator.clipboard.writeText(p);
+      showToast('📋 Đã sao chép đường dẫn Kernel vào Clipboard!', 'success');
+    } else {
+      showToast('Chưa có đường dẫn kernel khả dụng', 'warning');
+    }
+  });
+}
+
 async function pollKernelStatus() {
   try {
     const res = await fetch(`${API_BASE}/kernel/status`);
@@ -3623,10 +3657,20 @@ async function pollKernelStatus() {
 
     if (data.isInstalled) {
       if (statusTextEl) statusTextEl.innerText = 'Đã cài đặt MyBrowser 153 Core (Portable)';
-      if (pathTextEl) pathTextEl.innerText = data.kernelPath;
+      if (pathTextEl) pathTextEl.innerText = data.kernelPath || data.kernelDir || 'bin/chromium/chrome.exe';
       if (badgeEl) {
         badgeEl.className = 'badge badge-running';
         badgeEl.innerText = 'Sẵn sàng';
+      }
+      if (kernelSuccessBox) {
+        kernelSuccessBox.style.display = 'block';
+      }
+      if (btnStartAutoKernel) {
+        btnStartAutoKernel.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>Tải Lại / Cập Nhật Kernel Mới</span>
+        `;
+        btnStartAutoKernel.className = 'btn btn-secondary';
       }
       if (kernelLabel) kernelLabel.innerText = 'MyBrowser 153 (Sẵn sàng)';
       if (sidebarKernelDot) {
@@ -3646,6 +3690,16 @@ async function pollKernelStatus() {
         badgeEl.className = 'badge badge-stopped';
         badgeEl.innerText = 'Chưa cài';
       }
+      if (kernelSuccessBox) {
+        kernelSuccessBox.style.display = 'none';
+      }
+      if (btnStartAutoKernel) {
+        btnStartAutoKernel.innerHTML = `
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>1-Click Tải & Cài Đặt Tự Động</span>
+        `;
+        btnStartAutoKernel.className = 'btn btn-primary';
+      }
       if (kernelLabel) kernelLabel.innerText = 'Chưa cài MyBrowser 153';
       if (sidebarKernelDot) {
         sidebarKernelDot.style.background = '#F59E0B';
@@ -3662,8 +3716,9 @@ async function pollKernelStatus() {
     const task = data.downloadTask;
     if (task && (task.status === 'downloading' || task.status === 'extracting')) {
       if (progressBox) progressBox.style.display = 'block';
+      if (kernelSuccessBox) kernelSuccessBox.style.display = 'none';
       if (progressTitle) {
-        progressTitle.innerText = task.status === 'extracting' ? 'Đang giải nén Chromium Engine...' : 'Đang tải gói Chromium 153...';
+        progressTitle.innerText = task.status === 'extracting' ? '⚙️ Đang xả nén siêu tốc vào bin/chromium/...' : '⏳ Đang tải gói Chromium 153 (~245MB)...';
       }
       if (progressBar) progressBar.style.width = `${task.progress}%`;
       if (progressPercent) progressPercent.innerText = `${task.progress}%`;
@@ -3678,8 +3733,12 @@ async function pollKernelStatus() {
       kernelPollTimer = setTimeout(pollKernelStatus, 700);
     } else {
       if (progressBox) progressBox.style.display = 'none';
-      if (task && task.status === 'completed' && !data.isInstalled) {
-        showToast('🎉 Cài đặt Chromium Kernel thành công!', 'success');
+      if (isDownloadingKernel || (task && task.status === 'completed')) {
+        if (isDownloadingKernel) {
+          isDownloadingKernel = false;
+          showToast('🎉 Tải và cài đặt Chromium Kernel 153 thành công vào bin/chromium!', 'success');
+        }
+        if (kernelSuccessBox) kernelSuccessBox.style.display = 'block';
       }
     }
   } catch (err) {
@@ -3689,7 +3748,8 @@ async function pollKernelStatus() {
 
 if (btnStartAutoKernel) {
   btnStartAutoKernel.addEventListener('click', async () => {
-    showToast('Đang kết nối tải Chromium Core 153...', 'info');
+    isDownloadingKernel = true;
+    showToast('Đang kết nối tải Chromium Core 153 (~245MB)...', 'info');
     try {
       const res = await fetch(`${API_BASE}/kernel/download`, {
         method: 'POST',
@@ -3700,9 +3760,11 @@ if (btnStartAutoKernel) {
       if (data.success) {
         pollKernelStatus();
       } else {
+        isDownloadingKernel = false;
         showToast(`Lỗi: ${data.error}`, 'danger');
       }
     } catch (err) {
+      isDownloadingKernel = false;
       showToast(`Lỗi kết nối: ${err.message}`, 'danger');
     }
   });
@@ -3711,6 +3773,7 @@ if (btnStartAutoKernel) {
 if (btnCancelKernel) {
   btnCancelKernel.addEventListener('click', async () => {
     try {
+      isDownloadingKernel = false;
       await fetch(`${API_BASE}/kernel/cancel`, { method: 'POST' });
       showToast('Đã dừng tiến trình tải kernel', 'info');
       pollKernelStatus();

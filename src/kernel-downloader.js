@@ -37,6 +37,7 @@ function getKernelStatus() {
   return {
     isInstalled,
     kernelPath: isInstalled ? targetExe : null,
+    kernelDir: CHROMIUM_DIR,
     kernelVersion: isInstalled ? '153.0.7993.0 (Custom Build)' : null,
     downloadTask: {
       status: currentTask.status,
@@ -142,6 +143,19 @@ function startDownload(downloadUrl) {
   // Nếu người dùng truyền vào đường dẫn file zip cục bộ có sẵn (để test hoặc cài offline)
   if (downloadUrl && (downloadUrl.startsWith('C:') || downloadUrl.startsWith('D:') || downloadUrl.startsWith('E:') || downloadUrl.endsWith('.zip')) && fs.existsSync(downloadUrl)) {
     return installFromLocalZip(downloadUrl);
+  }
+
+  // Tự động kiểm tra các vị trí file ZIP có sẵn trên máy để cài đặt siêu tốc 1.5s
+  const commonZipLocations = [
+    path.join(config.BASE_DIR, '..', 'MyBrowser-153-win64.zip'),
+    path.join(config.BASE_DIR, 'MyBrowser-153-win64.zip'),
+    'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\MyBrowser-153-win64.zip',
+  ];
+  for (const zipLoc of commonZipLocations) {
+    if (fs.existsSync(zipLoc)) {
+      console.log('[Kernel Downloader] Tự động giải nén từ file ZIP có sẵn:', zipLoc);
+      return installFromLocalZip(zipLoc);
+    }
   }
 
   const targetUrl = downloadUrl || 'https://gofile.io/d/VmyJsIUD';

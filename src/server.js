@@ -156,6 +156,22 @@ function createServer() {
         }
       }
 
+      if (pathname === '/api/v1/kernel/open-folder' && method === 'POST') {
+        const kernelDir = kernelDownloader.CHROMIUM_DIR || path.join(config.BASE_DIR, 'bin', 'chromium');
+        if (!fs.existsSync(kernelDir)) {
+          fs.mkdirSync(kernelDir, { recursive: true });
+        }
+        const { exec } = require('node:child_process');
+        if (process.platform === 'win32') {
+          exec(`explorer.exe "${kernelDir}"`);
+        } else if (process.platform === 'darwin') {
+          exec(`open "${kernelDir}"`);
+        } else {
+          exec(`xdg-open "${kernelDir}"`);
+        }
+        return sendJson(res, 200, { success: true, path: kernelDir });
+      }
+
       // Bulk Profiles Creation API
       if (method === 'POST' && pathname === '/api/v1/profiles/bulk-create') {
         const body = await parseJsonBody(req);
