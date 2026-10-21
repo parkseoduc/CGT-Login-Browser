@@ -3763,7 +3763,7 @@ async function pollKernelStatus() {
 if (btnStartAutoKernel) {
   btnStartAutoKernel.addEventListener('click', async () => {
     isDownloadingKernel = true;
-    showToast('Đang kết nối tải Chromium Core 153 (~245MB)...', 'info');
+    showToast('Đang kết nối tải và cài đặt Chromium Core 153...', 'info');
     try {
       const res = await fetch(`${API_BASE}/kernel/download`, {
         method: 'POST',
@@ -3771,11 +3771,13 @@ if (btnStartAutoKernel) {
         body: JSON.stringify({})
       });
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success) {
+        showToast(data.message || '🎉 Đã cài đặt thành công Chromium Core 153!', 'success');
         pollKernelStatus();
+        fetchStatus();
       } else {
         isDownloadingKernel = false;
-        showToast(`Lỗi: ${data.error}`, 'danger');
+        showToast(`Lỗi: ${data.error || data.message || 'Không thể bắt đầu tải hoặc cài đặt'}`, 'danger');
       }
     } catch (err) {
       isDownloadingKernel = false;

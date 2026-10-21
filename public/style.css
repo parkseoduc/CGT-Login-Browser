@@ -1860,11 +1860,12 @@ body::after {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 12px;
+  padding: 5px 14px;
   font-size: 11.5px;
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
   background: #2563EB !important;
   color: #FFFFFF !important;
   border: 1px solid #1D4ED8 !important;
@@ -1887,6 +1888,7 @@ body::after {
   font-weight: 600;
   border-radius: 6px;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
 }
 

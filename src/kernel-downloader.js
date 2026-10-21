@@ -135,14 +135,14 @@ function normalizeKernelDir(destDir) {
 }
 
 // Bắt đầu tải và tự động cài đặt
-function startDownload(downloadUrl) {
+async function startDownload(downloadUrl) {
   if (currentTask.status === 'downloading' || currentTask.status === 'extracting') {
     throw new Error('Tiến trình tải kernel đang diễn ra, vui lòng chờ.');
   }
 
   // Nếu người dùng truyền vào đường dẫn file zip cục bộ có sẵn (để test hoặc cài offline)
   if (downloadUrl && (downloadUrl.startsWith('C:') || downloadUrl.startsWith('D:') || downloadUrl.startsWith('E:') || downloadUrl.endsWith('.zip')) && fs.existsSync(downloadUrl)) {
-    return installFromLocalZip(downloadUrl);
+    return await installFromLocalZip(downloadUrl);
   }
 
   // Tự động kiểm tra các vị trí file ZIP có sẵn trên máy để cài đặt siêu tốc 1.5s
@@ -154,11 +154,14 @@ function startDownload(downloadUrl) {
   for (const zipLoc of commonZipLocations) {
     if (fs.existsSync(zipLoc)) {
       console.log('[Kernel Downloader] Tự động giải nén từ file ZIP có sẵn:', zipLoc);
-      return installFromLocalZip(zipLoc);
+      return await installFromLocalZip(zipLoc);
     }
   }
 
-  const targetUrl = downloadUrl || 'https://gofile.io/d/VmyJsIUD';
+  const targetUrl = downloadUrl;
+  if (!targetUrl) {
+    throw new Error('Chưa tìm thấy gói cài đặt Chromium sẵn có trên máy. Vui lòng bấm "🌐 Mở link tải Cloud dự phòng" để tải file zip về máy hoặc cung cấp đường dẫn tải trực tiếp.');
+  }
 
   currentTask.status = 'downloading';
   currentTask.progress = 0;

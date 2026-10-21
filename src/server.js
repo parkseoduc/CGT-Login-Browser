@@ -133,7 +133,7 @@ function createServer() {
       if (pathname === '/api/v1/kernel/download' && method === 'POST') {
         const body = await parseJsonBody(req);
         try {
-          const result = kernelDownloader.startDownload(body.url);
+          const result = await kernelDownloader.startDownload(body.url);
           return sendJson(res, 200, result);
         } catch (err) {
           return sendJson(res, 400, { success: false, error: err.message });
