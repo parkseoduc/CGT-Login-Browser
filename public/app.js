@@ -3611,12 +3611,26 @@ if (kernelModalCancel) kernelModalCancel.addEventListener('click', closeKernelMo
 
 if (btnOpenKernelFolder) {
   btnOpenKernelFolder.addEventListener('click', async () => {
+    const pathTextEl = document.getElementById('kernel-modal-path-text');
+    let p = pathTextEl ? pathTextEl.innerText.trim() : '';
+    if (!p || p === '--') p = 'bin/chromium/chrome.exe';
+
+    // 1. If running inside Electron desktop app, use native shell API (bypasses Windows foreground lock)
+    if (window.electronAPI && typeof window.electronAPI.showItemInFolder === 'function') {
+      window.electronAPI.showItemInFolder(p);
+      showToast('📂 Đã mở Windows Explorer và làm nổi bật chrome.exe!', 'success');
+      // Also notify backend in background
+      fetch(`${API_BASE}/kernel/open-folder`, { method: 'POST' }).catch(() => {});
+      return;
+    }
+
+    // 2. Fallback when opened in web browser
     showToast('Đang mở thư mục chứa Kernel trong File Explorer...', 'info');
     try {
       const res = await fetch(`${API_BASE}/kernel/open-folder`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        showToast(`Đã mở thư mục: ${data.path}`, 'success');
+        showToast(`📂 Đã mở thư mục: ${data.path}`, 'success');
       } else {
         showToast(`Không mở được: ${data.error}`, 'danger');
       }

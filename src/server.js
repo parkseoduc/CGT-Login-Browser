@@ -161,15 +161,25 @@ function createServer() {
         if (!fs.existsSync(kernelDir)) {
           fs.mkdirSync(kernelDir, { recursive: true });
         }
-        const { exec } = require('node:child_process');
+        const targetExe = path.join(kernelDir, 'chrome.exe');
+        const hasExe = fs.existsSync(targetExe);
+        const targetToSelect = hasExe ? targetExe : kernelDir;
+
+        const { spawn, exec } = require('node:child_process');
         if (process.platform === 'win32') {
-          exec(`explorer.exe "${kernelDir}"`);
+          if (hasExe) {
+            const child = spawn('explorer.exe', [`/select,${targetToSelect}`], { detached: true, stdio: 'ignore' });
+            child.unref();
+          } else {
+            const child = spawn('explorer.exe', [kernelDir], { detached: true, stdio: 'ignore' });
+            child.unref();
+          }
         } else if (process.platform === 'darwin') {
           exec(`open "${kernelDir}"`);
         } else {
           exec(`xdg-open "${kernelDir}"`);
         }
-        return sendJson(res, 200, { success: true, path: kernelDir });
+        return sendJson(res, 200, { success: true, path: kernelDir, target: targetToSelect });
       }
 
       // Bulk Profiles Creation API

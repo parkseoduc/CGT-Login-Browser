@@ -1730,3 +1730,275 @@ body::after {
 #kernel-progress-bar {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ======================================================== */
+/* KERNEL MODAL - HIGH CONTRAST & ADAPTIVE STYLES          */
+/* ======================================================== */
+
+.kernel-status-banner {
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .kernel-status-banner {
+  background: #F8FAFC;
+  border: 1.5px solid #E2E8F0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+:root:not([data-theme="light"]) .kernel-status-banner {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1.5px solid rgba(56, 103, 244, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.kernel-status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.kernel-status-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-weight: 700;
+}
+
+[data-theme="light"] .kernel-status-label {
+  color: #64748B;
+}
+
+:root:not([data-theme="light"]) .kernel-status-label {
+  color: #94A3B8;
+}
+
+.kernel-status-value {
+  font-size: 14.5px;
+  font-weight: 700;
+  margin-top: 2px;
+}
+
+[data-theme="light"] .kernel-status-value {
+  color: #0F172A;
+}
+
+:root:not([data-theme="light"]) .kernel-status-value {
+  color: #60A5FA;
+}
+
+/* Path Storage Display Box - Clear & High Contrast */
+.kernel-path-card {
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 12px;
+}
+
+[data-theme="light"] .kernel-path-card {
+  background: #FFFFFF;
+  border: 1.5px solid #CBD5E1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+:root:not([data-theme="light"]) .kernel-path-card {
+  background: #0B1120;
+  border: 1.5px solid #1E293B;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.kernel-path-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.kernel-path-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+[data-theme="light"] .kernel-path-title {
+  color: #334155;
+}
+
+:root:not([data-theme="light"]) .kernel-path-title {
+  color: #94A3B8;
+}
+
+.kernel-path-text {
+  font-size: 12px;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 600;
+  word-break: break-all;
+  user-select: all;
+  padding: 8px 10px;
+  border-radius: 6px;
+  line-height: 1.45;
+}
+
+[data-theme="light"] .kernel-path-text {
+  background: #F1F5F9;
+  color: #0F172A;
+  border: 1px solid #E2E8F0;
+}
+
+:root:not([data-theme="light"]) .kernel-path-text {
+  background: #060B14;
+  color: #38BDF8;
+  border: 1px solid #1E293B;
+}
+
+/* Open Folder High Visibility Button */
+.btn-explorer-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1D4ED8 !important;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  transition: all 0.2s ease;
+}
+
+.btn-explorer-action:hover {
+  background: #1D4ED8 !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-copy-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .btn-copy-action {
+  background: #F8FAFC;
+  color: #334155;
+  border: 1px solid #CBD5E1;
+}
+
+[data-theme="light"] .btn-copy-action:hover {
+  background: #E2E8F0;
+  color: #0F172A;
+}
+
+:root:not([data-theme="light"]) .btn-copy-action {
+  background: #1E293B;
+  color: #E2E8F0;
+  border: 1px solid #334155;
+}
+
+:root:not([data-theme="light"]) .btn-copy-action:hover {
+  background: #334155;
+  color: #FFFFFF;
+}
+
+/* Success Card */
+.kernel-success-box {
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .kernel-success-box {
+  background: #F0FDF4;
+  border: 1.5px solid #86EFAC;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
+}
+
+:root:not([data-theme="light"]) .kernel-success-box {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+}
+
+.kernel-success-head {
+  font-size: 13.5px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+[data-theme="light"] .kernel-success-head {
+  color: #15803D;
+}
+
+:root:not([data-theme="light"]) .kernel-success-head {
+  color: #34D399;
+}
+
+.kernel-success-body {
+  font-size: 12px;
+  line-height: 1.55;
+  margin-top: 4px;
+}
+
+[data-theme="light"] .kernel-success-body {
+  color: #166534;
+}
+
+:root:not([data-theme="light"]) .kernel-success-body {
+  color: #E2E8F0;
+}
+
+[data-theme="light"] .kernel-success-body strong {
+  color: #14532D;
+}
+
+[data-theme="light"] .kernel-success-body code {
+  background: #DCFCE7;
+  color: #14532D;
+  border: 1px solid #BBF7D0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+/* Progress Box */
+.kernel-progress-container {
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .kernel-progress-container {
+  background: #EFF6FF;
+  border: 1.5px solid #BFDBFE;
+}
+
+:root:not([data-theme="light"]) .kernel-progress-container {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1.5px solid rgba(56, 103, 244, 0.35);
+}
+
+[data-theme="light"] #kernel-progress-title {
+  color: #1E40AF !important;
+}
+
+[data-theme="light"] #kernel-progress-percent {
+  color: #2563EB !important;
+}
+
+[data-theme="light"] #kernel-progress-bar-track {
+  background: #DBEAFE !important;
+}
+

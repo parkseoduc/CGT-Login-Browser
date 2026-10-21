@@ -109,6 +109,27 @@ ipcMain.on('app:openExternal', (event, url) => {
   }
 });
 
+ipcMain.on('app:openPath', async (event, targetPath) => {
+  if (targetPath) {
+    try {
+      await shell.openPath(targetPath);
+    } catch (e) {
+      console.error('[Electron] Failed to open path:', e.message);
+    }
+  }
+});
+
+ipcMain.on('app:showItemInFolder', (event, targetPath) => {
+  if (targetPath) {
+    try {
+      const fullPath = path.isAbsolute(targetPath) ? targetPath : path.resolve(process.cwd(), targetPath);
+      shell.showItemInFolder(fullPath);
+    } catch (e) {
+      console.error('[Electron] Failed to show item in folder:', e.message);
+    }
+  }
+});
+
 ipcMain.handle('app:version', () => {
   return app.getVersion();
 });

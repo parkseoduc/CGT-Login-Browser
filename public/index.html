@@ -1522,39 +1522,39 @@ async function automateProfile(profileId) {
 
       <div class="modal-body" style="padding: 20px;">
         <!-- Status Banner -->
-        <div id="kernel-status-banner" style="background: rgba(56, 103, 244, 0.08); padding: 14px 16px; border-radius: 10px; border: 1px solid rgba(56, 103, 244, 0.2); margin-bottom: 16px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div id="kernel-status-banner" class="kernel-status-banner">
+          <div class="kernel-status-header">
             <div>
-              <div style="font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600;">Trạng thái nhân trên máy:</div>
-              <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-top: 2px;" id="kernel-modal-status-text">Đang kiểm tra...</div>
+              <div class="kernel-status-label">Trạng thái nhân trên máy:</div>
+              <div class="kernel-status-value" id="kernel-modal-status-text">Đang kiểm tra...</div>
             </div>
             <span class="badge" id="kernel-modal-badge" style="font-size: 11px; padding: 4px 10px;">--</span>
           </div>
           
           <!-- Path & Explorer Action Box -->
-          <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 10px 12px; margin-top: 8px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">📁 Vị trí lưu trữ thực tế trên máy:</span>
-              <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-open-kernel-folder" style="font-size: 11px; padding: 3px 8px; height: 26px;" title="Mở thư mục trong Windows Explorer">
+          <div class="kernel-path-card">
+            <div class="kernel-path-header">
+              <span class="kernel-path-title">📁 Vị trí lưu trữ thực tế trên máy:</span>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-explorer-action" id="btn-open-kernel-folder" title="Mở thư mục trong Windows Explorer">
                   📂 Mở Thư Mục
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-kernel-path" style="font-size: 11px; padding: 3px 8px; height: 26px;" title="Sao chép đường dẫn">
+                <button type="button" class="btn-copy-action" id="btn-copy-kernel-path" title="Sao chép đường dẫn">
                   📋 Sao Chép
                 </button>
               </div>
             </div>
-            <div style="font-size: 11.5px; color: #6ee7b7; font-family: Consolas, monospace; word-break: break-all; user-select: all;" id="kernel-modal-path-text">--</div>
+            <div class="kernel-path-text" id="kernel-modal-path-text">--</div>
           </div>
         </div>
 
         <!-- Success Notification Box (Shows prominently when completed) -->
-        <div id="kernel-success-box" style="display: none; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.4); padding: 14px 16px; border-radius: 10px; margin-bottom: 16px;">
-          <div style="display: flex; align-items: flex-start; gap: 10px;">
-            <span style="font-size: 22px; line-height: 1;">🎉</span>
+        <div id="kernel-success-box" class="kernel-success-box" style="display: none;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <span style="font-size: 24px; line-height: 1;">🎉</span>
             <div style="flex: 1;">
-              <div style="font-size: 13px; font-weight: 700; color: #10B981;">ĐÃ TẢI & CÀI ĐẶT THÀNH CÔNG!</div>
-              <p style="font-size: 12px; color: var(--text-main); margin-top: 4px; line-height: 1.5;">
+              <div class="kernel-success-head">ĐÃ TẢI & CÀI ĐẶT THÀNH CÔNG!</div>
+              <p class="kernel-success-body">
                 Nhân <strong>Chromium 153 Core (Portable)</strong> đã sẵn sàng tại thư mục <code>bin/chromium/</code>. Tất cả profile mới và hiện tại sẽ tự động ưu tiên chạy nhân này để chống nhận diện (Bypass 100% Iphey & Pixelscan).
               </p>
             </div>
@@ -1562,17 +1562,17 @@ async function automateProfile(profileId) {
         </div>
 
         <!-- Download Progress Box (Hidden when idle) -->
-        <div id="kernel-progress-box" style="display: none; background: rgba(0,0,0,0.35); border: 1px solid rgba(56, 103, 244, 0.3); padding: 16px; border-radius: 10px; margin-bottom: 16px;">
+        <div id="kernel-progress-box" class="kernel-progress-container" style="display: none;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-size: 12px; font-weight: 700; color: #93c5fd;" id="kernel-progress-title">Đang tải gói Chromium 153...</span>
-            <span style="font-size: 13px; font-weight: 800; color: #60a5fa;" id="kernel-progress-percent">0%</span>
+            <span style="font-size: 12px; font-weight: 700;" id="kernel-progress-title">Đang tải gói Chromium 153...</span>
+            <span style="font-size: 13px; font-weight: 800;" id="kernel-progress-percent">0%</span>
           </div>
-          <div style="width: 100%; height: 9px; background: rgba(255,255,255,0.12); border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
+          <div id="kernel-progress-bar-track" style="width: 100%; height: 9px; background: rgba(255,255,255,0.12); border-radius: 5px; overflow: hidden; margin-bottom: 8px;">
             <div id="kernel-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #3867F4, #10B981); transition: width 0.3s ease;"></div>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); font-family: monospace;">
             <span id="kernel-progress-bytes">0 MB / 0 MB</span>
-            <span id="kernel-progress-speed" style="color: #34d399; font-weight: 600;">0 KB/s</span>
+            <span id="kernel-progress-speed" style="color: #10B981; font-weight: 700;">0 KB/s</span>
           </div>
           <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center;">
             <span>📁 Đích xả nén: <code>bin/chromium/chrome.exe</code></span>
