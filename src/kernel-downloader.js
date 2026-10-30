@@ -7,6 +7,7 @@ const config = require('./config');
 
 const CHROMIUM_DIR = path.join(config.BASE_DIR, 'bin', 'chromium');
 const TEMP_ZIP = path.join(config.BASE_DIR, 'bin', 'temp_kernel.zip');
+const DEFAULT_CLOUD_KERNEL_URL = 'https://github.com/parkseoduc/CGT-Login-Browser/releases/download/v2.0-kernel/MyBrowser-153-win64.zip';
 
 let currentTask = {
   status: 'idle', // 'idle' | 'downloading' | 'extracting' | 'completed' | 'error'
@@ -39,6 +40,7 @@ function getKernelStatus() {
     kernelPath: isInstalled ? targetExe : null,
     kernelDir: CHROMIUM_DIR,
     kernelVersion: isInstalled ? '153.0.7993.0 (Custom Build)' : null,
+    cloudUrl: DEFAULT_CLOUD_KERNEL_URL,
     downloadTask: {
       status: currentTask.status,
       progress: currentTask.progress,
@@ -158,10 +160,8 @@ async function startDownload(downloadUrl) {
     }
   }
 
-  const targetUrl = downloadUrl;
-  if (!targetUrl) {
-    throw new Error('Chưa tìm thấy gói cài đặt Chromium sẵn có trên máy. Vui lòng bấm "🌐 Mở link tải Cloud dự phòng" để tải file zip về máy hoặc cung cấp đường dẫn tải trực tiếp.');
-  }
+  const targetUrl = downloadUrl || DEFAULT_CLOUD_KERNEL_URL;
+  console.log('[Kernel Downloader] Bắt đầu tải kernel từ Cloud URL:', targetUrl);
 
   currentTask.status = 'downloading';
   currentTask.progress = 0;

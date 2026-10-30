@@ -218,13 +218,14 @@ Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động th
 ---
 
 ### 🌐 Cài Đặt Nhân Chromium Core 153 Custom Build (Chuẩn PolyLogin):
-Nếu sếp muốn chạy chính xác bản nhân Chromium Core 153 tự build:
-- **Cách 1 (Khuyên dùng - 1 Click ngay trong Web)**:
+Nếu bạn hoặc người dùng tải project từ Git về máy mới chưa có sẵn nhân Chromium 153:
+- **Cách 1 (Khuyên dùng - 1-Click Tự Động Trong Web UI)**:
   1. Mở giao diện Web tại `http://127.0.0.1:51888`.
   2. Bấm vào nút **"Cài Đặt Kernel"** trên thanh Header (hoặc góc dưới Sidebar).
-  3. Bấm **"Tải Tự Động Từ Cloud"**: Hệ thống sẽ tự tải gói runtime (~245MB) và tự động giải nén sạch vào `bin/chromium/` trong vài giây!
-- **Cách 2 (Cài đặt Offline)**:
-  - Nếu đã có file zip `MyBrowser-153-win64.zip`, mở cửa sổ Cài Đặt Kernel -> dán đường dẫn file zip -> bấm **"Cài Đặt File ZIP Này"** (giải nén siêu tốc trong 1.5 giây).
+  3. Bấm **"1-Click Tải & Cài Đặt Tự Động"**: Hệ thống sẽ tự động stream tải gói runtime (~245MB) trực tiếp từ **GitHub Releases chính thức** và tự động giải nén siêu tốc vào `bin/chromium/` trong vài giây!
+- **Cách 2 (Tải Trực Tiếp Từ GitHub Releases & Cài Đặt)**:
+  - Link tải trực tiếp vĩnh viễn (Tốc độ cao CDN): [MyBrowser-153-win64.zip (245MB)](https://github.com/parkseoduc/CGT-Login-Browser/releases/download/v2.0-kernel/MyBrowser-153-win64.zip)
+  - Sau khi tải về: Mở cửa sổ Cài Đặt Kernel -> dán đường dẫn file zip -> bấm **"Cài Đặt File ZIP Này"** (hoặc giải nén thẳng vào `bin/chromium/chrome.exe`).
 
 ---
 
