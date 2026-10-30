@@ -13,7 +13,66 @@ Hệ thống cho phép tạo và quản lý hàng loạt môi trường duyệt 
 
 ---
 
-## 🌟 2. Các Tính Năng Nổi Bật (Key Capabilities)
+## 🆕 2. Nhật Ký Cập Nhật Mới Nhất (Changelog & Release Notes)
+
+### 🌟 Bản Cập Nhật v2.0 - Pure Clean Kernel & Multi-Window Action Synchronizer
+
+> **Mục tiêu phiên bản:** Đưa nhân trình duyệt về chuẩn **Chromium sạch nguyên bản 100% (Pure Native Mode)**, loại bỏ triệt để các can thiệp JavaScript nhân tạo gây xung đột truyền tải đa phương tiện; đồng thời bổ sung **bộ đồng bộ hành động đa luồng (Action Synchronizer)** và **trình dàn xếp cửa sổ tự động (Auto Window Tiler)**.
+
+---
+
+#### 🔧 A. CÁC NỘI DUNG ĐÃ UPDATE & FIX LỖI (Updates & Bug Fixes)
+
+1. **Khôi Phục Nhân Chromium Thuần (Pure Clean Native Mode):**
+   * **Gỡ bỏ 100% mã tiêm JS qua CDP (`Page.addScriptToEvaluateOnNewDocument`):** Đã xóa bỏ toàn bộ hơn 400 dòng can thiệp monkey-patching (`Function.prototype.toString`, `window.Blob`, `Worker`, `Canvas`, `WebGL`, `WebAudio`).
+   * **Fix dứt điểm lỗi YouTube dừng/đơ ở giây 41 (`errorCode: "ump.spsrejectfailure"`):** Cơ chế giải mã Unified Media Pipeline (UMP) của Google YouTube trước đây phát hiện sự can thiệp sai lệch vào `Blob`/`Worker` dẫn đến ngắt luồng video. Sau khi dọn sạch, video YouTube chạy mượt mà liên tục, không còn bất kỳ lỗi nào.
+   * Bản build Chromium C++ tự build (`MyBrowser 153`) xử lý chống nhận diện trực tiếp từ mã nguồn lõi C++ (Blink engine), vượt qua bài test **Iphey (Pass 100%)** hoàn toàn tự nhiên mà không cần tiêm runtime.
+
+2. **Tối Giản Danh Sách Cờ Khởi Động (Command-line Flags Optimization):**
+   * Loại bỏ hơn 25 cờ can thiệp sâu không cần thiết gây treo hoặc giảm tính ổn định (`--disable-features=OptimizationGuide...`, `--disable-renderer-backgrounding`, `--disable-hang-monitor`, `--disable-sync`, v.v.).
+   * **Bổ sung cờ `--test-type`:** Ẩn vĩnh viễn thanh cảnh báo màu vàng khó chịu trên đầu trình duyệt (*"Bạn đang sử dụng một cờ dòng lệnh không được hỗ trợ: --no-sandbox"*).
+
+3. **Native Desktop Window Spawner (Hiển Thị Cửa Sổ Trực Tiếp):**
+   * Tích hợp bộ nạp native [`bin/spawn-desktop.exe`](bin/spawn-desktop.exe) (kèm mã nguồn C# [`bin/spawn-desktop.cs`](bin/spawn-desktop.cs)) sử dụng Win32 API `CreateProcess` chỉ định thẳng `lpDesktop = @"WinSta0\Default"`.
+   * Khắc phục triệt để hiện tượng trình duyệt mở thành công nhưng bị ẩn ngầm dưới hệ thống khi khởi chạy từ terminal/tiến trình nền.
+
+4. **Làm Sạch Tiện Ích Mở Rộng Mặc Định (Clean Default Extensions):**
+   * Thiết lập `is_global = 0` cho toàn bộ các extension preset trong cơ sở dữ liệu (`fb-helper`, `proxy-inspector`, `authenticator-2fa`).
+   * Profile mới tạo khi mở lên sẽ hoàn toàn sạch sẽ, không bị tự động chèn extension ngoài ý muốn.
+
+5. **Chuẩn Hóa Gói Nhân Tải Về:**
+   * Gói nén [`MyBrowser-153-win64.zip`](../MyBrowser-153-win64.zip) được đóng gói đồng nhất từ bản build gốc sạch `E:\Chromium_Workspace\src\out\Default\chrome.exe` (mã kiểm tra SHA-256 đối khớp 100%).
+
+---
+
+#### 🚀 B. CÁC TÍNH NĂNG MỚI ĐÃ ĐƯỢC THÊM VÀO (New Features Added)
+
+1. **Action Synchronizer (Bộ Đồng Bộ Hành Động Đa Luồng):**
+   * Cho phép chọn 1 cửa sổ làm **Master** và nhiều cửa sổ làm **Slaves**.
+   * Toàn bộ thao tác người dùng trên Master gồm: **Click chuột, Di chuyển chuột, Cuộn trang (Scroll Wheel), Nhập bàn phím (Keydown/Keyup/Input)** được bắt thông qua script tối ưu và phát lại ngay lập tức sang các Slaves qua Chrome DevTools Protocol (`Input.dispatchMouseEvent`, `Input.dispatchKeyEvent`).
+   * **Hỗ trợ tọa độ tương đối (Viewport-Relative Coordinates):** Tự động quy đổi tọa độ click/scroll theo tỷ lệ phần trăm khung hình, đảm bảo đồng bộ chuẩn xác ngay cả khi các cửa sổ có kích thước khác nhau.
+
+2. **Auto Window Tiler (Tự Động Chia Lưới & Căn Chỉnh Cửa Sổ):**
+   * Module [`src/sync/window-tiler.js`](src/sync/window-tiler.js) tự động phát hiện độ phân giải màn hình làm việc (Work Area).
+   * Tự động tính toán và dàn đều toàn bộ các cửa sổ đang đồng bộ theo bố cục lưới tối ưu (2x1, 2x2, 3x2, 4x2, v.v.), không để cửa sổ bị đè chồng lên nhau, giúp người dùng dễ dàng quan sát đồng thời nhiều tài khoản.
+
+3. **Giao Diện Điều Khiển Đồng Bộ Trực Quan (Sync Control Bar):**
+   * Bổ sung thanh công cụ điều khiển Sync ngay trên giao diện Web UI:
+     * Nút chọn Profile Master và chọn danh sách Profile Slaves bằng checkbox.
+     * Nút **Bắt đầu đồng bộ (Start Sync)**, **Tạm dừng (Pause)**, **Kết thúc (Stop Sync)**.
+     * Đèn báo trạng thái hoạt động theo thời gian thực (Active / Inactive).
+   * File mã nguồn giao diện module hóa độc lập: [`public/js/sync-ui.js`](public/js/sync-ui.js).
+
+4. **Kiến Trúc Backend Đồng Bộ Dạng Module Hóa:**
+   * Tổ chức mã nguồn backend sạch sẽ tại thư mục `src/sync/`:
+     * `capture-script.js`: Script bắt sự kiện phía Master siêu nhẹ, không gây trễ trang.
+     * `event-dispatcher.js`: Bộ phát lệnh CDP đa luồng sang các Slaves.
+     * `session-manager.js`: Quản lý vòng đời phiên đồng bộ, tự động xử lý khi một profile bị tắt.
+     * `window-tiler.js`: Điều khiển kích thước và vị trí cửa sổ qua CDP `Browser.setWindowBounds`.
+
+---
+
+## 🌟 3. Các Tính Năng Nổi Bật (Key Capabilities)
 
 ### 🛡️ A. Công Nghệ Chống Dấu Vân Tay (Advanced Fingerprint Spoofing)
 - **WebGL & GPU Masking**: Tùy biến Vendor và Renderer card đồ họa (NVIDIA GeForce RTX 4070/3080, AMD Radeon, Apple M2 Pro Metal).
@@ -81,18 +140,29 @@ Hệ thống cho phép tạo và quản lý hàng loạt môi trường duyệt 
 
 ---
 
-## 📂 3. Cấu Trúc Mã Nguồn (Project Structure)
+## 📂 4. Cấu Trúc Mã Nguồn (Project Structure)
 
 ```
 antidetect-manager/
+├── bin/                        # Bộ công cụ thực thi Native & Kernel Portable
+│   ├── chromium/               # Thư mục giải nén nhân Chromium 153 Portable
+│   ├── spawn-desktop.cs        # Mã nguồn C# native Win32 Window Spawner
+│   └── spawn-desktop.exe       # Trình nạp cửa sổ trực tiếp lên WinSta0\\Default
 ├── desktop/                    # Ứng dụng Desktop Electron
 │   ├── main.js                 # Electron Main Process & IPC Server Controller
 │   └── preload.js              # Context Bridge an toàn cho giao diện Desktop
-├── public/                     # Frontend Giao diện Workstation PolyLogin
+├── public/
+│   ├── js/
+│   │   └── sync-ui.js          # Controller điều khiển thanh công cụ Action Synchronizer
 │   ├── index.html              # Layout HTML giao diện Workstation, Modal Kernel, Bulk & Modals
 │   ├── app.js                  # Frontend Controller, Real-time Spec Sheet, Kernel Poller & Events
 │   └── style.css               # Hệ thống Stylesheet Dark/Light theme, Animation xoay proxy & Progress bar
 ├── src/                        # Backend Engine Modules (Node.js)
+│   ├── sync/                   # Hệ thống Action Synchronizer & Grid Window Tiling
+│   │   ├── capture-script.js   # Script lắng nghe & chuẩn hóa sự kiện chuột/phím Master
+│   │   ├── event-dispatcher.js # Bộ điều phối lệnh CDP sang toàn bộ hồ sơ Slaves
+│   │   ├── session-manager.js  # Quản lý vòng đời phiên đồng bộ (Start/Pause/Stop)
+│   │   └── window-tiler.js     # Thuật toán tính toán và chia lưới dàn đều cửa sổ
 │   ├── automation.js           # Kịch bản tự động hóa (Warmup, Iphey Audit)
 │   ├── cdp.js                  # Chrome DevTools Protocol Client & Process Watcher
 │   ├── config.js               # Quản lý đường dẫn môi trường, Kernel Chromium & Data
@@ -126,7 +196,7 @@ antidetect-manager/
 
 ---
 
-## 🚀 4. Hướng Dẫn Cài Đặt & Khởi Chạy Trên Mọi Máy Tính (Zero Configuration)
+## 🚀 5. Hướng Dẫn Cài Đặt & Khởi Chạy Trên Mọi Máy Tính (Zero Configuration)
 
 Dự án được thiết kế theo cơ chế **Plug-and-Play**, tự động thích ứng với bất kỳ máy tính nào ngay khi vừa `git clone` về:
 - **Tự động dò tìm nhân trình duyệt**: Tự động phát hiện Google Chrome (64/32-bit, LocalAppData), Microsoft Edge (có sẵn 100% trên Windows 10/11), Brave, Cốc Cốc hoặc Chromium trên macOS/Linux.
@@ -158,7 +228,7 @@ Nếu sếp muốn chạy chính xác bản nhân Chromium Core 153 tự build:
 
 ---
 
-## 🧪 5. Kết Quả Kiểm Thử Hệ Thống (Automated Test Suites)
+## 🧪 6. Kết Quả Kiểm Thử Hệ Thống (Automated Test Suites)
 
 Dự án tích hợp đầy đủ 8 kịch bản kiểm thử độc lập bao phủ 100% chức năng:
 
@@ -181,6 +251,6 @@ node test/test-web-ui-full.js
 
 ---
 
-## ⚖️ 6. Giấy Phép & Bản Quyền
+## ⚖️ 7. Giấy Phép & Bản Quyền
 - Bản quyền thuộc về đội ngũ phát triển **OmniBrowser Antidetect Team**.
 - Được cấp phép sử dụng nội bộ và thương mại hóa theo tiêu chuẩn bản quyền phần mềm CGT-License.
