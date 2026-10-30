@@ -378,6 +378,7 @@ window.copyText = async function(text, event) {
 
 function populateKernelSelect(kernels, defaultKernel) {
   if (!formKernel) return;
+  const currentVal = formKernel.value;
   formKernel.innerHTML = '';
 
   const available = kernels.filter(k => k.exists);
@@ -391,11 +392,29 @@ function populateKernelSelect(kernels, defaultKernel) {
     return;
   }
 
+  // Ưu tiên đưa MyBrowser 153 Portable lên đầu danh sách
+  available.sort((a, b) => {
+    if (a.id === 'local-portable-chromium') return -1;
+    if (b.id === 'local-portable-chromium') return 1;
+    if (a.isPrimary) return -1;
+    if (b.isPrimary) return 1;
+    return 0;
+  });
+
+  const portable = available.find(k => k.id === 'local-portable-chromium');
+  // Ưu tiên chọn MyBrowser 153 Portable làm mặc định nếu có sẵn trên máy
+  let selectPath = defaultKernel;
+  if (portable) {
+    selectPath = portable.path;
+  } else if (currentVal && available.some(k => k.path === currentVal)) {
+    selectPath = currentVal;
+  }
+
   available.forEach((k) => {
     const opt = document.createElement('option');
     opt.value = k.path;
     opt.text = `${k.name} (Sẵn sàng)`;
-    if (k.path === defaultKernel || (!defaultKernel && k.isPrimary)) {
+    if (k.path === selectPath || (!selectPath && (k.id === 'local-portable-chromium' || k.isPrimary))) {
       opt.selected = true;
     }
     formKernel.appendChild(opt);
@@ -412,6 +431,33 @@ function populateKernelSelect(kernels, defaultKernel) {
     opt.disabled = true;
     formKernel.appendChild(opt);
   });
+
+  // Cập nhật trạng thái badge & text trong modal Tạo Hồ Sơ
+  const modalQuickBtn = document.getElementById('btn-modal-open-kernel');
+  const modalQuickText = document.getElementById('modal-kernel-quick-text');
+  const kernelHint = document.getElementById('form-kernel-hint');
+
+  if (portable) {
+    if (modalQuickText) modalQuickText.innerText = '✓ Core 153 Sẵn Sàng';
+    if (modalQuickBtn) {
+      modalQuickBtn.style.color = '#10B981';
+      modalQuickBtn.style.background = 'rgba(16, 185, 129, 0.12)';
+      modalQuickBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+    }
+    if (kernelHint) {
+      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"/></svg><span style="color: #10B981; font-weight: 600;">MyBrowser 153 Core (Portable) đang được chọn. Tối ưu chống nhận diện 100% (Bypass Iphey & Pixelscan).</span>';
+    }
+  } else {
+    if (modalQuickText) modalQuickText.innerText = '⬇ Cài MyBrowser 153';
+    if (modalQuickBtn) {
+      modalQuickBtn.style.color = 'var(--primary)';
+      modalQuickBtn.style.background = 'rgba(56, 103, 244, 0.12)';
+      modalQuickBtn.style.borderColor = 'rgba(56, 103, 244, 0.3)';
+    }
+    if (kernelHint) {
+      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><span>Khuyên dùng: Bấm nút <b>Cài MyBrowser 153</b> phía trên để tải nhân chống phát hiện danh tính 100%.</span>';
+    }
+  }
 
   updateProfileSummary();
 }
@@ -2007,7 +2053,8 @@ if (fpDeviceName) fpDeviceName.addEventListener('input', updateProfileSummary);
 if (formProxy) formProxy.addEventListener('input', updateProfileSummary);
 if (formProxySelect) formProxySelect.addEventListener('change', updateProfileSummary);
 
-window.editProfile = function(id) {
+window.editProfile = async function(id) {
+  await fetchStatus();
   const p = allProfiles.find(x => x.id === id);
   if (!p) return;
 
@@ -2137,6 +2184,7 @@ if (formProxySelect) {
 
 // Modal handlers
 btnCreateModal.addEventListener('click', async () => {
+  await fetchStatus();
   modal.classList.add('open');
   setModalTab('basic');
   modalTitle.innerText = 'Tạo Hồ Sơ Mới';
@@ -4172,6 +4220,8 @@ const kernelSuccessBox = document.getElementById('kernel-success-box');
 const btnOpenKernelFolder = document.getElementById('btn-open-kernel-folder');
 const btnCopyKernelPath = document.getElementById('btn-copy-kernel-path');
 
+const btnModalOpenKernel = document.getElementById('btn-modal-open-kernel');
+
 let kernelPollTimer = null;
 let isDownloadingKernel = false;
 
@@ -4189,10 +4239,12 @@ function closeKernelModal() {
     kernelModal.classList.remove('open');
     kernelModal.style.display = 'none';
   }
+  fetchStatus();
 }
 
 if (btnKernelCenter) btnKernelCenter.addEventListener('click', openKernelModal);
 if (sidebarKernelCard) sidebarKernelCard.addEventListener('click', openKernelModal);
+if (btnModalOpenKernel) btnModalOpenKernel.addEventListener('click', openKernelModal);
 if (kernelModalClose) kernelModalClose.addEventListener('click', closeKernelModal);
 if (kernelModalCancel) kernelModalCancel.addEventListener('click', closeKernelModal);
 
@@ -4265,6 +4317,11 @@ async function pollKernelStatus() {
   try {
     const res = await fetch(`${API_BASE}/kernel/status`);
     const data = await res.json();
+
+    // Tự động đồng bộ danh sách kernels vào form Tạo Hồ Sơ
+    if (data.kernels && data.kernels.length > 0) {
+      populateKernelSelect(data.kernels, data.defaultKernel);
+    }
 
     // Update Status Banner in Modal
     const statusTextEl = document.getElementById('kernel-modal-status-text');
@@ -4362,11 +4419,13 @@ async function pollKernelStatus() {
     } else {
       if (progressBox) progressBox.style.display = 'none';
       if (isDownloadingKernel || (task && task.status === 'completed')) {
-        if (isDownloadingKernel) {
-          isDownloadingKernel = false;
+        const wasDownloading = isDownloadingKernel;
+        isDownloadingKernel = false;
+        if (wasDownloading) {
           showToast('🎉 Tải và cài đặt Chromium Kernel 153 thành công vào bin/chromium!', 'success');
         }
         if (kernelSuccessBox) kernelSuccessBox.style.display = 'block';
+        fetchStatus();
       }
     }
   } catch (err) {

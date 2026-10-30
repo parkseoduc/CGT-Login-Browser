@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const EventEmitter = require('node:events');
 
-const { PROFILES_DIR, getDefaultKernelPath } = require('./config');
+const { PROFILES_DIR, getDefaultKernelPath, BASE_DIR } = require('./config');
 const db = require('./db');
 const cdp = require('./cdp');
 const fingerprint = require('./fingerprint');
@@ -61,8 +61,21 @@ async function startProfile(profileId, overrides = {}) {
     }
   }
 
-  // Xác định file thực thi Chromium (Hỗ trợ tự động fallback khi chuyển máy)
+  // Xác định file thực thi Chromium (Hỗ trợ tự động fallback khi chuyển máy và ưu tiên MyBrowser 153)
   let kernelPath = overrides.kernel_path || profile.kernel_path;
+  const portableKernel = path.join(BASE_DIR, 'bin', 'chromium', process.platform === 'win32' ? 'chrome.exe' : 'chrome');
+  const hasPortable = fs.existsSync(portableKernel);
+
+  if (hasPortable && (!overrides.exactKernel)) {
+    // Nếu máy đã cài đặt MyBrowser 153 Portable, ưu tiên chạy nhân này nếu profile chưa gán hoặc đang trỏ Chrome/Edge thông thường
+    if (!kernelPath || !fs.existsSync(kernelPath) || kernelPath.toLowerCase().includes('google') || kernelPath.toLowerCase().includes('edge') || kernelPath.toLowerCase().includes('msedge')) {
+      if (profile.kernel_path !== portableKernel) {
+        console.log(`[Launcher] Tự động ưu tiên MyBrowser 153 Core (Portable) cho profile "${profile.name}" để đạt chuẩn Bypass 100% Iphey & Pixelscan!`);
+      }
+      kernelPath = portableKernel;
+    }
+  }
+
   if (!kernelPath || !fs.existsSync(kernelPath)) {
     const fallbackKernel = getDefaultKernelPath();
     if (fallbackKernel && fs.existsSync(fallbackKernel)) {
