@@ -460,6 +460,7 @@ function populateKernelSelect(kernels, defaultKernel) {
   }
 
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 // Fetch Initial Data
@@ -528,6 +529,8 @@ async function fetchGroups() {
         allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)} (${g.profile_count || 0})</option>`).join('');
       if (curFilter) filterGroupSelect.value = curFilter;
     }
+
+    if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 
     renderGroups();
   } catch (err) {
@@ -1316,6 +1319,7 @@ function setWorkstationOs(os, triggerRandom = false) {
     randomizeFingerprint(os, true);
   }
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 document.querySelectorAll('.os-select-btn').forEach(btn => {
@@ -1516,6 +1520,7 @@ window.selectHubProxy = function(id) {
 
   updateSelectedProxyInspector();
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 };
 
 // Cập nhật Inspector chi tiết Proxy đang chọn
@@ -1629,6 +1634,7 @@ function setQuickProxyMode(mode) {
     syncCustomProxyToHiddenInput();
   }
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 // Bắt sự kiện click 3 Mode Cards ở Tab 2
@@ -1785,6 +1791,7 @@ function syncCustomProxyToHiddenInput() {
     if (formProxy) formProxy.value = '';
   }
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 function setCustomProxyFormValues(opts) {
@@ -1956,6 +1963,7 @@ function setQuickWebRtc(mode) {
   });
   if (formWebrtc) formWebrtc.value = mode;
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 document.querySelectorAll('#quick-webrtc-pills .quick-pill-btn').forEach(btn => {
@@ -2204,6 +2212,7 @@ btnCreateModal.addEventListener('click', async () => {
   await randomizeFingerprint('windows', true);
   renderProfileExtensionsChecklist([]);
   updateProfileSummary();
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 });
 
 function closeModal() {

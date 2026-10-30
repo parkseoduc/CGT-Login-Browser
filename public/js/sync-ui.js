@@ -183,6 +183,8 @@ function renderSyncWorkspace() {
     syncMasterSelect.value = curMaster;
   }
 
+  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
+
   const selectedMasterId = syncMasterSelect.value;
   const masterProfile = running.find(p => p.id === selectedMasterId);
   if (syncStatMaster) {
