@@ -205,7 +205,10 @@ function showToast(message, type = 'info') {
     iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
   }
 
-  toast.innerHTML = `<span class="toast-icon">${iconSvg}</span><span class="toast-message">${message}</span>`;
+  const cleanMessage = typeof message === 'string' 
+    ? message.replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\uFE0F\s]+/u, '') 
+    : message;
+  toast.innerHTML = `<span class="toast-icon">${iconSvg}</span><span class="toast-message">${cleanMessage}</span>`;
   container.appendChild(toast);
 
   setTimeout(() => {
@@ -239,13 +242,13 @@ function showConfirmDialog({ title = 'Xác nhận thao tác', message = '', type
 
     iconEl.className = `confirm-icon-wrapper ${type}`;
     if (type === 'danger') {
-      btnConfirm.className = 'btn btn-danger';
+      btnConfirm.className = 'uiv-cta-danger';
       iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
     } else if (type === 'warning') {
-      btnConfirm.className = 'btn btn-primary';
+      btnConfirm.className = 'uiv-cta-primary';
       iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
     } else {
-      btnConfirm.className = 'btn btn-primary';
+      btnConfirm.className = 'uiv-cta-primary';
       iconEl.innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
     }
 
@@ -292,7 +295,7 @@ function showCustomAlert({ title = 'Thông báo', message = '', type = 'info', c
     msgEl.innerHTML = message;
     btnCancel.style.display = 'none';
     btnConfirm.innerText = confirmText;
-    btnConfirm.className = 'btn btn-primary';
+    btnConfirm.className = 'uiv-cta-primary';
 
     iconEl.className = `confirm-icon-wrapper ${type}`;
     if (type === 'danger') {
@@ -332,9 +335,44 @@ function formatTimeAgo(dateString) {
   return past.toLocaleDateString();
 }
 
-window.copyText = function(text, event) {
+async function safeCopyToClipboard(text) {
+  if (!text) return false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (err) {
+    // Fallback to execCommand
+  }
+
+  try {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    const successful = document.execCommand('copy');
+    document.body.removeChild(textArea);
+    return successful;
+  } catch (err) {
+    return false;
+  }
+}
+
+window.copyText = async function(text, event) {
   if (event) event.stopPropagation();
-  navigator.clipboard.writeText(text);
+  await safeCopyToClipboard(text);
   showToast(`Đã sao chép ID: ${text.slice(0, 12)}...`, 'info');
 };
 
@@ -348,7 +386,7 @@ function populateKernelSelect(kernels, defaultKernel) {
   if (available.length === 0) {
     const opt = document.createElement('option');
     opt.value = '';
-    opt.text = '⚠️ Chưa tìm thấy Google Chrome hoặc Microsoft Edge trên máy';
+    opt.text = 'Chưa tìm thấy Google Chrome hoặc Microsoft Edge trên máy';
     formKernel.appendChild(opt);
     return;
   }
@@ -356,7 +394,7 @@ function populateKernelSelect(kernels, defaultKernel) {
   available.forEach((k) => {
     const opt = document.createElement('option');
     opt.value = k.path;
-    opt.text = `⚡ ${k.name} (Sẵn sàng)`;
+    opt.text = `${k.name} (Sẵn sàng)`;
     if (k.path === defaultKernel || (!defaultKernel && k.isPrimary)) {
       opt.selected = true;
     }
@@ -370,7 +408,7 @@ function populateKernelSelect(kernels, defaultKernel) {
   unavailable.slice(0, 2).forEach(k => {
     const opt = document.createElement('option');
     opt.value = k.path;
-    opt.text = `⚠️ ${k.name} (Chưa cài đặt)`;
+    opt.text = `${k.name} (Chưa cài đặt)`;
     opt.disabled = true;
     formKernel.appendChild(opt);
   });
@@ -440,7 +478,7 @@ async function fetchGroups() {
     // Update Filter Bar group select
     if (filterGroupSelect) {
       const curFilter = filterGroupSelect.value;
-      filterGroupSelect.innerHTML = '<option value="">📁 Tất Cả Nhóm</option>' +
+      filterGroupSelect.innerHTML = '<option value="">Tất Cả Nhóm</option>' +
         allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)} (${g.profile_count || 0})</option>`).join('');
       if (curFilter) filterGroupSelect.value = curFilter;
     }
@@ -465,7 +503,7 @@ function renderGroups() {
   }
 
   groupsTbody.innerHTML = allGroups.map(g => {
-    const color = g.color || '#3867F4';
+    const color = (!g.color || g.color.toLowerCase() === '#3867f4') ? '#60A5FA' : g.color;
     return `
       <tr>
         <td>
@@ -484,8 +522,8 @@ function renderGroups() {
         <td style="color:var(--text-muted); font-size:12px;">${escapeHtml(g.notes || 'Không có ghi chú')}</td>
         <td style="text-align: right;">
           <div class="actions-cell" style="justify-content: flex-end;">
-            <button class="btn btn-sm btn-secondary" onclick="editGroup('${g.id}')">Sửa</button>
-            <button class="btn btn-sm btn-secondary" style="color: #F87171;" onclick="deleteGroup('${g.id}')">Xóa</button>
+            <button class="uiv-btn uiv-btn-secondary" onclick="editGroup('${g.id}')">Sửa</button>
+            <button class="uiv-btn uiv-btn-secondary" style="color: #F87171;" onclick="deleteGroup('${g.id}')">Xóa</button>
           </div>
         </td>
       </tr>
@@ -503,12 +541,12 @@ async function fetchProxies() {
       const curVal = formProxySelect.value;
       let opts = `
         <option value="">(Không dùng Proxy - Kết nối mạng trực tiếp)</option>
-        <option value="__custom__">⚙️ Nhập thủ công URL Proxy...</option>
+        <option value="__custom__">Nhập thủ công URL Proxy...</option>
       `;
       opts += allProxies.map(p => {
         const flag = p.country ? `[${p.country}] ` : '';
         const pingTxt = p.ping > 0 ? ` - ${p.ping}ms` : '';
-        return `<option value="${p.id}">🌐 ${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port}${pingTxt})</option>`;
+        return `<option value="${p.id}">${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port}${pingTxt})</option>`;
       }).join('');
       formProxySelect.innerHTML = opts;
       if (curVal) formProxySelect.value = curVal;
@@ -519,11 +557,15 @@ async function fetchProxies() {
       let hubOpts = allProxies.map(p => {
         const flag = p.country ? `[${p.country}] ` : '';
         const pingTxt = p.ping > 0 ? ` - ${p.ping}ms` : '';
-        return `<option value="${p.id}">🌐 ${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port}${pingTxt})</option>`;
+        return `<option value="${p.id}">${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port}${pingTxt})</option>`;
       }).join('');
       tabProxyHubSelect.innerHTML = hubOpts || '<option value="">(Kho trống - chưa có proxy nào)</option>';
       if (curHub) tabProxyHubSelect.value = curHub;
     }
+
+    if (typeof updateProxyCounters === 'function') updateProxyCounters();
+    if (typeof renderProxyHubCards === 'function') renderProxyHubCards();
+    if (typeof updateSelectedProxyInspector === 'function') updateSelectedProxyInspector();
 
     renderProxies();
   } catch (err) {
@@ -558,8 +600,11 @@ function renderProxies() {
       pingBadge = `<span style="font-weight:700; color:${pingColor}; font-size:12px;">${p.ping} ms</span>`;
     }
 
-    const countryTxt = p.country ? `<span class="badge" style="background:rgba(56,103,244,0.1); color:var(--primary); font-weight:600;">${escapeHtml(p.country)}${p.city ? ` • ${escapeHtml(p.city)}` : ''}</span>` : '<span style="color:var(--text-muted); font-size:11px;">--</span>';
-    const authTxt = p.username ? '<span title="Có tài khoản / mật khẩu" style="font-size:12px; margin-left:4px;">🔒</span>' : '';
+    const authTxt = p.username ? '<span title="Có tài khoản / mật khẩu" style="display:inline-flex; align-items:center; margin-left:4px; color:var(--text-muted);"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' : '';
+
+    const countryTxt = p.country
+      ? `<span style="font-size:12px; font-weight:600; color:var(--text-main);">${escapeHtml(p.country)}</span>`
+      : `<span style="color:var(--text-muted); font-size:12px;">--</span>`;
 
     return `
       <tr>
@@ -580,10 +625,13 @@ function renderProxies() {
           <span style="font-size:11px; color:var(--text-muted);"> profiles</span>
         </td>
         <td style="text-align: right;">
-          <div class="actions-cell" style="justify-content: flex-end;">
-            <button class="btn btn-sm btn-secondary" onclick="checkProxySingle('${p.id}')">⚡ Test IP</button>
-            <button class="btn btn-sm btn-secondary" onclick="editProxy('${p.id}')">Sửa</button>
-            <button class="btn btn-sm btn-secondary" style="color:#F87171;" onclick="deleteProxy('${p.id}')">Xóa</button>
+          <div style="display:inline-flex; gap:6px; justify-content:flex-end;">
+            <button class="uiv-btn uiv-btn-secondary" onclick="checkProxySingle('${p.id}')" style="display:inline-flex; align-items:center; gap:5px;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Test IP</span>
+            </button>
+            <button class="uiv-btn uiv-btn-secondary" onclick="editProxy('${p.id}')">Sửa</button>
+            <button class="uiv-btn uiv-btn-secondary" style="color:#F87171;" onclick="deleteProxy('${p.id}')">Xóa</button>
           </div>
         </td>
       </tr>
@@ -596,6 +644,14 @@ async function fetchProfiles() {
     const res = await fetch(`${API_BASE}/profiles`);
     const data = await res.json();
     allProfiles = data.profiles || [];
+    for (const p of allProfiles) {
+      if (p.isRunning) {
+        launchingProfileIds.delete(p.id);
+        failedProfileIds.delete(p.id);
+      } else {
+        stoppingProfileIds.delete(p.id);
+      }
+    }
     renderProfiles();
   } catch (err) {
     console.error('Error fetching profiles:', err);
@@ -604,6 +660,9 @@ async function fetchProfiles() {
 
 // Selection Set for Batch Actions
 const selectedProfileIds = new Set();
+const launchingProfileIds = new Set();
+const stoppingProfileIds = new Set();
+const failedProfileIds = new Map();
 
 function updateBatchToolbar() {
   const countEl = document.getElementById('batch-selected-count');
@@ -675,20 +734,23 @@ function renderProfiles() {
       }
     }
 
-    // OS detection & modern SVG
+    // OS detection & modern official SVG
     const osType = fp?.os || 'windows';
-    let osSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#00A4EF"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-13.051-1.9"/></svg>`;
+    let osSvg = `<svg width="14" height="14" viewBox="0 0 88 88" fill="none"><rect width="40" height="40" rx="3" fill="#0078D4"/><rect x="48" width="40" height="40" rx="3" fill="#0078D4"/><rect y="48" width="40" height="40" rx="3" fill="#0078D4"/><rect x="48" y="48" width="40" height="40" rx="3" fill="#0078D4"/></svg>`;
     let osTooltip = 'Windows 11';
     if (osType === 'mac') {
-      osSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 1.01-2.87-.96.04-2.16.65-2.84 1.45-.58.68-1.1 1.76-1.01 2.81 1.07.08 2.23-.64 2.84-1.39z"/></svg>`;
+      osSvg = `<svg width="14" height="14" viewBox="0 0 384 512" fill="currentColor"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>`;
       osTooltip = 'macOS Sonoma';
     } else if (osType === 'linux') {
-      osSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="#FCC624"><circle cx="12" cy="12" r="10"/><path d="M12 6a3 3 0 0 0-3 3c0 2 1 3 1 5h4s1-3 1-5a3 3 0 0 0-3-3z" fill="#000"/></svg>`;
-      osTooltip = 'Linux Ubuntu';
+      osSvg = `<svg width="14" height="14" viewBox="0 0 448 512" fill="#F59E0B"><path d="M220.8 123.3c1 .5 1.8 1.7 3 1.7 1.1 0 2.8-.4 2.9-1.5.2-1.4-1.9-2.3-3.2-2.9-1.7-.7-3.9-1-5.5-.1-.4.2-.8.7-.6 1.1.3 1.3 2.3 1.1 3.4 1.7zm-21.9 1.7c1.2 0 2-1.2 3-1.7 1.1-.6 3.1-.4 3.5-1.6.2-.4-.2-.9-.6-1.1-1.6-.9-3.8-.6-5.5.1-1.3.6-3.4 1.5-3.2 2.9.1 1 1.8 1.5 2.8 1.4zM420 403.8c-3.6-4-5.3-11.6-7.2-19.7-1.8-8.1-3.9-16.8-10.5-22.4-1.3-1.1-2.6-2.1-4-2.9-1.3-.8-2.7-1.5-4.1-2 9.2-27.3 5.6-54.5-3.7-79.1-11.4-30.1-31.3-56.4-46.5-74.4-17.1-21.5-33.7-41.9-33.4-72C311.1 85.4 315.7.1 234.8 0 132.4-.2 158 103.4 156.9 135.2c-1.7 23.4-6.4 41.8-22.5 64.7-18.9 22.5-45.5 58.8-58.1 96.7-6 17.9-8.8 36.1-6.2 53.3-6.5 5.8-11.4 14.7-16.6 20.2-4.2 4.3-10.3 5.9-17 8.3s-14 6-18.5 14.5c-2.1 3.9-2.8 8.1-2.8 12.4 0 3.9.6 7.9 1.2 11.8 1.2 8.1 2.5 15.7.8 20.8-5.2 14.4-5.9 24.4-2.2 31.7 3.8 7.3 11.4 10.5 20.1 12.3 17.3 3.6 40.8 2.7 59.3 12.5 19.8 10.4 39.9 14.1 55.9 10.4 11.6-2.6 21.1-9.6 25.9-20.2 12.5-.1 26.3-5.4 48.3-6.6 14.9-1.2 33.6 5.3 55.1 4.1.6 2.3 1.4 4.6 2.5 6.7v.1c8.3 16.7 23.8 24.3 40.3 23 16.6-1.3 34.1-11 48.3-27.9 13.6-16.4 36-23.2 50.9-32.2 7.4-4.5 13.4-10.1 13.9-18.3.4-8.2-4.4-17.3-15.5-29.7zM223.7 87.3c9.8-22.2 34.2-21.8 44-.4 6.5 14.2 3.6 30.9-4.3 40.4-1.6-.8-5.9-2.6-12.6-4.9 1.1-1.2 3.1-2.7 3.9-4.6 4.8-11.8-.2-27-9.1-27.3-7.3-.5-13.9 10.8-11.8 23-4.1-2-9.4-3.5-13-4.4-1-6.9-.3-14.6 2.9-21.8zM183 75.8c10.1 0 20.8 14.2 19.1 33.5-3.5 1-7.1 2.5-10.2 4.6 1.2-8.9-3.3-20.1-9.6-19.6-8.4.7-9.8 21.2-1.8 28.1 1 .8 1.9-.2-5.9 5.5-15.6-14.6-10.5-52.1 8.4-52.1zm-13.6 60.7c6.2-4.6 13.6-10 14.1-10.5 4.7-4.4 13.5-14.2 27.9-14.2 7.1 0 15.6 2.3 25.9 8.9 6.3 4.1 11.3 4.4 22.6 9.3 8.4 3.5 13.7 9.7 10.5 18.2-2.6 7.1-11 14.4-22.7 18.1-11.1 3.6-19.8 16-38.2 14.9-3.9-.2-7-1-9.6-2.1-8-3.5-12.2-10.4-20-15-8.6-4.8-13.2-10.4-14.7-15.3-1.4-4.9 0-9 4.2-12.3zm3.3 334c-2.7 35.1-43.9 34.4-75.3 18-29.9-15.8-68.6-6.5-76.5-21.9-2.4-4.7-2.4-12.7 2.6-26.4v-.2c2.4-7.6.6-16-.6-23.9-1.2-7.8-1.8-15 .9-20 3.5-6.7 8.5-9.1 14.8-11.3 10.3-3.7 11.8-3.4 19.6-9.9 5.5-5.7 9.5-12.9 14.3-18 5.1-5.5 10-8.1 17.7-6.9 8.1 1.2 15.1 6.8 21.9 16l19.6 35.6c9.5 19.9 43.1 48.4 41 68.9zm-1.4-25.9c-4.1-6.6-9.6-13.6-14.4-19.6 7.1 0 14.2-2.2 16.7-8.9 2.3-6.2 0-14.9-7.4-24.9-13.5-18.2-38.3-32.5-38.3-32.5-13.5-8.4-21.1-18.7-24.6-29.9s-3-23.3-.3-35.2c5.2-22.9 18.6-45.2 27.2-59.2 2.3-1.7.8 3.2-8.7 20.8-8.5 16.1-24.4 53.3-2.6 82.4.6-20.7 5.5-41.8 13.8-61.5 12-27.4 37.3-74.9 39.3-112.7 1.1.8 4.6 3.2 6.2 4.1 4.6 2.7 8.1 6.7 12.6 10.3 12.4 10 28.5 9.2 42.4 1.2 6.2-3.5 11.2-7.5 15.9-9 9.9-3.1 17.8-8.6 22.3-15 7.7 30.4 25.7 74.3 37.2 95.7 6.1 11.4 18.3 35.5 23.6 64.6 3.3-.1 7 .4 10.9 1.4 13.8-35.7-11.7-74.2-23.3-84.9-4.7-4.6-4.9-6.6-2.6-6.5 12.6 11.2 29.2 33.7 35.2 59 2.8 11.6 3.3 23.7.4 35.7 16.4 6.8 35.9 17.9 30.7 34.8-2.2-.1-3.2 0-4.2 0 3.2-10.1-3.9-17.6-22.8-26.1-19.6-8.6-36-8.6-38.3 12.5-12.1 4.2-18.3 14.7-21.4 27.3-2.8 11.2-3.6 24.7-4.4 39.9-.5 7.7-3.6 18-6.8 29-32.1 22.9-76.7 32.9-114.3 7.2zm257.4-11.5c-.9 16.8-41.2 19.9-63.2 46.5-13.2 15.7-29.4 24.4-43.6 25.5s-26.5-4.8-33.7-19.3c-4.7-11.1-2.4-23.1 1.1-36.3 3.7-14.2 9.2-28.8 9.9-40.6.8-15.2 1.7-28.5 4.2-38.7 2.6-10.3 6.6-17.2 13.7-21.1.3-.2.7-.3 1-.5.8 13.2 7.3 26.6 18.8 29.5 12.6 3.3 30.7-7.5 38.4-16.3 9-.3 15.7-.9 22.6 5.1 9.9 8.5 7.1 30.3 17.1 41.6 10.6 11.6 14 19.5 13.7 24.6zM173.3 148.7c2 1.9 4.7 4.5 8 7.1 6.6 5.2 15.8 10.6 27.3 10.6 11.6 0 22.5-5.9 31.8-10.8 4.9-2.6 10.9-7 14.8-10.4s5.9-6.3 3.1-6.6-2.6 2.6-6 5.1c-4.4 3.2-9.7 7.4-13.9 9.8-7.4 4.2-19.5 10.2-29.9 10.2s-18.7-4.8-24.9-9.7c-3.1-2.5-5.7-5-7.7-6.9-1.5-1.4-1.9-4.6-4.3-4.9-1.4-.1-1.8 3.7 1.7 6.5z"/></svg>`;
+      osTooltip = 'Linux (Tux)';
+    } else if (osType === 'android') {
+      osSvg = `<svg width="14" height="14" viewBox="0 0 576 512" fill="#3DDC84"><path d="M420.55,301.93a24,24,0,1,1,24-24,24,24,0,0,1-24,24m-265.1,0a24,24,0,1,1,24-24,24,24,0,0,1-24,24m273.7-144.48,47.94-83a10,10,0,1,0-17.27-10h0l-48.54,84.07a301.25,301.25,0,0,0-246.56,0L116.18,64.45a10,10,0,1,0-17.27,10h0l47.94,83C64.53,202.22,8.24,285.55,0,384H576c-8.24-98.45-64.54-181.78-146.85-226.55"/></svg>`;
+      osTooltip = 'Android';
     }
 
     const kernelVersion = (p.kernel_path && p.kernel_path.includes('153')) || p.kernel_path.includes('Chromium_Workspace') ? '153' : '150';
-    const groupColor = p.group_color || '#3867F4';
+    const groupColor = (!p.group_color || p.group_color.toLowerCase() === '#3867f4') ? '#60A5FA' : p.group_color;
     const isChecked = selectedProfileIds.has(p.id);
 
     return `
@@ -715,7 +777,7 @@ function renderProfiles() {
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
               </button>
             </div>
-            <div style="font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
               <span style="font-family: monospace;">ID: ${p.id.slice(0, 8)}...</span>
               <span>•</span>
               <span>${p.hardware_concurrency || 8}C/${p.device_memory || 8}GB</span>
@@ -740,9 +802,9 @@ function renderProfiles() {
                   </button>
                 ` : ''}
               </div>
-              <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--text-muted);">
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted);">
                 <span style="text-transform: uppercase; font-weight: 700; color: var(--accent);">${p.proxy_type || 'HTTP'}</span>
-                ${p.proxy_user ? '<span>• Auth 🔒</span>' : ''}
+                ${p.proxy_user ? '<span style="display:inline-flex; align-items:center; gap:3px;">• Auth <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>' : ''}
                 ${p.proxy_rotation_api_url ? '<span style="color: #10B981; font-weight: 600;">• Xoay IP 4G</span>' : ''}
               </div>
             </div>
@@ -754,9 +816,18 @@ function renderProfiles() {
           `}
         </td>
         <td>
-          ${p.isRunning
-            ? `<span class="badge badge-running" style="font-size: 11px; padding: 3px 8px;"><span class="badge-pulse"></span> Đang chạy</span>`
-            : `<span class="badge badge-stopped" style="font-size: 11px; padding: 3px 8px;">Đã dừng</span>`
+          ${launchingProfileIds.has(p.id)
+            ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border: 1px solid rgba(245, 158, 11, 0.35); font-size: 12px; padding: 4px 9px; display: inline-flex; align-items: center; gap: 6px;"><span class="badge-pulse" style="background: #F59E0B;"></span> Đang khởi động...</span>`
+            : (stoppingProfileIds.has(p.id)
+                ? `<span class="badge" style="background: rgba(148, 163, 184, 0.15); color: #94A3B8; border: 1px solid rgba(148, 163, 184, 0.35); font-size: 12px; padding: 4px 9px; display: inline-flex; align-items: center; gap: 6px;"><span class="uiv-spinner" style="width: 10px; height: 10px; border-width: 1.5px; border-top-color: #94A3B8;"></span> Đang đóng...</span>`
+                : (failedProfileIds.has(p.id)
+                    ? `<span class="badge badge-danger" style="font-size: 12px; padding: 4px 9px; display: inline-flex; align-items: center; gap: 5px;" title="${escapeHtml(failedProfileIds.get(p.id))}"><span class="badge-dot danger"></span> Khởi động thất bại</span>`
+                    : (p.isRunning
+                        ? `<span class="badge badge-running" style="font-size: 12px; padding: 4px 9px;"><span class="badge-pulse"></span> Đang chạy</span>`
+                        : `<span class="badge badge-stopped" style="font-size: 12px; padding: 4px 9px;">Đã dừng</span>`
+                      )
+                  )
+              )
           }
         </td>
         <td>
@@ -767,20 +838,26 @@ function renderProfiles() {
         </td>
         <td style="text-align: right;">
           <div class="actions-cell" style="justify-content: flex-end; align-items: center; gap: 6px;">
-            ${p.isRunning
-              ? `<button class="btn btn-sm btn-danger" style="padding: 5px 14px; font-weight: 600; border-radius: 7px;" onclick="stopProfile('${p.id}')">Đóng</button>`
-              : `<button class="btn btn-sm btn-primary" style="padding: 5px 14px; font-weight: 600; border-radius: 7px;" onclick="startProfile('${p.id}')">Mở</button>`
+            ${launchingProfileIds.has(p.id)
+              ? `<button class="uiv-btn" style="opacity: 0.75; cursor: not-allowed; min-width: 68px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; background: rgba(245, 158, 11, 0.15); color: #F59E0B; border-color: rgba(245, 158, 11, 0.35);" disabled><span class="uiv-spinner" style="width: 11px; height: 11px; border-width: 2px; border-top-color: #F59E0B;"></span> Mở...</button>`
+              : (stoppingProfileIds.has(p.id)
+                  ? `<button class="uiv-btn" style="opacity: 0.75; cursor: not-allowed; min-width: 68px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;" disabled><span class="uiv-spinner" style="width: 11px; height: 11px; border-width: 2px;"></span> Đóng...</button>`
+                  : (p.isRunning
+                      ? `<button class="uiv-btn uiv-btn-stop" onclick="stopProfile('${p.id}')">Đóng</button>`
+                      : `<button class="uiv-btn uiv-btn-run" onclick="startProfile('${p.id}')">Mở</button>`
+                    )
+                )
             }
-            <button class="btn-icon-action" onclick="exportProfileZip('${p.id}', event)" title="Xuất toàn bộ Profile thành file ZIP (Backup & Restore)">
+            <button class="uiv-btn-icon" onclick="exportProfileZip('${p.id}', event)" title="Xuất toàn bộ Profile thành file ZIP (Backup & Restore)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </button>
-            <button class="btn-icon-action" onclick="openCookieModal('${p.id}')" title="Quản lý / Xuất / Nhập Cookie">
+            <button class="uiv-btn-icon" onclick="openCookieModal('${p.id}')" title="Quản lý / Xuất / Nhập Cookie">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01"/><path d="M16 15.5v.01"/><path d="M12 12v.01"/><path d="M11 17v.01"/><path d="M7 14v.01"/></svg>
             </button>
-            <button class="btn-icon-action" onclick="editProfile('${p.id}')" title="Sửa hồ sơ">
+            <button class="uiv-btn-icon" onclick="editProfile('${p.id}')" title="Sửa hồ sơ">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            <button class="btn-icon-action danger" onclick="deleteProfile('${p.id}')" title="Xóa hồ sơ">
+            <button class="uiv-btn-icon danger" onclick="deleteProfile('${p.id}')" title="Xóa hồ sơ">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
           </div>
@@ -806,32 +883,49 @@ function escapeHtml(str) {
 // Actions
 window.startProfile = async function(id) {
   try {
+    launchingProfileIds.add(id);
+    failedProfileIds.delete(id);
+    renderProfiles();
     showToast(`Đang khởi chạy hồ sơ ${id.slice(0, 8)}...`, 'info');
     const res = await fetch(`${API_BASE}/profiles/${id}/start`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
+      launchingProfileIds.delete(id);
       showToast(`Profile đã mở thành công! PID: ${data.pid} | Cổng CDP: ${data.port}`, 'success');
-      fetchProfiles();
+      await fetchProfiles();
     } else {
+      launchingProfileIds.delete(id);
+      failedProfileIds.set(id, data.error || 'Khởi động thất bại');
+      renderProfiles();
       showToast(`Không mở được: ${data.error}`, 'danger');
     }
   } catch (err) {
+    launchingProfileIds.delete(id);
+    failedProfileIds.set(id, err.message || 'Lỗi mở hồ sơ');
+    renderProfiles();
     showToast(`Lỗi mở hồ sơ: ${err.message}`, 'danger');
   }
 };
 
 window.stopProfile = async function(id) {
   try {
+    stoppingProfileIds.add(id);
+    renderProfiles();
     showToast(`Đang đóng hồ sơ an toàn qua CDP...`, 'info');
     const res = await fetch(`${API_BASE}/profiles/${id}/stop`, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
+      stoppingProfileIds.delete(id);
       showToast(`Đã đóng êm hồ sơ (Đã lưu toàn bộ cookie)`, 'success');
-      fetchProfiles();
+      await fetchProfiles();
     } else {
+      stoppingProfileIds.delete(id);
+      renderProfiles();
       showToast(`Lỗi đóng: ${data.error}`, 'danger');
     }
   } catch (err) {
+    stoppingProfileIds.delete(id);
+    renderProfiles();
     showToast(`Lỗi đóng hồ sơ: ${err.message}`, 'danger');
   }
 };
@@ -844,15 +938,53 @@ function setModalTab(tab) {
   if (modalTabExt) modalTabExt.classList.toggle('active', tab === 'ext');
 
   if (modalContentBasic) modalContentBasic.style.display = tab === 'basic' ? 'block' : 'none';
-  if (modalContentProxy) modalContentProxy.style.display = tab === 'proxy' ? 'block' : 'none';
+  if (modalContentProxy) modalContentProxy.style.display = tab === 'proxy' ? 'flex' : 'none';
   if (modalContentFp) modalContentFp.style.display = tab === 'fp' ? 'block' : 'none';
   if (modalContentExt) modalContentExt.style.display = tab === 'ext' ? 'block' : 'none';
+
+  if (tab === 'proxy') {
+    if (typeof renderProxyHubCards === 'function') renderProxyHubCards();
+    if (typeof updateSelectedProxyInspector === 'function') updateSelectedProxyInspector();
+  }
 }
 
 if (modalTabBasic) modalTabBasic.addEventListener('click', () => setModalTab('basic'));
 if (modalTabProxy) modalTabProxy.addEventListener('click', () => setModalTab('proxy'));
 if (modalTabFp) modalTabFp.addEventListener('click', () => setModalTab('fp'));
 if (modalTabExt) modalTabExt.addEventListener('click', () => setModalTab('ext'));
+
+function getExtensionIcon(ext, size = 24) {
+  const rawUrl = (ext && ext.icon_url) ? String(ext.icon_url).trim() : '';
+  if (rawUrl && (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('/') || rawUrl.startsWith('data:image'))) {
+    return `<img src="${escapeHtml(rawUrl)}" style="width:${size}px;height:${size}px;border-radius:4px;object-fit:contain;" alt="" onerror="this.onerror=null;this.replaceWith(this.nextElementSibling||this);"><svg style="display:none" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+  }
+
+  const id = (ext && ext.id) ? ext.id.toLowerCase() : '';
+  const name = (ext && ext.name) ? ext.name.toLowerCase() : '';
+
+  // Proxy / IP Inspector
+  if (id.includes('proxy') || name.includes('proxy') || name.includes('ip inspector')) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
+  }
+
+  // Facebook / FB Helper
+  if (id.includes('fb') || name.includes('fb') || name.includes('facebook')) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="#3B82F6"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+  }
+
+  // 2FA Authenticator
+  if (id.includes('authenticator') || id.includes('2fa') || name.includes('2fa') || name.includes('authenticator')) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>`;
+  }
+
+  // Cookie Editor
+  if (id.includes('cookie') || name.includes('cookie')) {
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><circle cx="8.5" cy="8.5" r="1" fill="#F59E0B"/><circle cx="16" cy="15.5" r="1" fill="#F59E0B"/><circle cx="8.5" cy="15.5" r="1" fill="#F59E0B"/><circle cx="12" cy="12" r="1" fill="#F59E0B"/><circle cx="13" cy="17" r="1" fill="#F59E0B"/></svg>`;
+  }
+
+  // Generic extension package icon
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`;
+}
 
 function renderProfileExtensionsChecklist(selectedExtIds = []) {
   if (!profileExtensionsChecklist) return;
@@ -873,13 +1005,13 @@ function renderProfileExtensionsChecklist(selectedExtIds = []) {
     const isChecked = isGlobal || selectedExtIds.includes(ext.id);
     const disabledAttr = isGlobal ? 'disabled' : '';
     const badgeTxt = isGlobal
-      ? `<span class="badge badge-global">🌐 Toàn cục (Luôn bật)</span>`
-      : `<span class="badge badge-targeted">🎯 Riêng lẻ</span>`;
+      ? `<span class="badge badge-global">Toàn cục (Luôn bật)</span>`
+      : `<span class="badge badge-targeted">Riêng lẻ</span>`;
 
     return `
       <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.03); padding:10px 14px; border-radius:8px; border:1px solid var(--border-subtle);">
         <div style="display:flex; align-items:center; gap:12px;">
-          <span style="font-size:22px;">${ext.icon_url || '🧩'}</span>
+          <span style="display:inline-flex; align-items:center; flex-shrink:0;">${getExtensionIcon(ext, 20)}</span>
           <div>
             <div style="font-size:13px; font-weight:600; color:var(--text-main);">
               ${escapeHtml(ext.name)} 
@@ -1003,11 +1135,11 @@ function updateProfileSummary() {
   // 1. Browser Kernel
   if (formKernel && formKernel.selectedIndex >= 0) {
     const kText = formKernel.options[formKernel.selectedIndex]?.text || 'MyBrowser 153';
-    sumKernel.innerText = kText.replace('🌐 ', '').split(' (')[0].trim();
+    sumKernel.innerText = kText.split(' (')[0].trim();
   }
 
   // 2. Hệ điều hành
-  const activeOsBtn = document.querySelector('.os-card-btn.active');
+  const activeOsBtn = document.querySelector('.os-select-btn.active');
   const os = activeOsBtn ? activeOsBtn.dataset.os : (fpOs ? fpOs.value : 'windows');
   const osMap = {
     windows: 'Windows 11',
@@ -1117,7 +1249,7 @@ function updateProfileSummary() {
 
 // Chuyển đổi OS trên Card Buttons kiểu PolyLogin
 function setWorkstationOs(os, triggerRandom = false) {
-  document.querySelectorAll('.os-card-btn').forEach(btn => {
+  document.querySelectorAll('.os-select-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.os === os);
   });
   if (fpOs) fpOs.value = os;
@@ -1140,52 +1272,624 @@ function setWorkstationOs(os, triggerRandom = false) {
   updateProfileSummary();
 }
 
-document.querySelectorAll('.os-card-btn').forEach(btn => {
+document.querySelectorAll('.os-select-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     setWorkstationOs(btn.dataset.os, false);
   });
 });
 
-// Chuyển đổi Chế độ Proxy nhanh kiểu PolyLogin
+// =========================================================================
+// PARSER & PROXY HUB MANAGER (UIverse Modern Redesign)
+// =========================================================================
+
+function parseProxyStringToFields(str) {
+  if (!str) return null;
+  let raw = String(str).trim();
+  if (!raw) return null;
+  let proto = 'http';
+
+  // Kiểm tra tiền tố giao thức (http://, https://, socks5://, socks4://)
+  const protoMatch = raw.match(/^([a-zA-Z0-9]+):\/\//);
+  if (protoMatch) {
+    proto = protoMatch[1].toLowerCase();
+    raw = raw.slice(protoMatch[0].length);
+  }
+
+  let host = '', port = '', user = '', pass = '';
+
+  // Định dạng URI chuẩn: [user[:pass]@]host:port
+  if (raw.includes('@')) {
+    const atParts = raw.split('@');
+    const authPart = atParts[0];
+    const hostPart = atParts.slice(1).join('@');
+    if (authPart.includes(':')) {
+      const authSub = authPart.split(':');
+      user = authSub[0];
+      pass = authSub.slice(1).join(':');
+    } else {
+      user = authPart;
+    }
+    const hostSub = hostPart.split(':');
+    host = hostSub[0];
+    port = hostSub[1] || '';
+  } else {
+    // Định dạng phân tách bằng dấu hai chấm ':'
+    // Chuẩn: host:port:user:pass HOẶC host:port
+    const parts = raw.split(':');
+    if (parts.length >= 4) {
+      host = parts[0];
+      port = parts[1];
+      user = parts[2];
+      pass = parts.slice(3).join(':');
+    } else if (parts.length === 2) {
+      host = parts[0];
+      port = parts[1];
+    } else if (parts.length === 3) {
+      host = parts[0];
+      port = parts[1];
+      user = parts[2];
+    }
+  }
+
+  port = port ? parseInt(String(port).replace(/\D/g, ''), 10) : '';
+  if (!host || !port || isNaN(port)) return null;
+
+  return {
+    proto: ['http', 'https', 'socks5', 'socks4'].includes(proto) ? proto : 'http',
+    host: host.trim(),
+    port: String(port),
+    user: user ? user.trim() : '',
+    pass: pass ? pass.trim() : ''
+  };
+}
+
+// Hub State Variables
+let currentHubFilter = 'all';
+let currentHubSearch = '';
+
+function updateProxyCounters() {
+  const allCount = allProxies.length;
+  const liveCount = allProxies.filter(p => p.status === 'live').length;
+
+  const countAllEl = document.getElementById('proxy-count-all');
+  if (countAllEl) countAllEl.innerText = allCount;
+
+  const countLiveEl = document.getElementById('proxy-count-live');
+  if (countLiveEl) countLiveEl.innerText = liveCount;
+
+  // Cập nhật nhãn pill Tab 1
+  const hubPillBtn = document.querySelector('#quick-proxy-pills .quick-pill-btn[data-proxymode="hub"]');
+  if (hubPillBtn) {
+    hubPillBtn.innerText = `Chọn từ Kho Proxy (${liveCount} Live)`;
+  }
+}
+
+// Render danh sách thẻ Proxy trong Tab 2 Modal Hồ Sơ
+function renderProxyHubCards() {
+  const container = document.getElementById('proxy-hub-cards-container');
+  if (!container) return;
+
+  const q = (currentHubSearch || '').trim().toLowerCase();
+  const filter = currentHubFilter || 'all';
+
+  let list = allProxies.slice();
+
+  // Lọc theo trạng thái / giao thức
+  if (filter === 'live') {
+    list = list.filter(p => p.status === 'live');
+  } else if (filter === 'http') {
+    list = list.filter(p => (p.type || '').toLowerCase() === 'http' || (p.type || '').toLowerCase() === 'https');
+  } else if (filter === 'socks5') {
+    list = list.filter(p => (p.type || '').toLowerCase() === 'socks5');
+  }
+
+  // Tìm kiếm theo text
+  if (q) {
+    list = list.filter(p => {
+      const matchName = (p.name || '').toLowerCase().includes(q);
+      const matchHost = (p.host || '').toLowerCase().includes(q);
+      const matchPort = String(p.port || '').includes(q);
+      const matchCountry = (p.country || '').toLowerCase().includes(q);
+      return matchName || matchHost || matchPort || matchCountry;
+    });
+  }
+
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 32px 16px; text-align: center; color: var(--text-muted); background: rgba(255,255,255,0.02); border: 1px dashed var(--border-subtle); border-radius: 10px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.6;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Không tìm thấy Proxy phù hợp</div>
+        <div style="font-size: 11.5px; margin-top: 4px;">Thử đổi bộ lọc hoặc thêm Proxy mới vào kho quản lý.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const selectedId = formProxySelect ? formProxySelect.value : '';
+
+  container.innerHTML = list.map(p => {
+    const isSelected = selectedId === p.id;
+    const isLive = p.status === 'live';
+    const protoLower = (p.type || 'http').toLowerCase();
+    const protoUpper = protoLower.toUpperCase();
+    const flag = p.country ? p.country.toUpperCase() : '';
+    const pingTxt = p.ping > 0 ? `${p.ping}ms` : '';
+
+    // Bóc tách tên gọn gàng không bị lặp lại IP:Port
+    let displayName = (p.name || '').trim();
+    if (displayName) {
+      displayName = displayName.replace(new RegExp(`\\s*[-•]?\\s*${p.host}(?::\\d+)?`, 'gi'), '').trim();
+      displayName = displayName.replace(new RegExp(`^${p.host}:\\d+\\s*`, 'gi'), '').trim();
+    }
+    if (!displayName || displayName === '-' || displayName === ':') {
+      displayName = p.city ? `${p.city}` : '';
+    }
+
+    return `
+      <div class="proxy-card-item ${isSelected ? 'selected' : ''}" data-id="${p.id}" onclick="selectHubProxy('${p.id}')">
+        <div class="pcard-left-group">
+          <div class="pcard-radio-circle">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="pcard-tag-group">
+            ${flag ? `<span class="pcard-pill pcard-country-pill">${flag}</span>` : ''}
+            <span class="pcard-pill pcard-proto-pill proto-${protoLower}">${protoUpper}</span>
+          </div>
+          <div class="pcard-hostport-wrap">
+            <span class="pcard-ip">${escapeHtml(p.host)}</span><span class="pcard-colon">:</span><span class="pcard-port">${escapeHtml(String(p.port))}</span>
+          </div>
+          ${displayName ? `<span class="pcard-label" title="${escapeHtml(p.name)}">${escapeHtml(displayName)}</span>` : ''}
+        </div>
+        <div class="pcard-right-group">
+          ${pingTxt ? `
+            <span class="pcard-ping-pill ${p.ping < 600 ? 'ping-fast' : (p.ping < 1200 ? 'ping-med' : 'ping-slow')}">
+              ⚡ ${pingTxt}
+            </span>
+          ` : ''}
+          <span class="pcard-status-pill ${isLive ? 'status-live' : 'status-die'}">
+            <span class="status-dot"></span>
+            <span>${isLive ? 'LIVE' : (p.status === 'die' ? 'DIE' : 'Chưa test')}</span>
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Chọn một Proxy trong Kho
+window.selectHubProxy = function(id) {
+  if (formProxySelect) formProxySelect.value = id;
+  if (tabProxyHubSelect) tabProxyHubSelect.value = id;
+
+  document.querySelectorAll('#proxy-hub-cards-container .proxy-card-item').forEach(card => {
+    card.classList.toggle('selected', card.dataset.id === id);
+  });
+
+  const hubResult = document.getElementById('hub-proxy-test-result');
+  if (hubResult) hubResult.style.display = 'none';
+
+  updateSelectedProxyInspector();
+  updateProfileSummary();
+};
+
+// Cập nhật Inspector chi tiết Proxy đang chọn
+function updateSelectedProxyInspector() {
+  const inspector = document.getElementById('selected-proxy-inspector');
+  if (!inspector) return;
+
+  const pid = formProxySelect ? formProxySelect.value : '';
+  const p = allProxies.find(x => x.id === pid);
+
+  if (!p) {
+    inspector.style.display = 'none';
+    return;
+  }
+
+  inspector.style.display = 'block';
+  const inspName = document.getElementById('insp-name');
+  const inspProto = document.getElementById('insp-proto');
+  const inspHostPort = document.getElementById('insp-hostport');
+  const inspAuth = document.getElementById('insp-auth');
+  const inspStatus = document.getElementById('insp-status');
+  const inspPing = document.getElementById('insp-ping');
+
+  if (inspName) {
+    let cleanName = (p.name || '').trim();
+    if (cleanName.includes(p.host)) {
+      cleanName = cleanName.replace(new RegExp(`\\s*[-•]?\\s*${p.host}(?::\\d+)?`, 'gi'), '').trim();
+    }
+    inspName.innerText = cleanName || `Proxy ${p.host}:${p.port}`;
+  }
+  if (inspProto) {
+    const protoLower = (p.type || 'http').toLowerCase();
+    inspProto.innerText = protoLower.toUpperCase();
+    inspProto.className = `pcard-pill pcard-proto-pill proto-${protoLower}`;
+  }
+  if (inspHostPort) {
+    inspHostPort.innerHTML = `<span style="color:var(--text-main); font-weight:700;">${escapeHtml(p.host)}</span><span style="color:var(--text-muted);">:</span><span style="color:var(--primary); font-weight:700;">${escapeHtml(String(p.port))}</span>`;
+  }
+  if (inspAuth) {
+    inspAuth.innerHTML = p.username
+      ? `<span style="font-weight:600;">${escapeHtml(p.username)} <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">(Có pass)</span></span>`
+      : `<span style="color:var(--text-muted); font-weight:500;">Không (IP Trực tiếp)</span>`;
+  }
+  if (inspStatus) {
+    inspStatus.innerHTML = p.status === 'live'
+      ? `<span class="pcard-status-pill status-live"><span class="status-dot"></span><span>🟢 LIVE</span></span>`
+      : `<span class="pcard-status-pill status-die"><span class="status-dot"></span><span>🔴 DIE / Lỗi</span></span>`;
+  }
+  if (inspPing) {
+    inspPing.innerHTML = p.ping > 0
+      ? `<span class="pcard-ping-pill ${p.ping < 600 ? 'ping-fast' : (p.ping < 1200 ? 'ping-med' : 'ping-slow')}">⚡ ${p.ping} ms</span>`
+      : `<span style="color:var(--text-muted); font-weight:500;">--</span>`;
+  }
+}
+
+// Chuyển đổi Chế độ Proxy toàn diện (UIverse Cards + Quick Pills)
 function setQuickProxyMode(mode) {
+  // 1. Cập nhật Pills ở Tab 1
   document.querySelectorAll('#quick-proxy-pills .quick-pill-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.proxymode === mode);
   });
 
+  // 2. Cập nhật 3 Cards lớn ở Tab 2
+  document.querySelectorAll('.proxy-mode-card').forEach(card => {
+    card.classList.toggle('active', card.dataset.mode === mode);
+  });
+
+  const panelNone = document.getElementById('proxy-panel-none');
+  const panelHub = document.getElementById('proxy-panel-hub');
+  const panelCustom = document.getElementById('proxy-panel-custom');
+
   if (mode === 'none') {
+    if (panelNone) panelNone.style.display = 'block';
+    if (panelHub) panelHub.style.display = 'none';
+    if (panelCustom) panelCustom.style.display = 'none';
+
     if (quickProxyHubWrap) quickProxyHubWrap.style.display = 'none';
     if (quickProxyCustomWrap) quickProxyCustomWrap.style.display = 'none';
     if (formProxySelect) formProxySelect.value = '';
     if (formProxy) { formProxy.value = ''; formProxy.style.display = 'none'; }
     if (tabProxySource) tabProxySource.value = 'none';
   } else if (mode === 'hub') {
+    if (panelNone) panelNone.style.display = 'none';
+    if (panelHub) panelHub.style.display = 'flex';
+    if (panelCustom) panelCustom.style.display = 'none';
+
     if (quickProxyHubWrap) quickProxyHubWrap.style.display = 'block';
     if (quickProxyCustomWrap) quickProxyCustomWrap.style.display = 'none';
     if (tabProxySource) tabProxySource.value = 'hub';
+
     if (formProxySelect && (!formProxySelect.value || formProxySelect.value === '__custom__')) {
       if (allProxies.length > 0) {
         formProxySelect.value = allProxies[0].id;
         if (tabProxyHubSelect) tabProxyHubSelect.value = allProxies[0].id;
       }
     }
+    renderProxyHubCards();
+    updateSelectedProxyInspector();
   } else if (mode === 'custom') {
+    if (panelNone) panelNone.style.display = 'none';
+    if (panelHub) panelHub.style.display = 'none';
+    if (panelCustom) panelCustom.style.display = 'block';
+
     if (quickProxyHubWrap) quickProxyHubWrap.style.display = 'none';
     if (quickProxyCustomWrap) quickProxyCustomWrap.style.display = 'block';
     if (tabProxySource) tabProxySource.value = 'custom';
     if (formProxySelect) formProxySelect.value = '__custom__';
     if (formProxy) {
       formProxy.style.display = 'block';
-      formProxy.focus();
     }
+    syncCustomProxyToHiddenInput();
   }
   updateProfileSummary();
 }
 
+// Bắt sự kiện click 3 Mode Cards ở Tab 2
+document.querySelectorAll('.proxy-mode-card').forEach(card => {
+  card.addEventListener('click', () => {
+    setQuickProxyMode(card.dataset.mode);
+  });
+});
+
+// Bắt sự kiện click Quick Pills ở Tab 1
 document.querySelectorAll('#quick-proxy-pills .quick-pill-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     setQuickProxyMode(btn.dataset.proxymode);
   });
 });
+
+// Tìm kiếm Hub Proxy
+const proxyHubSearchInput = document.getElementById('proxy-hub-search-input');
+const proxyHubSearchClear = document.getElementById('proxy-hub-search-clear');
+if (proxyHubSearchInput) {
+  proxyHubSearchInput.addEventListener('input', () => {
+    currentHubSearch = proxyHubSearchInput.value;
+    if (proxyHubSearchClear) {
+      proxyHubSearchClear.style.display = currentHubSearch ? 'block' : 'none';
+    }
+    renderProxyHubCards();
+  });
+}
+if (proxyHubSearchClear) {
+  proxyHubSearchClear.addEventListener('click', () => {
+    if (proxyHubSearchInput) proxyHubSearchInput.value = '';
+    currentHubSearch = '';
+    proxyHubSearchClear.style.display = 'none';
+    renderProxyHubCards();
+  });
+}
+
+// Filter chips Hub
+document.querySelectorAll('.proxy-filter-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.proxy-filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentHubFilter = chip.dataset.filter || 'all';
+    renderProxyHubCards();
+  });
+});
+
+// Test trực tiếp Hub Proxy đang chọn trong Profile Modal
+const btnTestHubProxy = document.getElementById('btn-test-hub-proxy');
+const hubProxyTestResult = document.getElementById('hub-proxy-test-result');
+if (btnTestHubProxy) {
+  btnTestHubProxy.addEventListener('click', async () => {
+    const pid = formProxySelect ? formProxySelect.value : '';
+    if (!pid || pid === '__custom__') {
+      showToast('Vui lòng chọn một Proxy từ danh sách trước khi kiểm tra!', 'warning');
+      return;
+    }
+    const btnText = document.getElementById('btn-test-hub-proxy-text');
+    const origText = btnText ? btnText.innerText : 'Kiểm Tra Proxy Ngay';
+    if (btnText) btnText.innerHTML = '<span class="spinner-sm"></span> Đang ping...';
+    btnTestHubProxy.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/proxies/${pid}/check`, { method: 'POST' });
+      const data = await res.json();
+      if (hubProxyTestResult) {
+        hubProxyTestResult.style.display = 'block';
+
+        // Luôn đồng bộ trạng thái mới nhất vào mảng allProxies
+        const found = allProxies.find(x => x.id === pid);
+        if (found && data.proxy) {
+          found.status = data.proxy.status;
+          found.ping = data.proxy.ping;
+          found.ip = data.proxy.ip;
+          found.country = data.proxy.country;
+        }
+        updateProxyCounters();
+        renderProxyHubCards();
+        updateSelectedProxyInspector();
+
+        if (data.success && data.proxy && data.proxy.status === 'live') {
+          const p = data.proxy;
+          hubProxyTestResult.className = 'proxy-test-result-box success';
+          hubProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>KẾT NỐI LIVE THÀNH CÔNG</span>
+            </div>
+            <div class="result-details">
+              IP: <strong>${escapeHtml(p.ip)}</strong> &bull; Quốc gia: <strong>${escapeHtml(p.country || 'Unknown')}</strong> &bull; Độ trễ Ping: <strong>${p.ping}ms</strong>
+            </div>
+          `;
+          showToast(`✅ Proxy LIVE! Ping: ${p.ping}ms`, 'success');
+        } else {
+          const rawErr = data.result?.error || data.error || (data.proxy && data.proxy.error) || 'Không có phản hồi từ Proxy';
+          hubProxyTestResult.className = 'proxy-test-result-box error';
+          hubProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>PROXY KHÔNG PHẢN HỒI (DIE)</span>
+            </div>
+            <div class="result-details">
+              Lỗi: <strong>${escapeHtml(rawErr)}</strong>
+            </div>
+          `;
+          showToast(`❌ Proxy DIE: ${rawErr}`, 'danger');
+        }
+      }
+    } catch (err) {
+      if (hubProxyTestResult) {
+        hubProxyTestResult.style.display = 'block';
+        hubProxyTestResult.className = 'proxy-test-result-box error';
+        hubProxyTestResult.innerHTML = `<div class="result-headline"><span>LỖI KẾT NỐI</span></div><div class="result-details">${escapeHtml(err.message)}</div>`;
+      }
+    } finally {
+      btnTestHubProxy.disabled = false;
+      if (btnText) btnText.innerText = origText;
+    }
+  });
+}
+
+// =========================================================================
+// CUSTOM PROXY CONFIGURATION LOGIC (Profile Modal Tab 2)
+// =========================================================================
+
+function setCustomProto(proto) {
+  const cleanProto = ['http', 'https', 'socks5'].includes(proto) ? proto : 'http';
+  document.querySelectorAll('#custom-proxy-proto-group .proto-pill').forEach(pill => {
+    pill.classList.toggle('active', pill.dataset.proto === cleanProto);
+  });
+  const protoVal = document.getElementById('custom-proxy-proto-val');
+  if (protoVal) protoVal.value = cleanProto;
+  syncCustomProxyToHiddenInput();
+}
+
+document.querySelectorAll('#custom-proxy-proto-group .proto-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    setCustomProto(pill.dataset.proto);
+  });
+});
+
+function syncCustomProxyToHiddenInput() {
+  const proto = document.getElementById('custom-proxy-proto-val')?.value || 'http';
+  const host = document.getElementById('custom-proxy-host')?.value.trim() || '';
+  const port = document.getElementById('custom-proxy-port')?.value.trim() || '';
+  const user = document.getElementById('custom-proxy-user')?.value.trim() || '';
+  const pass = document.getElementById('custom-proxy-pass')?.value.trim() || '';
+
+  if (host && port) {
+    const auth = (user || pass) ? `${encodeURIComponent(user)}:${encodeURIComponent(pass)}@` : '';
+    const full = `${proto}://${auth}${host}:${port}`;
+    if (formProxy) formProxy.value = full;
+  } else {
+    if (formProxy) formProxy.value = '';
+  }
+  updateProfileSummary();
+}
+
+function setCustomProxyFormValues(opts) {
+  setCustomProto(opts.proto || 'http');
+  const hInput = document.getElementById('custom-proxy-host');
+  const pInput = document.getElementById('custom-proxy-port');
+  const uInput = document.getElementById('custom-proxy-user');
+  const pwInput = document.getElementById('custom-proxy-pass');
+  const rotInput = document.getElementById('custom-proxy-rotation-url');
+
+  if (hInput) hInput.value = opts.host || '';
+  if (pInput) pInput.value = opts.port || '';
+  if (uInput) uInput.value = opts.user || '';
+  if (pwInput) pwInput.value = opts.pass || '';
+  if (rotInput) rotInput.value = opts.rotation_url || '';
+
+  syncCustomProxyToHiddenInput();
+}
+
+function resetCustomProxyForm() {
+  setCustomProto('http');
+  const ids = ['custom-proxy-host', 'custom-proxy-port', 'custom-proxy-user', 'custom-proxy-pass', 'custom-proxy-rotation-url', 'custom-proxy-quick-paste'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const resultBox = document.getElementById('custom-proxy-test-result');
+  if (resultBox) { resultBox.style.display = 'none'; resultBox.innerHTML = ''; }
+  syncCustomProxyToHiddenInput();
+}
+
+// Lắng nghe input thay đổi ở Custom Proxy để sync tức thì
+['custom-proxy-host', 'custom-proxy-port', 'custom-proxy-user', 'custom-proxy-pass'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', syncCustomProxyToHiddenInput);
+});
+
+// Toggle password Custom Proxy
+const btnToggleCustomPwd = document.getElementById('btn-toggle-custom-pwd');
+const customProxyPass = document.getElementById('custom-proxy-pass');
+if (btnToggleCustomPwd && customProxyPass) {
+  btnToggleCustomPwd.addEventListener('click', () => {
+    customProxyPass.type = customProxyPass.type === 'password' ? 'text' : 'password';
+  });
+}
+
+// Bóc tách nhanh chuỗi Proxy trong Custom Panel
+const customProxyQuickPaste = document.getElementById('custom-proxy-quick-paste');
+const btnParseCustomProxy = document.getElementById('btn-parse-custom-proxy');
+
+function handleCustomProxyQuickParse() {
+  const str = customProxyQuickPaste?.value.trim();
+  if (!str) return;
+  const parsed = parseProxyStringToFields(str);
+  if (parsed) {
+    setCustomProxyFormValues(parsed);
+    showToast(`✨ Đã nhận diện Proxy: ${parsed.host}:${parsed.port} (${parsed.proto.toUpperCase()})`, 'success');
+  } else {
+    showToast('Không thể nhận diện định dạng Proxy. Vui lòng nhập: host:port:user:pass', 'warning');
+  }
+}
+
+if (btnParseCustomProxy) btnParseCustomProxy.addEventListener('click', handleCustomProxyQuickParse);
+if (customProxyQuickPaste) {
+  customProxyQuickPaste.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCustomProxyQuickParse();
+    }
+  });
+  customProxyQuickPaste.addEventListener('input', () => {
+    const val = customProxyQuickPaste.value.trim();
+    if (val.includes(':') && (val.split(':').length >= 2 || val.includes('://'))) {
+      handleCustomProxyQuickParse();
+    }
+  });
+}
+
+// Test Custom Proxy trước khi gán
+const btnTestCustomProxy = document.getElementById('btn-test-custom-proxy');
+const customProxyTestResult = document.getElementById('custom-proxy-test-result');
+if (btnTestCustomProxy) {
+  btnTestCustomProxy.addEventListener('click', async () => {
+    const proto = document.getElementById('custom-proxy-proto-val')?.value || 'http';
+    const host = document.getElementById('custom-proxy-host')?.value.trim();
+    const port = parseInt(document.getElementById('custom-proxy-port')?.value.trim(), 10);
+    const username = document.getElementById('custom-proxy-user')?.value.trim();
+    const password = document.getElementById('custom-proxy-pass')?.value.trim();
+
+    if (!host || !port) {
+      await showCustomAlert({
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập <strong>Host / IP</strong> và <strong>Cổng (Port)</strong> của Proxy để kiểm tra kết nối.',
+        type: 'warning'
+      });
+      return;
+    }
+
+    const btnText = document.getElementById('btn-test-custom-proxy-text');
+    const origText = btnText ? btnText.innerText : 'Kiểm Tra Kết Nối Proxy Này';
+    if (btnText) btnText.innerHTML = '<span class="spinner-sm"></span> Đang kết nối thử nghiệm...';
+    btnTestCustomProxy.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/proxies/test-custom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: proto, host, port, username, password })
+      });
+      const data = await res.json();
+
+      if (customProxyTestResult) {
+        customProxyTestResult.style.display = 'block';
+        if (data.success && data.status === 'live') {
+          customProxyTestResult.className = 'proxy-test-result-box success';
+          customProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>KẾT NỐI THÀNH CÔNG (LIVE)</span>
+            </div>
+            <div class="result-details">
+              IP Ngoại vi: <strong>${data.ip}</strong> &bull; Quốc gia: <strong>${data.country || 'Unknown'}</strong> &bull; Ping: <strong>${data.ping}ms</strong>
+            </div>
+          `;
+          showToast(`✅ Proxy LIVE! IP: ${data.ip} - ${data.ping}ms`, 'success');
+        } else {
+          customProxyTestResult.className = 'proxy-test-result-box error';
+          customProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>KẾT NỐI THẤT BÀI (DIE)</span>
+            </div>
+            <div class="result-details">
+              Lỗi: ${escapeHtml(data.error || 'Proxy không phản hồi hoặc sai thông tin xác thực')}
+            </div>
+          `;
+          showToast(`❌ Proxy không phản hồi`, 'danger');
+        }
+      }
+    } catch (err) {
+      if (customProxyTestResult) {
+        customProxyTestResult.style.display = 'block';
+        customProxyTestResult.className = 'proxy-test-result-box error';
+        customProxyTestResult.innerHTML = `<div class="result-headline"><span>LỖI HỆ THỐNG</span></div><div class="result-details">${escapeHtml(err.message)}</div>`;
+      }
+    } finally {
+      btnTestCustomProxy.disabled = false;
+      if (btnText) btnText.innerText = origText;
+    }
+  });
+}
 
 if (tabProxySource) {
   tabProxySource.addEventListener('change', () => {
@@ -1228,7 +1932,7 @@ async function randomizeFingerprint(selectedOs, silent = false) {
       if (fpOs) fpOs.value = fp.os || 'windows';
 
       // Cập nhật OS card tương ứng
-      document.querySelectorAll('.os-card-btn').forEach(btn => {
+      document.querySelectorAll('.os-select-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.os === (fp.os || 'windows'));
       });
 
@@ -1324,12 +2028,20 @@ window.editProfile = function(id) {
     setQuickProxyMode('hub');
     if (formProxySelect) formProxySelect.value = p.proxy_id;
     if (tabProxyHubSelect) tabProxyHubSelect.value = p.proxy_id;
+    selectHubProxy(p.proxy_id);
   } else if (p.proxy_host) {
     setQuickProxyMode('custom');
-    const auth = p.proxy_user ? `${p.proxy_user}:${p.proxy_pass}@` : '';
-    if (formProxy) formProxy.value = `${p.proxy_type || 'http'}://${auth}${p.proxy_host}:${p.proxy_port}`;
+    setCustomProxyFormValues({
+      proto: p.proxy_type || 'http',
+      host: p.proxy_host,
+      port: p.proxy_port,
+      user: p.proxy_user || '',
+      pass: p.proxy_pass || '',
+      rotation_url: p.proxy_rotation_api_url || ''
+    });
   } else {
     setQuickProxyMode('none');
+    resetCustomProxyForm();
   }
 
   if (formStartUrl) formStartUrl.value = p.start_url || 'https://iphey.com';
@@ -1432,6 +2144,7 @@ btnCreateModal.addEventListener('click', async () => {
   formName.value = '';
   formGroupId.value = '';
   setQuickProxyMode('none');
+  resetCustomProxyForm();
   if (formStartUrl) formStartUrl.value = 'https://iphey.com';
   if (formResolution) formResolution.value = '1920x1080';
   setQuickWebRtc('fake_ip');
@@ -1511,10 +2224,12 @@ btnModalSave.addEventListener('click', async () => {
 
   let proxy_id = null;
   let proxy_url = null;
+  const activeProxyCard = document.querySelector('.proxy-mode-card.active');
   const activeProxyPill = document.querySelector('#quick-proxy-pills .quick-pill-btn.active');
-  const pMode = activeProxyPill ? activeProxyPill.dataset.proxymode : 'none';
+  const pMode = activeProxyCard ? activeProxyCard.dataset.mode : (activeProxyPill ? activeProxyPill.dataset.proxymode : 'none');
 
   if (pMode === 'custom' || formProxySelect.value === '__custom__') {
+    syncCustomProxyToHiddenInput();
     proxy_url = formProxy.value.trim() || null;
   } else if (pMode === 'hub' && formProxySelect.value) {
     proxy_id = formProxySelect.value;
@@ -1860,7 +2575,7 @@ if (batchBtnProxy) {
       } else {
         batchProxySelectHub.innerHTML = allProxies.map(p => {
           const flag = p.country ? `[${p.country}] ` : '';
-          return `<option value="${p.id}">🌐 ${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port})</option>`;
+          return `<option value="${p.id}">${flag}${escapeHtml(p.name)} (${p.type.toUpperCase()} • ${p.host}:${p.port})</option>`;
         }).join('');
       }
     }
@@ -2255,7 +2970,7 @@ if (btnCopyCookie) {
       showToast('Không có dữ liệu cookie để sao chép', 'warning');
       return;
     }
-    await navigator.clipboard.writeText(val);
+    await safeCopyToClipboard(val);
     showToast(`Đã sao chép cookie dạng ${currentCookieFormat.toUpperCase()} vào clipboard!`, 'success');
   });
 }
@@ -2330,6 +3045,17 @@ searchInput.addEventListener('input', renderProfiles);
 if (filterGroupSelect) {
   filterGroupSelect.addEventListener('change', renderProfiles);
 }
+
+// Global Ctrl+K shortcut to focus profile search
+window.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+  }
+});
 
 // -------------------------------------------------------------
 // Group Modal Handlers (Bước 3)
@@ -2464,6 +3190,150 @@ function closeProxyModal() {
 if (proxyModalCloseBtn) proxyModalCloseBtn.addEventListener('click', closeProxyModal);
 if (proxyModalCancelBtn) proxyModalCancelBtn.addEventListener('click', closeProxyModal);
 
+// Điều khiển nút chọn giao thức (Protocol Pills) trong Proxy Modal
+document.querySelectorAll('#proxy-modal-proto-group .proto-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#proxy-modal-proto-group .proto-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (proxyFormType) proxyFormType.value = btn.dataset.proto;
+  });
+});
+
+// Nút ẩn/hiện mật khẩu trong Proxy Modal
+const btnToggleModalProxyPwd = document.getElementById('btn-toggle-modal-proxy-pwd');
+if (btnToggleModalProxyPwd && proxyFormPass) {
+  btnToggleModalProxyPwd.addEventListener('click', () => {
+    proxyFormPass.type = proxyFormPass.type === 'password' ? 'text' : 'password';
+  });
+}
+
+// Bóc tách nhanh chuỗi Proxy trong Proxy Modal
+const btnQuickParseProxyModal = document.getElementById('btn-quick-parse-proxy-modal');
+const proxyModalQuickPaste = document.getElementById('proxy-modal-quick-paste');
+
+function handleProxyModalQuickParse() {
+  const val = proxyModalQuickPaste?.value.trim();
+  if (!val) return;
+  const parsed = parseProxyStringToFields(val);
+  if (parsed) {
+    if (proxyFormHost) proxyFormHost.value = parsed.host;
+    if (proxyFormPort) proxyFormPort.value = parsed.port;
+    if (proxyFormUser) proxyFormUser.value = parsed.user;
+    if (proxyFormPass) proxyFormPass.value = parsed.pass;
+    if (parsed.proto && proxyFormType) {
+      proxyFormType.value = parsed.proto;
+      document.querySelectorAll('#proxy-modal-proto-group .proto-pill').forEach(b => {
+        b.classList.toggle('active', b.dataset.proto === parsed.proto);
+      });
+    }
+    if (proxyFormName && !proxyFormName.value) {
+      proxyFormName.value = `Proxy ${parsed.host}:${parsed.port}`;
+    }
+    showToast(`✨ Đã nhận diện: ${parsed.host}:${parsed.port} (${parsed.proto.toUpperCase()})`, 'success');
+  } else {
+    showToast('Không nhận diện được proxy. Vui lòng nhập: host:port:user:pass', 'warning');
+  }
+}
+
+if (btnQuickParseProxyModal) btnQuickParseProxyModal.addEventListener('click', handleProxyModalQuickParse);
+if (proxyModalQuickPaste) {
+  proxyModalQuickPaste.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleProxyModalQuickParse();
+    }
+  });
+  proxyModalQuickPaste.addEventListener('input', () => {
+    const v = proxyModalQuickPaste.value.trim();
+    if (v.includes(':') && (v.split(':').length >= 2 || v.includes('://'))) {
+      handleProxyModalQuickParse();
+    }
+  });
+}
+
+// Kiểm tra kết nối trực tiếp (Live Test) trong Proxy Modal
+const btnTestModalProxy = document.getElementById('btn-test-modal-proxy');
+const modalProxyTestResult = document.getElementById('modal-proxy-test-result');
+if (btnTestModalProxy) {
+  btnTestModalProxy.addEventListener('click', async () => {
+    const host = proxyFormHost?.value.trim();
+    const port = parseInt(proxyFormPort?.value.trim(), 10);
+    if (!host || !port) {
+      await showCustomAlert({
+        title: 'Thiếu thông tin',
+        message: 'Vui lòng nhập <strong>Host / IP</strong> và <strong>Cổng (Port)</strong> để kiểm tra kết nối.',
+        type: 'warning'
+      });
+      return;
+    }
+    const btnText = document.getElementById('btn-test-modal-proxy-text');
+    const originalText = btnText ? btnText.innerText : 'Kiểm Tra Kết Nối Proxy (Test IP Ngay)';
+    if (btnText) btnText.innerHTML = '<span class="spinner-sm"></span> Đang kiểm tra kết nối...';
+    btnTestModalProxy.disabled = true;
+
+    try {
+      const res = await fetch(`${API_BASE}/proxies/test-custom`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: proxyFormType?.value || 'http',
+          host,
+          port,
+          username: proxyFormUser?.value.trim() || undefined,
+          password: proxyFormPass?.value.trim() || undefined
+        })
+      });
+      const data = await res.json();
+      if (modalProxyTestResult) {
+        modalProxyTestResult.style.display = 'block';
+        if (data.success && data.status === 'live') {
+          modalProxyTestResult.className = 'proxy-test-result-box success';
+          modalProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              <span>KẾT NỐI THÀNH CÔNG (LIVE)</span>
+            </div>
+            <div class="result-details">
+              IP Ngoại vi: <strong>${data.ip}</strong> &bull; Quốc gia: <strong>${data.country || 'Unknown'}</strong> &bull; Ping: <strong>${data.ping}ms</strong>
+            </div>
+          `;
+          showToast(`✅ LIVE! IP: ${data.ip} (${data.country}) - ${data.ping}ms`, 'success');
+        } else {
+          modalProxyTestResult.className = 'proxy-test-result-box error';
+          modalProxyTestResult.innerHTML = `
+            <div class="result-headline">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <span>KẾT NỐI THẤT BÀI (DIE)</span>
+            </div>
+            <div class="result-details">
+              Lỗi: ${escapeHtml(data.error || 'Proxy không phản hồi hoặc sai thông tin xác thực')}
+            </div>
+          `;
+          showToast(`❌ Proxy không hoạt động: ${data.error || 'Timeout'}`, 'danger');
+        }
+      }
+    } catch (err) {
+      if (modalProxyTestResult) {
+        modalProxyTestResult.style.display = 'block';
+        modalProxyTestResult.className = 'proxy-test-result-box error';
+        modalProxyTestResult.innerHTML = `<div class="result-headline"><span>LỖI KẾT NỐI HỆ THỐNG</span></div><div class="result-details">${escapeHtml(err.message)}</div>`;
+      }
+    } finally {
+      btnTestModalProxy.disabled = false;
+      if (btnText) btnText.innerText = originalText;
+    }
+  });
+}
+
+// Đếm số dòng tự động ở tab Nhập Hàng Loạt
+const proxyBulkDetectedCount = document.getElementById('proxy-bulk-detected-count');
+if (proxyFormBulk && proxyBulkDetectedCount) {
+  proxyFormBulk.addEventListener('input', () => {
+    const lines = proxyFormBulk.value.split('\n').filter(l => l.trim().length > 0);
+    proxyBulkDetectedCount.innerText = `${lines.length} proxy`;
+  });
+}
+
 if (btnAddProxy) {
   btnAddProxy.addEventListener('click', () => {
     setProxyModalTab('single');
@@ -2475,9 +3345,16 @@ if (btnAddProxy) {
     proxyFormPort.value = '';
     proxyFormUser.value = '';
     proxyFormPass.value = '';
+    if (proxyFormPass) proxyFormPass.type = 'password';
     const rotInput = document.getElementById('proxy-form-rotation-url');
     if (rotInput) rotInput.value = '';
     proxyFormBulk.value = '';
+    if (proxyModalQuickPaste) proxyModalQuickPaste.value = '';
+    if (modalProxyTestResult) { modalProxyTestResult.style.display = 'none'; modalProxyTestResult.innerHTML = ''; }
+    if (proxyBulkDetectedCount) proxyBulkDetectedCount.innerText = '0 proxy';
+    document.querySelectorAll('#proxy-modal-proto-group .proto-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.proto === 'http');
+    });
     proxyModal.classList.add('open');
   });
 }
@@ -2564,8 +3441,14 @@ window.editProxy = function(id) {
   proxyFormPort.value = p.port || '';
   proxyFormUser.value = p.username || '';
   proxyFormPass.value = p.password || '';
+  if (proxyFormPass) proxyFormPass.type = 'password';
   const rotInput = document.getElementById('proxy-form-rotation-url');
   if (rotInput) rotInput.value = p.rotation_api_url || '';
+  if (proxyModalQuickPaste) proxyModalQuickPaste.value = '';
+  if (modalProxyTestResult) { modalProxyTestResult.style.display = 'none'; modalProxyTestResult.innerHTML = ''; }
+  document.querySelectorAll('#proxy-modal-proto-group .proto-pill').forEach(b => {
+    b.classList.toggle('active', b.dataset.proto === (p.type || 'http'));
+  });
   proxyModal.classList.add('open');
 };
 
@@ -2757,353 +3640,18 @@ document.querySelectorAll('#api-lang-tabs .plan-tab').forEach(tab => {
 });
 
 if (btnCopyCode) {
-  btnCopyCode.addEventListener('click', () => {
+  btnCopyCode.addEventListener('click', async () => {
     if (apiCodeSnippet) {
-      navigator.clipboard.writeText(apiCodeSnippet.innerText);
+      await safeCopyToClipboard(apiCodeSnippet.innerText);
       showToast('Đã sao chép mã tự động hóa vào clipboard!', 'success');
     }
   });
 }
 
 // -------------------------------------------------------------
-// Multi-Window Action Synchronizer & Grid Tiling (Bước 4)
+// Multi-Window Action Synchronizer & Grid Tiling UI
+// Đã được tách thành module độc lập: public/js/sync-ui.js
 // -------------------------------------------------------------
-const syncMasterSelect = document.getElementById('sync-master-select');
-const syncSlavesTbody = document.getElementById('sync-slaves-tbody');
-const syncSelectAllSlaves = document.getElementById('sync-select-all-slaves');
-const btnTileWindows = document.getElementById('btn-tile-windows');
-const btnToggleSync = document.getElementById('btn-toggle-sync');
-const syncBtnText = document.getElementById('sync-btn-text');
-const syncStatMaster = document.getElementById('sync-stat-master');
-const syncStatSlaves = document.getElementById('sync-stat-slaves');
-const syncStatEvents = document.getElementById('sync-stat-events');
-const syncStatStatus = document.getElementById('sync-stat-status');
-const syncOptMouse = document.getElementById('sync-opt-mouse');
-const syncOptKeyboard = document.getElementById('sync-opt-keyboard');
-const syncOptScroll = document.getElementById('sync-opt-scroll');
-const syncOptNav = document.getElementById('sync-opt-nav');
-const syncOptJitter = document.getElementById('sync-opt-jitter');
-
-let isSyncActive = false;
-
-function renderSyncWorkspace() {
-  if (!syncMasterSelect || !syncSlavesTbody) return;
-
-  const running = allProfiles.filter(p => p.isRunning);
-  const curMaster = syncMasterSelect.value;
-
-  if (running.length === 0) {
-    syncMasterSelect.innerHTML = '<option value="">(Chưa có profile nào mở - Bấm nút bên dưới để mở nhanh)</option>';
-    syncSlavesTbody.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 36px 20px;">
-          <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
-            ⚠️ Chưa có cửa sổ trình duyệt nào đang mở
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); max-width: 480px; margin: 0 auto 16px auto; line-height: 1.6;">
-            Chức năng Đồng bộ thao tác cần các cửa sổ Chromium thực tế đang mở trên màn hình để truyền phím và chuột từ Master sang Slaves.
-          </p>
-          <div style="display:flex; justify-content:center; gap: 12px;">
-            <button class="btn btn-primary btn-sm" onclick="quickStartTwoProfiles()" style="padding: 8px 16px; font-size: 13px;">
-              🚀 Mở Nhanh 2 Cửa Sổ & Sắp Xếp Lưới
-            </button>
-            <button class="btn btn-secondary btn-sm" onclick="switchTab('profiles')" style="padding: 8px 16px; font-size: 13px;">
-              📂 Xem Tab Quản Lý Hồ Sơ
-            </button>
-          </div>
-        </td>
-      </tr>
-    `;
-    if (syncStatMaster) syncStatMaster.innerText = 'Chưa mở profile';
-    if (syncStatSlaves) syncStatSlaves.innerText = '0 Cửa sổ';
-    return;
-  }
-
-  // Populate Master select
-  let masterOpts = running.map(p => {
-    return `<option value="${p.id}">${escapeHtml(p.name)} (${p.id.slice(0, 8)})</option>`;
-  }).join('');
-  syncMasterSelect.innerHTML = masterOpts;
-
-  // Preserve previous selection if still running
-  if (curMaster && running.some(p => p.id === curMaster)) {
-    syncMasterSelect.value = curMaster;
-  }
-
-  const selectedMasterId = syncMasterSelect.value;
-  const masterProfile = running.find(p => p.id === selectedMasterId);
-  if (syncStatMaster) {
-    syncStatMaster.innerText = masterProfile ? masterProfile.name : 'Chưa chọn';
-  }
-
-  // Slaves are all running profiles except master
-  const slaves = running.filter(p => p.id !== selectedMasterId);
-
-  if (slaves.length === 0) {
-    syncSlavesTbody.innerHTML = `
-      <tr>
-        <td colspan="4" style="text-align: center; padding: 28px 16px;">
-          <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 6px;">
-            ⚠️ Bạn mới mở 1 profile (đã chọn làm Master)
-          </div>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 14px;">
-            Tính năng Đồng bộ cần ít nhất 1 cửa sổ Slave theo sau để copy thao tác chuột và phím.
-          </p>
-          <button class="btn btn-primary btn-sm" onclick="quickStartOneMoreSlave()" style="padding: 8px 16px; font-size: 12px;">
-            ➕ Bấm vào đây để mở thêm 1 cửa sổ Slave ngay
-          </button>
-        </td>
-      </tr>
-    `;
-    if (syncStatSlaves) syncStatSlaves.innerText = '0 Cửa sổ';
-    return;
-  }
-
-  syncSlavesTbody.innerHTML = slaves.map(p => {
-    const groupTxt = p.group_name
-      ? `<span class="badge" style="background:${p.group_color || '#3867F4'}20; color:${p.group_color || '#3867F4'}; font-size:11px;">${escapeHtml(p.group_name)}</span>`
-      : `<span style="color:var(--text-muted); font-size:11px;">Mặc định</span>`;
-
-    return `
-      <tr>
-        <td style="text-align: center;">
-          <input type="checkbox" class="sync-slave-cb" value="${p.id}" checked style="width:16px; height:16px; accent-color: var(--primary); cursor: pointer;">
-        </td>
-        <td>
-          <span style="font-weight:600; font-size:13px; color:var(--text-main);">${escapeHtml(p.name)}</span>
-        </td>
-        <td>
-          <span style="font-family:monospace; font-size:11px; color:var(--text-muted);">${p.id.slice(0, 13)}...</span>
-        </td>
-        <td>${groupTxt}</td>
-      </tr>
-    `;
-  }).join('');
-
-  if (syncStatSlaves && !isSyncActive) {
-    syncStatSlaves.innerText = `${slaves.length} Cửa sổ`;
-  }
-}
-
-async function fetchSyncStatus() {
-  try {
-    const res = await fetch(`${API_BASE}/sync/status`);
-    const data = await res.json();
-    if (!data.success) return;
-
-    isSyncActive = data.isSyncing;
-
-    if (syncStatEvents) {
-      syncStatEvents.innerText = `${data.metrics?.eventsSent || 0} sự kiện`;
-    }
-
-    if (isSyncActive) {
-      if (syncBtnText) syncBtnText.innerText = 'Dừng Đồng Bộ';
-      if (btnToggleSync) {
-        btnToggleSync.className = 'btn btn-danger btn-sm';
-      }
-      if (syncStatStatus) {
-        syncStatStatus.innerHTML = '<span class="badge badge-running"><span class="badge-pulse"></span> ĐANG ĐỒNG BỘ LIVE</span>';
-      }
-      if (syncStatSlaves) {
-        syncStatSlaves.innerText = `${data.activeSlavesCount} Cửa sổ`;
-      }
-      if (data.masterProfileId && syncStatMaster) {
-        const m = allProfiles.find(p => p.id === data.masterProfileId);
-        syncStatMaster.innerText = m ? m.name : data.masterProfileId.slice(0, 8);
-      }
-    } else {
-      if (syncBtnText) syncBtnText.innerText = 'Bắt đầu Đồng Bộ';
-      if (btnToggleSync) {
-        btnToggleSync.className = 'btn btn-primary btn-sm';
-      }
-      if (syncStatStatus) {
-        syncStatStatus.innerHTML = '<span class="badge" style="background:rgba(156,163,175,0.15); color:var(--text-muted);">Đang dừng</span>';
-      }
-    }
-  } catch (err) {
-    // ignore
-  }
-}
-
-async function toggleSync() {
-  if (isSyncActive) {
-    try {
-      showToast('Đang dừng phiên đồng bộ...', 'info');
-      const res = await fetch(`${API_BASE}/sync/stop`, { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        isSyncActive = false;
-        showToast('Đã dừng phiên đồng bộ thao tác', 'info');
-        fetchSyncStatus();
-      }
-    } catch (err) {
-      showToast(`Lỗi dừng đồng bộ: ${err.message}`, 'danger');
-    }
-  } else {
-    const masterId = syncMasterSelect ? syncMasterSelect.value : '';
-    if (!masterId) {
-      await showCustomAlert({
-        title: 'Chưa chọn Master',
-        message: 'Vui lòng mở ít nhất <strong>2 profile</strong> và chọn 1 profile làm <strong>Master điều khiển</strong>.',
-        type: 'warning'
-      });
-      return;
-    }
-
-    const checkedSlaves = Array.from(document.querySelectorAll('.sync-slave-cb:checked')).map(cb => cb.value);
-    if (checkedSlaves.length === 0) {
-      await showCustomAlert({
-        title: 'Chưa chọn Slave',
-        message: 'Vui lòng chọn ít nhất <strong>1 Profile Slave</strong> để nhận thao tác đồng bộ.',
-        type: 'warning'
-      });
-      return;
-    }
-
-    const payload = {
-      masterId,
-      slaveIds: checkedSlaves,
-      options: {
-        syncMouse: syncOptMouse?.checked ?? true,
-        syncKeyboard: syncOptKeyboard?.checked ?? true,
-        syncScroll: syncOptScroll?.checked ?? true,
-        syncNav: syncOptNav?.checked ?? true,
-        humanDelay: syncOptJitter?.checked ?? true,
-      }
-    };
-
-    try {
-      showToast(`Đang kết nối đồng bộ tới Master và ${checkedSlaves.length} Slaves...`, 'info');
-      const res = await fetch(`${API_BASE}/sync/start`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-
-      isSyncActive = true;
-      showToast(`🚀 ĐÃ BẬT ĐỒNG BỘ THỜI GIAN THỰC! Mọi click, gõ phím trên Master sẽ truyền sang Slaves.`, 'success');
-      fetchSyncStatus();
-    } catch (err) {
-      showToast(`Không thể bắt đầu đồng bộ: ${err.message}`, 'danger');
-    }
-  }
-}
-
-async function tileWindows(layout = 'auto') {
-  const running = allProfiles.filter(p => p.isRunning);
-  if (running.length === 0) {
-    showToast('Chưa có profile nào đang chạy để sắp xếp lưới', 'danger');
-    return;
-  }
-
-  try {
-    const screenWidth = window.screen.availWidth || 1920;
-    const screenHeight = window.screen.availHeight || 1040;
-
-    showToast(`Đang sắp xếp ${running.length} cửa sổ theo bố cục ${layout.toUpperCase()}...`, 'info');
-    const res = await fetch(`${API_BASE}/sync/tile-grid`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ layout, screenWidth, screenHeight })
-    });
-    const data = await res.json();
-    if (!data.success) throw new Error(data.error);
-
-    showToast(`📐 Đã căn chỉnh ${data.count} cửa sổ theo lưới ${data.grid.cols}x${data.grid.rows} (${data.grid.width}x${data.grid.height}px)!`, 'success');
-  } catch (err) {
-    showToast(`Lỗi sắp xếp lưới: ${err.message}`, 'danger');
-  }
-}
-
-window.quickStartTwoProfiles = async function() {
-  if (allProfiles.length < 2) {
-    showToast('Cần ít nhất 2 profile trong danh sách để đồng bộ. Vui lòng tạo thêm profile!', 'danger');
-    return;
-  }
-  const targetProfiles = allProfiles.slice(0, 2);
-  showToast(`Đang mở 2 profile: "${targetProfiles[0].name}" và "${targetProfiles[1].name}"...`, 'info');
-  for (const p of targetProfiles) {
-    await fetch(`${API_BASE}/profiles/${p.id}/start`, { method: 'POST' });
-  }
-  await fetchProfiles();
-  showToast('Đang xếp 2 cửa sổ chia đôi màn hình (2x1)...', 'info');
-  setTimeout(async () => {
-    await tileWindows('2x1');
-    setTimeout(async () => {
-      try {
-        const payload = {
-          masterId: targetProfiles[0].id,
-          slaveIds: [targetProfiles[1].id],
-          options: {
-            syncMouse: true,
-            syncKeyboard: true,
-            syncScroll: true,
-            syncNav: true,
-            humanDelay: true,
-          }
-        };
-        const syncRes = await fetch(`${API_BASE}/sync/start`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const syncData = await syncRes.json();
-        if (syncData.success) {
-          isSyncActive = true;
-          fetchSyncStatus();
-          renderSyncWorkspace();
-          showToast(`🚀 ĐỒNG BỘ ĐÃ KÍCH HOẠT! Cửa sổ bên TRÁI là Master (Điều khiển). Cửa sổ bên PHẢI là Slave. Mọi click, gõ phím, mở tab ở cửa sổ bên TRÁI sẽ truyền sang PHẢI!`, 'success');
-        }
-      } catch (e) {
-        console.warn('Auto sync start error:', e);
-      }
-    }, 1000);
-  }, 1500);
-};
-
-window.quickStartOneMoreSlave = async function() {
-  const stoppedProfiles = allProfiles.filter(p => !p.isRunning);
-  if (stoppedProfiles.length === 0) {
-    showToast('Tất cả profile trong hệ thống đã được mở!', 'info');
-    return;
-  }
-  const nextProfile = stoppedProfiles[0];
-  showToast(`Đang mở thêm profile "${nextProfile.name}" làm Slave...`, 'info');
-  await fetch(`${API_BASE}/profiles/${nextProfile.id}/start`, { method: 'POST' });
-  await fetchProfiles();
-  showToast(`Đã mở thành công profile "${nextProfile.name}" làm Slave!`, 'success');
-};
-
-if (btnToggleSync) {
-  btnToggleSync.addEventListener('click', toggleSync);
-}
-
-if (btnTileWindows) {
-  btnTileWindows.addEventListener('click', () => tileWindows('auto'));
-}
-
-document.querySelectorAll('.sync-tile-btn').forEach(btn => {
-  btn.addEventListener('click', () => tileWindows(btn.dataset.layout));
-});
-
-if (syncMasterSelect) {
-  syncMasterSelect.addEventListener('change', () => {
-    const masterP = allProfiles.find(p => p.id === syncMasterSelect.value);
-    if (syncStatMaster && masterP) syncStatMaster.innerText = masterP.name;
-    renderSyncWorkspace();
-  });
-}
-
-if (syncSelectAllSlaves) {
-  syncSelectAllSlaves.addEventListener('change', () => {
-    document.querySelectorAll('.sync-slave-cb').forEach(cb => {
-      cb.checked = syncSelectAllSlaves.checked;
-    });
-  });
-}
 
 // Navigation Tabs
 const views = {
@@ -3135,8 +3683,8 @@ function switchTab(tabId) {
 
   if (tabId === 'sync') {
     fetchProfiles().then(() => {
-      renderSyncWorkspace();
-      fetchSyncStatus();
+      if (typeof renderSyncWorkspace === 'function') renderSyncWorkspace();
+      if (typeof fetchSyncStatus === 'function') fetchSyncStatus();
     });
   }
 
@@ -3191,13 +3739,15 @@ function renderExtensions() {
     const isGlobal = ext.is_global === 1;
     const isEnabled = ext.enabled === 1;
     const globalBadge = isGlobal
-      ? `<span class="badge-global" onclick="toggleGlobalExtension('${ext.id}')" title="Nhấp để chuyển thành tiện ích Riêng lẻ">🌐 Toàn cục (Tất cả Profile)</span>`
-      : `<span class="badge-targeted" onclick="toggleGlobalExtension('${ext.id}')" title="Nhấp để chuyển thành tiện ích Toàn cục">🎯 Riêng lẻ (Tùy chọn)</span>`;
+      ? `<span class="badge-global" onclick="toggleGlobalExtension('${ext.id}')" title="Nhấp để chuyển thành tiện ích Riêng lẻ">Toàn cục (Tất cả Profile)</span>`
+      : `<span class="badge-targeted" onclick="toggleGlobalExtension('${ext.id}')" title="Nhấp để chuyển thành tiện ích Toàn cục">Riêng lẻ (Tùy chọn)</span>`;
+
+    const iconContent = getExtensionIcon(ext, 24);
 
     return `
       <div class="extension-card">
         <div class="ext-card-header">
-          <div class="ext-icon-box">${ext.icon_url || '🧩'}</div>
+          <div class="ext-icon-box" style="display:flex;align-items:center;justify-content:center;color:var(--primary);">${iconContent}</div>
           <div class="ext-info">
             <div class="ext-title-row">
               <span class="ext-name" title="${escapeHtml(ext.name)}">${escapeHtml(ext.name)}</span>
@@ -3213,13 +3763,16 @@ function renderExtensions() {
           ${escapeHtml(ext.description || 'Không có mô tả chi tiết cho tiện ích này.')}
         </div>
 
-        <div class="ext-card-footer">
-          <label class="switch-label">
-            <input type="checkbox" class="switch-input" ${isEnabled ? 'checked' : ''} onchange="toggleExtension('${ext.id}')">
-            <span>${isEnabled ? 'Đang bật' : 'Đã tắt'}</span>
-          </label>
+        <div class="ext-card-footer" style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <label class="uiv-switch" title="Bật/Tắt tiện ích">
+              <input type="checkbox" ${isEnabled ? 'checked' : ''} onchange="toggleExtension('${ext.id}')">
+              <span class="uiv-switch-track"><span class="uiv-switch-thumb"></span></span>
+            </label>
+            <span style="font-size: 12px; font-weight: 600; color: ${isEnabled ? '#10B981' : 'var(--text-muted)'};">${isEnabled ? 'Đang bật' : 'Đã tắt'}</span>
+          </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-secondary btn-sm" style="color: #F87171; padding: 4px 10px; font-size: 11px;" onclick="deleteExtension('${ext.id}')" title="Xóa tiện ích khỏi hệ thống">
+            <button class="uiv-btn uiv-btn-secondary" style="color: #F87171; border-color: rgba(248,113,113,0.3); padding: 4px 10px; font-size: 12px;" onclick="deleteExtension('${ext.id}')" title="Xóa tiện ích khỏi hệ thống">
               Xóa
             </button>
           </div>
@@ -3313,7 +3866,24 @@ if (btnBrowseExtFolder) {
         } catch (e) {}
       }
     } else {
-      showToast('Vui lòng dán trực tiếp đường dẫn thư mục vào ô bên dưới', 'info');
+      const p = prompt('Nhập đường dẫn thư mục tiện ích đã giải nén trên máy tính của bạn:', extFormPath.value || '');
+      if (p && p.trim()) {
+        extFormPath.value = p.trim();
+        try {
+          const res = await fetch(`${API_BASE}/extensions/parse`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: p.trim() })
+          });
+          const data = await res.json();
+          if (data.success && data.manifest) {
+            extFormName.value = data.manifest.name || '';
+            showToast(`Đã nhận diện: ${data.manifest.name} v${data.manifest.version}`, 'success');
+          } else {
+            showToast('Đã lưu đường dẫn tiện ích', 'info');
+          }
+        } catch (e) {}
+      }
     }
   });
 }
@@ -3386,9 +3956,22 @@ document.querySelectorAll('.nav-item').forEach(item => {
   });
 });
 
-document.getElementById('sidebar-btn-upgrade').addEventListener('click', () => {
-  switchTab('license');
-});
+const sidebarBtnUpgrade = document.getElementById('sidebar-btn-upgrade');
+if (sidebarBtnUpgrade) {
+  sidebarBtnUpgrade.addEventListener('click', () => {
+    switchTab('license');
+  });
+}
+
+const sidebarBtnCreate = document.getElementById('sidebar-btn-create');
+if (sidebarBtnCreate) {
+  sidebarBtnCreate.addEventListener('click', () => {
+    if (btnCreateModal) btnCreateModal.click();
+  });
+}
+
+window.switchTab = switchTab;
+window.closeModal = closeModal;
 
 // License Pricing & Slider Logic
 const profileSlider = document.getElementById('profile-slider');
@@ -3469,16 +4052,20 @@ document.getElementById('btn-submit-license').addEventListener('click', async ()
 });
 
 // Copy HWID
-document.getElementById('btn-copy-hwid').addEventListener('click', () => {
-  const hwid = document.getElementById('license-hwid-text').innerText;
-  navigator.clipboard.writeText(hwid);
-  showToast('Đã sao chép mã HWID vào bộ nhớ tạm', 'success');
-});
+const btnCopyHwid = document.getElementById('btn-copy-hwid');
+if (btnCopyHwid) {
+  btnCopyHwid.addEventListener('click', async () => {
+    const hwidEl = document.getElementById('license-hwid-text');
+    const hwid = hwidEl ? hwidEl.innerText.trim() : '';
+    await safeCopyToClipboard(hwid);
+    showToast('Đã sao chép mã HWID vào bộ nhớ tạm', 'success');
+  });
+}
 
 // Auto-refresh loop every 1.2 seconds to keep running status live
 setInterval(() => {
   fetchProfiles();
-  fetchSyncStatus();
+  if (typeof fetchSyncStatus === 'function') fetchSyncStatus();
 }, 1200);
 
 // Delegate external link clicks to open in default system browser
@@ -3613,39 +4200,60 @@ if (btnOpenKernelFolder) {
   btnOpenKernelFolder.addEventListener('click', async () => {
     const pathTextEl = document.getElementById('kernel-modal-path-text');
     let p = pathTextEl ? pathTextEl.innerText.trim() : '';
-    if (!p || p === '--') p = 'bin/chromium/chrome.exe';
-
-    // 1. If running inside Electron desktop app, use native shell API (bypasses Windows foreground lock)
-    if (window.electronAPI && typeof window.electronAPI.showItemInFolder === 'function') {
-      window.electronAPI.showItemInFolder(p);
-      showToast('📂 Đã mở Windows Explorer và làm nổi bật chrome.exe!', 'success');
-      // Also notify backend in background
-      fetch(`${API_BASE}/kernel/open-folder`, { method: 'POST' }).catch(() => {});
-      return;
+    if (!p || p === '--') {
+      p = 'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\antidetect-manager\\bin\\chromium\\chrome.exe';
     }
 
-    // 2. Fallback when opened in web browser
-    showToast('Đang mở thư mục chứa Kernel trong File Explorer...', 'info');
+    // Determine folder directory
+    let folderPath = p;
+    if (folderPath.toLowerCase().endsWith('.exe')) {
+      const idx = Math.max(folderPath.lastIndexOf('\\'), folderPath.lastIndexOf('/'));
+      if (idx > 0) folderPath = folderPath.substring(0, idx);
+    }
+    const winPath = folderPath.replace(/\//g, '\\');
+    const normalizedSlash = winPath.replace(/\\/g, '/');
+    const fileUrl = normalizedSlash.startsWith('file:///') ? normalizedSlash : `file:///${normalizedSlash}`;
+
+    showToast('📂 Đang mở thư mục trong Windows Explorer...', 'info');
+
+    // 1. If running in Electron, use native desktop shell (100% active in all Electron instances)
+    if (window.electronAPI) {
+      if (typeof window.electronAPI.openExternal === 'function') {
+        window.electronAPI.openExternal(fileUrl);
+      }
+      if (typeof window.electronAPI.openPath === 'function') {
+        window.electronAPI.openPath(winPath);
+      }
+      if (typeof window.electronAPI.showItemInFolder === 'function') {
+        window.electronAPI.showItemInFolder(p);
+      }
+    }
+
+    // 2. Also call backend API for redundancy and for web-browser access
     try {
-      const res = await fetch(`${API_BASE}/kernel/open-folder`, { method: 'POST' });
+      const res = await fetch(`${API_BASE}/kernel/open-folder`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: winPath })
+      });
       const data = await res.json();
-      if (data.success) {
+      if (data && data.success) {
         showToast(`📂 Đã mở thư mục: ${data.path}`, 'success');
       } else {
-        showToast(`Không mở được: ${data.error}`, 'danger');
+        showToast(`Không mở được: ${data.error || 'Lỗi không xác định'}`, 'danger');
       }
     } catch (err) {
-      showToast(`Lỗi mở thư mục: ${err.message}`, 'danger');
+      showToast(`Lỗi: ${err.message}`, 'danger');
     }
   });
 }
 
 if (btnCopyKernelPath) {
-  btnCopyKernelPath.addEventListener('click', () => {
+  btnCopyKernelPath.addEventListener('click', async () => {
     const pathTextEl = document.getElementById('kernel-modal-path-text');
     const p = pathTextEl ? pathTextEl.innerText.trim() : '';
     if (p && p !== '--') {
-      navigator.clipboard.writeText(p);
+      await safeCopyToClipboard(p);
       showToast('📋 Đã sao chép đường dẫn Kernel vào Clipboard!', 'success');
     } else {
       showToast('Chưa có đường dẫn kernel khả dụng', 'warning');
@@ -3684,12 +4292,15 @@ async function pollKernelStatus() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           <span>Tải Lại / Cập Nhật Kernel Mới</span>
         `;
-        btnStartAutoKernel.className = 'btn btn-secondary';
+        btnStartAutoKernel.className = 'uiv-btn uiv-btn-secondary';
+        btnStartAutoKernel.style.width = '100%';
+        btnStartAutoKernel.style.justifyContent = 'center';
+        btnStartAutoKernel.style.padding = '10px';
       }
       if (kernelLabel) kernelLabel.innerText = 'MyBrowser 153 (Sẵn sàng)';
       if (sidebarKernelDot) {
         sidebarKernelDot.style.background = '#10B981';
-        sidebarKernelDot.style.boxShadow = '0 0 8px #10B981';
+        sidebarKernelDot.style.boxShadow = 'none';
       }
       if (btnKernelLabel) btnKernelLabel.innerText = 'Kernel 153: Sẵn Sàng';
       if (btnKernelCenter) {
@@ -3712,12 +4323,15 @@ async function pollKernelStatus() {
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span>1-Click Tải & Cài Đặt Tự Động</span>
         `;
-        btnStartAutoKernel.className = 'btn btn-primary';
+        btnStartAutoKernel.className = 'uiv-cta-primary';
+        btnStartAutoKernel.style.width = '100%';
+        btnStartAutoKernel.style.justifyContent = 'center';
+        btnStartAutoKernel.style.padding = '11px';
       }
       if (kernelLabel) kernelLabel.innerText = 'Chưa cài MyBrowser 153';
       if (sidebarKernelDot) {
         sidebarKernelDot.style.background = '#F59E0B';
-        sidebarKernelDot.style.boxShadow = '0 0 8px #F59E0B';
+        sidebarKernelDot.style.boxShadow = 'none';
       }
       if (btnKernelLabel) btnKernelLabel.innerText = 'Cài Đặt Kernel';
       if (btnKernelCenter) {
@@ -3732,7 +4346,7 @@ async function pollKernelStatus() {
       if (progressBox) progressBox.style.display = 'block';
       if (kernelSuccessBox) kernelSuccessBox.style.display = 'none';
       if (progressTitle) {
-        progressTitle.innerText = task.status === 'extracting' ? '⚙️ Đang xả nén siêu tốc vào bin/chromium/...' : '⏳ Đang tải gói Chromium 153 (~245MB)...';
+        progressTitle.innerText = task.status === 'extracting' ? 'Đang xả nén siêu tốc vào bin/chromium/...' : 'Đang tải gói Chromium 153 (~245MB)...';
       }
       if (progressBar) progressBar.style.width = `${task.progress}%`;
       if (progressPercent) progressPercent.innerText = `${task.progress}%`;
@@ -3911,6 +4525,6 @@ fetchGroups();
 fetchProxies();
 fetchProfiles();
 fetchExtensions();
-fetchSyncStatus();
+if (typeof fetchSyncStatus === 'function') fetchSyncStatus();
 calculatePrice();
 

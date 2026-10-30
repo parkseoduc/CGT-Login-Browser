@@ -161,25 +161,19 @@ function createServer() {
         if (!fs.existsSync(kernelDir)) {
           fs.mkdirSync(kernelDir, { recursive: true });
         }
-        const targetExe = path.join(kernelDir, 'chrome.exe');
-        const hasExe = fs.existsSync(targetExe);
-        const targetToSelect = hasExe ? targetExe : kernelDir;
-
-        const { spawn, exec } = require('node:child_process');
+        const { exec } = require('node:child_process');
         if (process.platform === 'win32') {
-          if (hasExe) {
-            const child = spawn('explorer.exe', [`/select,${targetToSelect}`], { detached: true, stdio: 'ignore' });
-            child.unref();
-          } else {
-            const child = spawn('explorer.exe', [kernelDir], { detached: true, stdio: 'ignore' });
-            child.unref();
-          }
+          exec(`cmd.exe /c start "" "${kernelDir}"`, (err) => {
+            if (err) {
+              exec(`powershell.exe -NoProfile -Command "Start-Process explorer.exe -ArgumentList '${kernelDir}'"`);
+            }
+          });
         } else if (process.platform === 'darwin') {
           exec(`open "${kernelDir}"`);
         } else {
           exec(`xdg-open "${kernelDir}"`);
         }
-        return sendJson(res, 200, { success: true, path: kernelDir, target: targetToSelect });
+        return sendJson(res, 200, { success: true, path: kernelDir });
       }
 
       // Bulk Profiles Creation API
@@ -573,6 +567,35 @@ function createServer() {
       }
 
       // 6. Proxies API (Full CRUD, Batch Import & Live Check)
+      if (method === 'POST' && pathname === '/api/v1/proxies/test-custom') {
+        try {
+          const body = await parseJsonBody(req);
+          if (!body.host || !body.port) {
+            return sendJson(res, 400, { success: false, error: 'Host và Port của proxy là bắt buộc để kiểm tra' });
+          }
+          const checkRes = await proxy.checkProxy({
+            type: body.type || 'http',
+            host: body.host,
+            port: parseInt(body.port, 10),
+            username: body.username || '',
+            password: body.password || '',
+          });
+          return sendJson(res, 200, {
+            success: true,
+            status: checkRes.live ? 'live' : 'die',
+            ip: checkRes.ip,
+            ping: checkRes.ping,
+            country: checkRes.country,
+            city: checkRes.city,
+            isp: checkRes.isp,
+            error: checkRes.error,
+            result: checkRes
+          });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
       if (method === 'POST' && pathname === '/api/v1/proxies/check-all') {
         const list = db.listProxies();
         const results = [];
@@ -631,7 +654,12 @@ function createServer() {
             city: checkRes.city,
             isp: checkRes.isp,
           });
-          return sendJson(res, 200, { success: true, proxy: updated, result: checkRes });
+          return sendJson(res, 200, {
+            success: true,
+            proxy: updated,
+            result: checkRes,
+            error: checkRes.error || null
+          });
         }
 
         // List proxies

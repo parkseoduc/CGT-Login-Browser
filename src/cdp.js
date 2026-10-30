@@ -40,10 +40,13 @@ class CdpClient extends EventEmitter {
     this.ws = null;
     this.nextId = 1;
     this.callbacks = new Map();
+    // Tránh Unhandled 'error' event trong EventEmitter
+    this.on('error', () => {});
   }
 
   async connect(timeoutMs = 5000) {
     return new Promise((resolve, reject) => {
+      let connected = false;
       const timer = setTimeout(() => {
         if (this.ws) this.ws.close();
         reject(new Error(`CDP connect timeout after ${timeoutMs}ms`));
@@ -53,13 +56,18 @@ class CdpClient extends EventEmitter {
         this.ws = new WebSocket(this.wsEndpoint);
 
         this.ws.onopen = () => {
+          connected = true;
           clearTimeout(timer);
           resolve();
         };
 
         this.ws.onerror = (err) => {
-          clearTimeout(timer);
-          reject(err);
+          if (!connected) {
+            clearTimeout(timer);
+            reject(err);
+          } else {
+            this.emit('error', err);
+          }
         };
 
         this.ws.onmessage = (event) => {
@@ -95,13 +103,31 @@ class CdpClient extends EventEmitter {
     });
   }
 
-  send(method, params = {}, sessionId = null) {
+  send(method, params = {}, sessionId = null, timeoutMs = 15000) {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== 1) { // 1 = OPEN
         return reject(new Error('CDP WebSocket not connected'));
       }
       const id = this.nextId++;
-      this.callbacks.set(id, { resolve, reject });
+      let timer = null;
+      if (timeoutMs && timeoutMs > 0) {
+        timer = setTimeout(() => {
+          if (this.callbacks.has(id)) {
+            this.callbacks.delete(id);
+            reject(new Error(`CDP command ${method} timed out after ${timeoutMs}ms`));
+          }
+        }, timeoutMs);
+      }
+      this.callbacks.set(id, {
+        resolve: (val) => {
+          if (timer) clearTimeout(timer);
+          resolve(val);
+        },
+        reject: (err) => {
+          if (timer) clearTimeout(timer);
+          reject(err);
+        }
+      });
       const payload = { id, method, params };
       if (sessionId) payload.sessionId = sessionId;
       this.ws.send(JSON.stringify(payload));

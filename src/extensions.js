@@ -619,7 +619,7 @@ checkIp();`;
       version: '1.12.2',
       description: 'Quản lý Cookie chuyên sâu cho Facebook, TikTok: Xuất/Nhập JSON cookies 1-click.',
       path: cookieDir,
-      icon_url: '🍪',
+      icon_url: null,
       is_global: 1,
       enabled: 1,
     },
@@ -629,7 +629,7 @@ checkIp();`;
       version: '1.6.0',
       description: 'Tạo mã xác thực 2FA 6 số tự động theo thời gian (TOTP) an toàn cho tài khoản Facebook / Google.',
       path: authDir,
-      icon_url: '🔐',
+      icon_url: null,
       is_global: 1,
       enabled: 1,
     },
@@ -639,7 +639,7 @@ checkIp();`;
       version: '2.1.0',
       description: 'Trích xuất Access Token (EAAB/EAAA...), User ID (c_user) và chuỗi Cookie cho Facebook Auto-Post.',
       path: fbDir,
-      icon_url: '🔵',
+      icon_url: null,
       is_global: 1,
       enabled: 1,
     },
@@ -649,7 +649,7 @@ checkIp();`;
       version: '1.2.0',
       description: 'Kiểm tra IP công khai, quốc gia, ISP và trạng thái WebRTC trực tiếp trên tab.',
       path: proxyDir,
-      icon_url: '🌐',
+      icon_url: null,
       is_global: 0,
       enabled: 1,
     }
@@ -690,7 +690,7 @@ function parseExtensionFromFolder(folderPath) {
       description: manifest.description || '',
       manifestVersion: manifest.manifest_version || 3,
       path: folderPath,
-      icon_url: '🧩'
+      icon_url: null
     };
   } catch (err) {
     throw new Error('Không thể đọc file manifest.json: ' + err.message);

@@ -108,10 +108,21 @@ function checkHttpProxy(proxy, timeoutMs = 7000) {
             isp: '',
           });
         }
+        let detailedError = `HTTP ${res.statusCode} ${res.statusMessage || ''}`.trim();
+        if (res.statusCode === 402) {
+          detailedError = 'HTTP 402 - Hết băng thông / Gói Proxy hết hạn (Bandwidth Limit)';
+        } else if (res.statusCode === 407) {
+          detailedError = 'HTTP 407 - Sai tài khoản / mật khẩu Proxy (Auth Required)';
+        } else if (res.statusCode === 403) {
+          detailedError = 'HTTP 403 - Bị từ chối truy cập (Forbidden)';
+        } else if (data && data.trim()) {
+          const cleanBody = data.trim().slice(0, 100);
+          detailedError += ` (${cleanBody})`;
+        }
         resolve({
           live: false,
           ping,
-          error: `HTTP ${res.statusCode} ${res.statusMessage || ''}`,
+          error: detailedError,
         });
       });
     });
@@ -335,7 +346,14 @@ function createLocalProxyForwarder(remoteProxy) {
         };
 
         clientSocket.on('error', cleanup);
-        remoteSocket.on('error', cleanup);
+        remoteSocket.on('error', (err) => {
+          try {
+            if (!clientSocket.destroyed) {
+              clientSocket.write('HTTP/1.1 502 Bad Gateway (SOCKS5 Proxy Failed)\r\n\r\n');
+            }
+          } catch {}
+          cleanup();
+        });
 
         const hasAuth = Boolean(remoteProxy.username && remoteProxy.password);
         const methods = hasAuth ? Buffer.from([0x05, 0x02, 0x00, 0x02]) : Buffer.from([0x05, 0x01, 0x00]);
@@ -405,8 +423,24 @@ function createLocalProxyForwarder(remoteProxy) {
           try { remoteSocket.destroy(); } catch {}
         };
 
+        remoteSocket.setTimeout(7000, () => {
+          try {
+            if (!clientSocket.destroyed) {
+              clientSocket.write('HTTP/1.1 504 Gateway Timeout (Proxy Die / Unreachable)\r\n\r\n');
+            }
+          } catch {}
+          cleanup();
+        });
+
         clientSocket.on('error', cleanup);
-        remoteSocket.on('error', cleanup);
+        remoteSocket.on('error', (err) => {
+          try {
+            if (!clientSocket.destroyed) {
+              clientSocket.write('HTTP/1.1 502 Bad Gateway (HTTP Proxy Connection Failed)\r\n\r\n');
+            }
+          } catch {}
+          cleanup();
+        });
 
         let buffer = Buffer.alloc(0);
         function onHttpProxyData(chunk) {

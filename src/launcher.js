@@ -104,38 +104,18 @@ async function startProfile(profileId, overrides = {}) {
   // Vá Preferences chống crash bubble
   preparePreferences(userDataDir);
 
-  // Xây dựng danh sách tham số khởi động
+  // Xây dựng danh sách tham số khởi động (Chế độ nhân sạch nguyên bản, không cờ rác can thiệp)
   const args = [
     `--user-data-dir=${userDataDir}`,
     '--no-sandbox',
-    '--disable-gpu-sandbox',
-    '--remote-debugging-port=0',
-    '--remote-debugging-address=127.0.0.1',
+    '--test-type', // Triệt tiêu hoàn toàn dải cảnh báo "cờ không được hỗ trợ: --no-sandbox"
     '--no-first-run',
     '--no-default-browser-check',
     '--disable-background-mode',
-    '--password-store=basic',
-    '--disable-features=CalculateNativeWinOcclusion,FlashDeprecationWarning',
-    '--force-color-profile=srgb',
-    '--webrtc-ip-handling-policy=disable_non_proxied_udp',
-    '--force-webrtc-ip-handling-policy',
-    '--no-session-restore',
+    '--remote-debugging-port=0',
+    '--remote-debugging-address=127.0.0.1',
     '--disable-session-crashed-bubble',
     '--disable-restore-session-state',
-    // === CÁC CỜ TỐI ƯU HÓA TÀI NGUYÊN RAM / CPU & CHỐNG TẢI RÁC NGẦM ===
-    '--disable-component-update',
-    '--disable-background-networking',
-    '--disable-sync',
-    '--disable-default-apps',
-    '--disable-client-side-phishing-detection',
-    '--disable-hang-monitor',
-    '--disable-popup-blocking',
-    '--disable-prompt-on-repost',
-    '--disable-domain-reliability',
-    '--disable-features=OptimizationGuideModelDownloading,OptimizationHints,MediaRouter,DialMediaRouteProvider,CalculateNativeWinOcclusion,FlashDeprecationWarning',
-    '--disk-cache-size=20971520', // Khống chế bộ đệm ổ đĩa tối đa 20MB
-    '--media-cache-size=10485760', // Khống chế cache đa phương tiện 10MB
-    '--js-flags=--max-old-space-size=256', // Khống chế heap engine V8 chống phình RAM
   ];
 
   if (fp.languages && fp.languages[0]) {
@@ -220,16 +200,23 @@ async function startProfile(profileId, overrides = {}) {
     console.warn('[Launcher] Warning loading extensions:', err.message);
   }
 
-  const startUrl = overrides.start_url || profile.start_url || 'https://iphey.com';
+  let startUrl = overrides.start_url || profile.start_url || 'https://iphey.com';
+  if (startUrl.startsWith('http://iphey.com')) {
+    startUrl = startUrl.replace('http://iphey.com', 'https://iphey.com');
+  }
   args.push(startUrl);
 
   // Dọn dẹp thư mục Sessions và Tabs cũ để tránh việc Chromium tự động khôi phục (restore) hàng loạt tab từ phiên trước
-  const sessionsDir = path.join(userDataDir, 'Default', 'Sessions');
-  try {
-    if (fs.existsSync(sessionsDir)) {
-      fs.rmSync(sessionsDir, { recursive: true, force: true });
-    }
-  } catch {}
+  const defaultDir = path.join(userDataDir, 'Default');
+  const sessionTargets = ['Sessions', 'Sessions_Encrypted', 'Current Session', 'Current Tabs', 'Last Session', 'Last Tabs'];
+  for (const sTarget of sessionTargets) {
+    try {
+      const fullP = path.join(defaultDir, sTarget);
+      if (fs.existsSync(fullP)) {
+        fs.rmSync(fullP, { recursive: true, force: true });
+      }
+    } catch {}
+  }
 
   // Dọn dẹp tiến trình mồ côi hoặc lockfile cũ nếu có từ lần chạy trước
   const staleEp = cdp.readDevToolsEndpoint(userDataDir);
@@ -249,33 +236,72 @@ async function startProfile(profileId, overrides = {}) {
 
   console.log(`[Launcher] Spawning: "${kernelPath}" with args:`, args.join(' '));
 
-  // Khởi chạy tiến trình Chromium tách biệt hoàn toàn khỏi background shell
-  const child = spawn(kernelPath, args, {
-    detached: true,
-    windowsHide: false,
-    stdio: 'ignore',
-  });
-  child.unref();
+  let child = null;
+  let pid = null;
+  const spawnDesktopExe = path.join(path.resolve(__dirname, '..'), 'bin', 'spawn-desktop.exe');
 
-  const pid = child.pid;
+  if (process.platform === 'win32' && fs.existsSync(spawnDesktopExe)) {
+    try {
+      const { execFileSync } = require('node:child_process');
+      const out = execFileSync(spawnDesktopExe, [kernelPath, ...args], { encoding: 'utf8', windowsHide: true }).trim();
+      const parsedPid = parseInt(out, 10);
+      if (parsedPid && !isNaN(parsedPid)) {
+        pid = parsedPid;
+        console.log(`[Launcher] Spawned Chromium on WinSta0\\Default via spawn-desktop.exe (PID: ${pid})`);
+      }
+    } catch (spawnErr) {
+      console.warn('[Launcher] Warning: spawn-desktop.exe failed, falling back to spawn():', spawnErr.message);
+    }
+  }
+
+  if (!pid) {
+    child = spawn(kernelPath, args, {
+      detached: true,
+      windowsHide: false,
+      stdio: 'ignore',
+    });
+    child.unref();
+    pid = child.pid;
+  }
+
   if (!pid) {
     throw new Error('Failed to spawn Chromium process');
   }
 
   // Theo dõi khi tiến trình tắt
-  child.on('exit', (code, signal) => {
-    console.log(`[Launcher] Profile ${profileId} (PID: ${pid}) process exit event (code: ${code}, signal: ${signal})`);
-    const current = _running.get(profileId);
-    if (current && current.cdpClient && current.cdpClient.ws && current.cdpClient.ws.readyState === 1) {
-      console.log(`[Launcher] Profile ${profileId} browser session still active via CDP, maintaining running status.`);
-      return;
-    }
-    if (proxyForwarder) {
-      try { proxyForwarder.close(); } catch {}
-    }
-    _running.delete(profileId);
-    events.emit('profile-exited', { profileId, pid, code, signal });
-  });
+  if (child) {
+    child.on('exit', (code, signal) => {
+      console.log(`[Launcher] Profile ${profileId} (PID: ${pid}) process exit event (code: ${code}, signal: ${signal})`);
+      const current = _running.get(profileId);
+      if (current && current.cdpClient && current.cdpClient.ws && current.cdpClient.ws.readyState === 1) {
+        console.log(`[Launcher] Profile ${profileId} browser session still active via CDP, maintaining running status.`);
+        return;
+      }
+      if (proxyForwarder) {
+        try { proxyForwarder.close(); } catch {}
+      }
+      _running.delete(profileId);
+      events.emit('profile-exited', { profileId, pid, code, signal });
+    });
+  } else {
+    const exitTimer = setInterval(() => {
+      try {
+        process.kill(pid, 0);
+      } catch {
+        clearInterval(exitTimer);
+        console.log(`[Launcher] Profile ${profileId} (PID: ${pid}) process exited.`);
+        const current = _running.get(profileId);
+        if (current && current.cdpClient && current.cdpClient.ws && current.cdpClient.ws.readyState === 1) {
+          return;
+        }
+        if (proxyForwarder) {
+          try { proxyForwarder.close(); } catch {}
+        }
+        _running.delete(profileId);
+        events.emit('profile-exited', { profileId, pid, code: 0, signal: null });
+      }
+    }, 1000);
+  }
 
   // Chờ Chromium tạo file DevToolsActivePort để lấy cổng loopback CDP
   const ep = await cdp.waitForDevToolsEndpoint(userDataDir, 10000);
@@ -283,50 +309,11 @@ async function startProfile(profileId, overrides = {}) {
   const wsEndpoint = ep ? ep.wsEndpoint : null;
 
   let cdpClient = null;
+  const pageSessions = new Map(); // targetId -> sessionId
   if (wsEndpoint) {
     try {
       cdpClient = new cdp.CdpClient(wsEndpoint);
       await cdpClient.connect(3000);
-
-      // Kích hoạt tính năng tự động đính kèm (Auto-Attach) cho mọi tab/frame
-      await cdpClient.send('Target.setAutoAttach', {
-        autoAttach: true,
-        waitForDebuggerOnStart: false,
-        flatten: true
-      });
-
-      const injectionScript = fingerprint.getInjectionScript(fp);
-
-      // Lấy danh sách các trang/tab hiện tại để tiêm script
-      const targets = await cdpClient.send('Target.getTargets');
-      for (const t of targets.targetInfos || []) {
-        if (t.type === 'page') {
-          try {
-            const { sessionId } = await cdpClient.send('Target.attachToTarget', {
-              targetId: t.targetId,
-              flatten: true
-            });
-            await cdpClient.send('Page.enable', {}, sessionId);
-            await cdpClient.send('Runtime.enable', {}, sessionId).catch(() => {});
-            await cdpClient.send('Runtime.evaluate', { expression: injectionScript }, sessionId).catch(() => {});
-            await cdpClient.send('Page.addScriptToEvaluateOnNewDocument', {
-              source: injectionScript
-            }, sessionId);
-            // Vô hiệu hóa Runtime ngay để ngăn chặn bẫy phát hiện bot CDP (Iphey, CreepJS, DataDome)
-            await cdpClient.send('Runtime.disable', {}, sessionId).catch(() => {});
-            if (fp.timezone) {
-              await cdpClient.send('Emulation.setTimezoneOverride', {
-                timezoneId: fp.timezone
-              }, sessionId).catch(() => {});
-            }
-            if (profile.proxy_user && profile.proxy_pass) {
-              await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sessionId).catch(() => {});
-            }
-          } catch {
-            // ignore initial attach error
-          }
-        }
-      }
 
       // Lắng nghe khi trình duyệt đóng WebSocket CDP
       cdpClient.on('close', () => {
@@ -354,33 +341,42 @@ async function startProfile(profileId, overrides = {}) {
         });
       }
 
-      // Lắng nghe khi có tab mới mở ra để tự động tiêm script
-      cdpClient.on('Target.attachedToTarget', async (params) => {
-        if (params.targetInfo && params.targetInfo.type === 'page') {
-          try {
-            const sId = params.sessionId;
-            await cdpClient.send('Page.enable', {}, sId);
-            await cdpClient.send('Runtime.enable', {}, sId).catch(() => {});
-            await cdpClient.send('Runtime.evaluate', { expression: injectionScript }, sId).catch(() => {});
-            await cdpClient.send('Page.addScriptToEvaluateOnNewDocument', {
-              source: injectionScript
-            }, sId);
-            // Vô hiệu hóa Runtime để tránh lộ bẫy CDP bot detector
-            await cdpClient.send('Runtime.disable', {}, sId).catch(() => {});
-            if (fp.timezone) {
-              await cdpClient.send('Emulation.setTimezoneOverride', {
-                timezoneId: fp.timezone
-              }, sId).catch(() => {});
-            }
-            if (profile.proxy_user && profile.proxy_pass) {
-              await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sId).catch(() => {});
-            }
-          } catch {
-            // ignore
+      const setupSession = async (sId) => {
+        try {
+          await cdpClient.send('Page.enable', {}, sId).catch(() => {});
+          await cdpClient.send('Page.bringToFront', {}, sId).catch(() => {});
+          if (profile.proxy_user && profile.proxy_pass) {
+            await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sId).catch(() => {});
           }
+        } catch {}
+      };
+
+      // Lắng nghe tự động đính kèm (Auto-Attach) cho tab mới hoặc tab hiện tại
+      cdpClient.on('Target.attachedToTarget', async (params) => {
+        const sId = params.sessionId;
+        if (params.targetInfo && params.targetInfo.type === 'page') {
+          pageSessions.set(params.targetInfo.targetId, sId);
+          try {
+            await setupSession(sId);
+          } catch {}
+        }
+        if (params.waitingForDebugger) {
+          await cdpClient.send('Runtime.runIfWaitingForDebugger', {}, sId).catch(() => {});
         }
       });
-      console.log(`[CDP] Dynamic Fingerprint injected successfully for Profile ${profileId}`);
+
+      cdpClient.on('Target.detachedFromTarget', (params) => {
+        if (params.targetId) pageSessions.delete(params.targetId);
+      });
+
+      // Kích hoạt tính năng tự động đính kèm (Auto-Attach) cho mọi tab/frame để quản lý phiên sạch sẽ
+      await cdpClient.send('Target.setAutoAttach', {
+        autoAttach: true,
+        waitForDebuggerOnStart: false,
+        flatten: true
+      });
+
+      console.log(`[CDP] Session connected cleanly in Pure Native Mode for Profile ${profileId}`);
     } catch (err) {
       console.warn(`[CDP] Warning: Could not inject dynamic fingerprint via CDP:`, err.message);
     }
@@ -394,6 +390,7 @@ async function startProfile(profileId, overrides = {}) {
     port,
     wsEndpoint,
     cdpClient,
+    pageSessions: cdpClient ? pageSessions : new Map(),
     proxyForwarder,
     fingerprint: fp,
     startedAt: new Date().toISOString(),
@@ -408,6 +405,8 @@ async function startProfile(profileId, overrides = {}) {
     pid,
     port,
     wsEndpoint,
+    cdpClient,
+    pageSessions,
     fingerprint: fp,
     startedAt: info.startedAt,
   };

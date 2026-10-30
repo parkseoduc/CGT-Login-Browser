@@ -55,6 +55,14 @@ async function main() {
     process.exit(0);
   };
 
+  // Bắt lỗi toàn cục ngăn server bị crash bất ngờ
+  process.on('uncaughtException', (err) => {
+    console.error('[Engine] Uncaught Exception:', err?.message || err);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('[Engine] Unhandled Rejection:', reason?.message || reason);
+  });
+
   process.on('SIGINT', cleanExit);
   process.on('SIGTERM', cleanExit);
 }
