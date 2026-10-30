@@ -6,7 +6,13 @@
 
 (function() {
   function makeCustomSelect(selectEl) {
-    if (!selectEl || selectEl.dataset.customized === 'true') return;
+    if (!selectEl) return;
+    if (selectEl.dataset.customized === 'true') {
+      if (typeof selectEl._syncCustomSelect === 'function') {
+        selectEl._syncCustomSelect();
+      }
+      return;
+    }
     selectEl.dataset.customized = 'true';
 
     const parent = selectEl.parentNode;
@@ -115,6 +121,8 @@
 
       isSyncing = false;
     }
+
+    selectEl._syncCustomSelect = syncOptions;
 
     // Toggle dropdown
     trigger.addEventListener('click', (e) => {

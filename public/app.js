@@ -525,8 +525,8 @@ async function fetchGroups() {
     // Update Filter Bar group select
     if (filterGroupSelect) {
       const curFilter = filterGroupSelect.value;
-      filterGroupSelect.innerHTML = '<option value="">Tất Cả Nhóm</option>' +
-        allGroups.map(g => `<option value="${g.id}">${escapeHtml(g.name)} (${g.profile_count || 0})</option>`).join('');
+      filterGroupSelect.innerHTML = '<option value="" style="background-color: #FFFFFF; color: #0F172A;">Tất Cả Nhóm</option>' +
+        allGroups.map(g => `<option value="${g.id}" style="background-color: #FFFFFF; color: #0F172A;">${escapeHtml(g.name)} (${g.profile_count || 0})</option>`).join('');
       if (curFilter) filterGroupSelect.value = curFilter;
     }
 
