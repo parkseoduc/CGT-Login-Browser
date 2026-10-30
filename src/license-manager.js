@@ -1,30 +1,82 @@
 const path = require('node:path');
 const fs = require('node:fs');
+const { pathToFileURL } = require('node:url');
 const db = require('./db');
 
-const SDK_PATH = 'E:/License-CGT/client-sdk/javascript/src/index.mjs';
 const SERVER_URL = 'https://lic.cgtdev.space';
 const PRODUCT_CODE = 'ANTIDETECT';
 
 let _licenseInstance = null;
 let _cachedStatus = null;
+let _hardwareId = null;
+
+function resolveSdkPath() {
+  const localSdk = path.join(__dirname, 'license-sdk', 'src', 'index.mjs');
+  if (fs.existsSync(localSdk)) {
+    return pathToFileURL(localSdk).href;
+  }
+  const externalSdk = 'E:/License-CGT/client-sdk/javascript/src/index.mjs';
+  if (fs.existsSync(externalSdk)) {
+    return pathToFileURL(externalSdk).href;
+  }
+  return null;
+}
+
+function resolveCryptoPath() {
+  const localCrypto = path.join(__dirname, 'license-sdk', 'src', 'crypto.mjs');
+  if (fs.existsSync(localCrypto)) {
+    return pathToFileURL(localCrypto).href;
+  }
+  const externalCrypto = 'E:/License-CGT/client-sdk/javascript/src/crypto.mjs';
+  if (fs.existsSync(externalCrypto)) {
+    return pathToFileURL(externalCrypto).href;
+  }
+  return null;
+}
+
+async function getOrComputeHwid() {
+  if (_hardwareId) return _hardwareId;
+  try {
+    const cryptoUrl = resolveCryptoPath();
+    if (cryptoUrl) {
+      const { getHardwareId } = await import(cryptoUrl);
+      if (typeof getHardwareId === 'function') {
+        _hardwareId = getHardwareId();
+        return _hardwareId;
+      }
+    }
+  } catch (err) {
+    console.warn('[License] Could not compute real HWID via crypto module:', err.message);
+  }
+  _hardwareId = 'HWID-LOCAL-MACHINE';
+  return _hardwareId;
+}
 
 // Khởi tạo License SDK
 async function initLicense() {
   try {
-    if (!fs.existsSync('E:/License-CGT/client-sdk/javascript/src/index.mjs')) {
-      console.warn('[License] License-CGT SDK not found at E:/License-CGT, running in Free mode');
+    const sdkUrl = resolveSdkPath();
+    if (!sdkUrl) {
+      console.warn('[License] License-CGT SDK not found, running in Free mode');
       return getFallbackStatus();
     }
 
-    const { License } = await import('file:///E:/License-CGT/client-sdk/javascript/src/index.mjs');
+    const { License } = await import(sdkUrl);
+    const storageDir = path.join(__dirname, '..', 'data', 'license');
+    if (!fs.existsSync(storageDir)) {
+      fs.mkdirSync(storageDir, { recursive: true });
+    }
+
     _licenseInstance = new License({
       product: PRODUCT_CODE,
       serverUrl: SERVER_URL,
-      storageDir: path.join(__dirname, '..', 'data', 'license')
+      storageDir
     });
 
     _cachedStatus = await _licenseInstance.init();
+    if (_cachedStatus && _cachedStatus.device_id) {
+      _hardwareId = _cachedStatus.device_id;
+    }
     console.log('[License] Initialized with status:', _cachedStatus.status, 'Device ID:', _cachedStatus.device_id);
     return getLicenseStatus();
   } catch (err) {
@@ -39,11 +91,12 @@ function getFallbackStatus() {
     mode: 'free',
     plan: 'Trial Dev',
     status: 'TRIAL_PLAN',
-    message: 'Phiên bản thử nghiệm (Tối đa 50 hồ sơ)',
-    device_id: 'HWID-LOCAL-DEV',
+    message: 'Phiên bản thử nghiệm (Tối đa 50 hồ sơ). Nhập License Key để kích hoạt thiết bị lên máy chủ.',
+    device_id: _hardwareId || 'HWID-LOCAL-DEV',
     max_profiles: 50,
     expires_at: null,
     server_url: SERVER_URL,
+    features: {},
   };
 }
 
@@ -53,6 +106,7 @@ function getLicenseStatus() {
   if (!_licenseInstance || !_cachedStatus) {
     return {
       ...getFallbackStatus(),
+      device_id: _hardwareId || 'HWID-LOCAL-DEV',
       current_profiles: profileCount,
     };
   }
@@ -60,15 +114,26 @@ function getLicenseStatus() {
   const raw = _licenseInstance.status();
   const isAllowed = raw.allowed === true;
   const plan = isAllowed ? (raw.plan || 'Pro Plus') : 'Trial Dev';
-  const maxProfiles = isAllowed ? (raw.features?.max_profiles || 1000) : 50;
+  
+  // Trích xuất hạn mức profile từ features nếu có
+  let maxProfiles = 50;
+  if (isAllowed) {
+    maxProfiles = 1000;
+    if (Array.isArray(raw.features)) {
+      const feat = raw.features.find(f => f.code === 'MAX_PROFILES');
+      if (feat && feat.value) maxProfiles = Number(feat.value);
+    } else if (raw.features?.max_profiles) {
+      maxProfiles = Number(raw.features.max_profiles);
+    }
+  }
 
   return {
     allowed: isAllowed,
     mode: isAllowed ? 'pro' : 'free',
     plan,
     status: raw.status || 'ACTIVATION_REQUIRED',
-    message: isAllowed ? `Bản quyền ${plan} hợp lệ` : 'Phiên bản miễn phí (Tối đa 5 hồ sơ)',
-    device_id: raw.device_id || 'HWID-UNKNOWN',
+    message: isAllowed ? `Bản quyền ${plan} hợp lệ trên thiết bị này` : 'Chưa kích hoạt bản quyền (Tối đa 50 hồ sơ thử nghiệm)',
+    device_id: raw.device_id || _hardwareId || 'HWID-UNKNOWN',
     max_profiles: maxProfiles,
     current_profiles: profileCount,
     expires_at: raw.expires_at || null,
@@ -118,6 +183,9 @@ function canCreateProfile(requestedCount = 1) {
   }
   return { allowed: true };
 }
+
+// Tự động tính toán HWID trước
+getOrComputeHwid();
 
 module.exports = {
   initLicense,
