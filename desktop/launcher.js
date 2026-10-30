@@ -71,7 +71,7 @@ async function main() {
   const isUp = await checkServerReady(PORT);
   if (!isUp) {
     console.log('[Launcher] Dang khoi dong Backend Engine tren cong ' + PORT + '...');
-    const serverProc = spawn(process.execPath, [path.join(ROOT_DIR, 'src', 'index.js')], {
+    const serverProc = spawn(process.execPath, ['--experimental-sqlite', path.join(ROOT_DIR, 'src', 'index.js')], {
       cwd: ROOT_DIR,
       detached: true,
       stdio: 'ignore'

@@ -77,8 +77,8 @@ echo  OMNIBROWSER ANTIDETECT WORKSTATION - RUNNING
 echo  Dia chi: http://127.0.0.1:51888
 echo ============================================================
 echo.
-start http://127.0.0.1:51888
-"%NODE_EXE%" src/index.js
+set "AUTO_OPEN_BROWSER=1"
+"%NODE_EXE%" --experimental-sqlite src/index.js
 echo.
 echo [OmniBrowser] May chu da dung. Nhan phim bat ky de khoi dong lai, hoac dong cua so nay.
 pause

@@ -72,7 +72,7 @@ if exist "bin\node\node.exe" (
 )
 
 :run_desktop
-"%NODE_EXE%" desktop/launcher.js
+"%NODE_EXE%" --experimental-sqlite desktop/launcher.js
 if errorlevel 1 goto :error_exit
 exit /b 0
 

@@ -35,6 +35,17 @@ async function main() {
   try {
     await server.startServer(config.API_PORT);
     console.log(`\n[API Ready] Endpoint: http://127.0.0.1:${config.API_PORT}`);
+
+    // Tự động mở trình duyệt sau khi máy chủ đã lắng nghe sẵn sàng
+    if (process.env.AUTO_OPEN_BROWSER === '1') {
+      try {
+        const { exec } = require('node:child_process');
+        const openCmd = process.platform === 'win32' ? `start http://127.0.0.1:${config.API_PORT}` :
+                        process.platform === 'darwin' ? `open http://127.0.0.1:${config.API_PORT}` :
+                        `xdg-open http://127.0.0.1:${config.API_PORT}`;
+        exec(openCmd);
+      } catch {}
+    }
   } catch (err) {
     if (err.code === 'EADDRINUSE') {
       console.log(`\n⚠️  [Thông Báo] Máy chủ OmniBrowser đã đang chạy sẵn tại: http://127.0.0.1:${config.API_PORT}`);

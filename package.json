@@ -4,11 +4,11 @@
   "description": "Next-gen Antidetect Chromium Profile Manager & Automation Hub",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "desktop": "node desktop/launcher.js",
-    "test:core": "node test/test-core.js",
-    "test:api": "node test/test-api.js",
-    "test:web": "node test/test-web-ui-full.js"
+    "start": "node --experimental-sqlite src/index.js",
+    "desktop": "node --experimental-sqlite desktop/launcher.js",
+    "test:core": "node --experimental-sqlite test/test-core.js",
+    "test:api": "node --experimental-sqlite test/test-api.js",
+    "test:web": "node --experimental-sqlite test/test-web-ui-full.js"
   },
   "engines": {
     "node": ">=22.5.0"
