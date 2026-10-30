@@ -29,5 +29,7 @@ temp/
 # Portable Chromium binaries
 bin/chromium/*
 !bin/chromium/.gitkeep
+bin/node/*
+!bin/node/.gitkeep
 bin/temp_kernel.zip
 data/tmp_backups/
