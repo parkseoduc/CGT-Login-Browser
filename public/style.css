@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg-main: #080D19;
   --bg-card: #111A31;
   --bg-card-hover: #162240;
@@ -41,6 +42,7 @@ textarea::placeholder,
 }
 
 [data-theme="light"] {
+  color-scheme: light;
   --bg-main: #F3F4F6;
   --bg-card: #FFFFFF;
   --bg-card-hover: #F8FAFC;
@@ -1217,7 +1219,7 @@ body::after {
 }
 
 .form-control {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-btn);
   padding: 10px 14px;
@@ -1225,12 +1227,69 @@ body::after {
   font-family: inherit;
   font-size: 13px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
 .form-control:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-glow);
+}
+
+/* =============================================================
+   Native Select Dropdowns & Options Contrast Fix (Dark / Light)
+   ============================================================= */
+select,
+select.form-control {
+  color-scheme: dark;
+  background-color: #111A31 !important;
+  color: #FFFFFF !important;
+  cursor: pointer;
+}
+
+select option,
+select optgroup {
+  background-color: #111A31 !important;
+  color: #FFFFFF !important;
+  padding: 8px 12px;
+}
+
+select option:checked {
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+
+select option:hover,
+select option:focus {
+  background-color: #1D4ED8 !important;
+  color: #FFFFFF !important;
+}
+
+select option:disabled {
+  color: #64748B !important;
+  background-color: #111A31 !important;
+}
+
+[data-theme="light"] select,
+[data-theme="light"] select.form-control {
+  color-scheme: light;
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] select option,
+[data-theme="light"] select optgroup {
+  background-color: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] select option:checked {
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+
+[data-theme="light"] select option:disabled {
+  color: #94A3B8 !important;
+  background-color: #FFFFFF !important;
 }
 
 .form-row {

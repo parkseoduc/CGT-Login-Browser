@@ -3,6 +3,8 @@
  * Arranges browser windows on physical screen in structured grid layout
  */
 
+const path = require('node:path');
+const { spawn } = require('node:child_process');
 const { CdpClient } = require('../cdp');
 const launcher = require('../launcher');
 
@@ -86,6 +88,7 @@ class WindowTiler {
         if (page) {
           const winRes = await client.send('Browser.getWindowForTarget', { targetId: page.targetId }, null, 2000);
           if (winRes && winRes.windowId) {
+            // Restore window if minimized and apply exact grid coordinates
             await client.send('Browser.setWindowBounds', {
               windowId: winRes.windowId,
               bounds: {
@@ -96,6 +99,15 @@ class WindowTiler {
                 windowState: 'normal',
               },
             }, null, 2000);
+
+            // Kích hoạt tab và cửa sổ lên phía trước qua CDP
+            try {
+              await client.send('Page.bringToFront', {}, null, 1500);
+            } catch {}
+            try {
+              await client.send('Target.activateTarget', { targetId: page.targetId }, null, 1500);
+            } catch {}
+
             results.push({ profileId: p.profileId, left, top, width: w, height: h, success: true });
           }
         }
@@ -106,12 +118,42 @@ class WindowTiler {
       }
     }
 
+    // Đưa các cửa sổ Chromium lên Foreground màn hình Windows (OS level)
+    if (process.platform === 'win32') {
+      try {
+        const pids = targetList.map(p => p.pid).filter(Boolean);
+        WindowTiler.bringPidsToFront(pids);
+      } catch (err) {
+        console.warn('[WindowTiler] Foreground activation warning:', err.message);
+      }
+    }
+
     return {
       success: true,
       count: targetList.length,
       grid: { cols, rows, width: w, height: h, layout },
       results,
     };
+  }
+
+  /**
+   * Đưa danh sách tiến trình Chromium lên phía trước màn hình (Foreground Z-Order)
+   */
+  static bringPidsToFront(pids) {
+    if (!Array.isArray(pids) || !pids.length || process.platform !== 'win32') return;
+    const psScript = path.join(__dirname, 'activate-windows.ps1');
+    const child = spawn('powershell.exe', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-ExecutionPolicy', 'Bypass',
+      '-File', psScript,
+      '-Pids', ...pids.map(String)
+    ], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    child.unref();
   }
 }
 

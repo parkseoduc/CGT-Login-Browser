@@ -381,7 +381,7 @@ async function tileWindows(layout = 'auto') {
     const data = await res.json();
     if (!data.success) throw new Error(data.error);
 
-    showToast(`📐 Đã căn chỉnh ${data.count} cửa sổ theo lưới ${data.grid.cols}x${data.grid.rows} (${data.grid.width}x${data.grid.height}px)!`, 'success');
+    showToast(`📐 Đã căn chỉnh và đưa ${data.count} cửa sổ lên màn hình theo lưới ${data.grid.cols}x${data.grid.rows} (${data.grid.width}x${data.grid.height}px)!`, 'success');
   } catch (err) {
     showToast(`Lỗi sắp xếp lưới: ${err.message}`, 'danger');
   }
