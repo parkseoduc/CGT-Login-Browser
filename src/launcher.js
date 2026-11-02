@@ -230,7 +230,66 @@ async function startProfile(profileId, overrides = {}) {
   if (startUrl.startsWith('http://iphey.com')) {
     startUrl = startUrl.replace('http://iphey.com', 'https://iphey.com');
   }
-  args.push(startUrl);
+
+  // Khởi động mượt mà (Cold-Boot Graceful Splash):
+  // Giúp GPU Process và ANGLE D3D11 device khởi tạo ấm êm 350ms trước khi tải các trang fingerprint nặng
+  // Triệt tiêu hoàn toàn race condition gây mã ngắt STATUS_BREAKPOINT khi khởi động lạnh
+  let launchTarget = startUrl;
+  if (startUrl && startUrl !== 'about:blank' && !startUrl.startsWith('data:')) {
+    const splashPath = path.join(userDataDir, 'start.html');
+    const splashContent = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
+  <title>OmniBrowser Workstation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+    .card { text-align: center; padding: 24px; }
+    .spinner {
+      width: 42px;
+      height: 42px;
+      margin: 0 auto 16px;
+      border: 3px solid rgba(59, 130, 246, 0.2);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
+    p { font-size: 13px; color: #94a3b8; }
+  </style>
+  <script>
+    setTimeout(() => {
+      window.location.replace(${JSON.stringify(startUrl)});
+    }, 350);
+  </script>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h3>OmniBrowser Workstation</h3>
+    <p>Đang chuẩn bị môi trường bảo mật...</p>
+  </div>
+</body>
+</html>`;
+    try {
+      fs.writeFileSync(splashPath, splashContent, 'utf8');
+      launchTarget = splashPath;
+    } catch {}
+  }
+  args.push(launchTarget);
 
   // Dọn dẹp thư mục Sessions và Tabs cũ để tránh việc Chromium tự động khôi phục (restore) hàng loạt tab từ phiên trước
   const defaultDir = path.join(userDataDir, 'Default');
