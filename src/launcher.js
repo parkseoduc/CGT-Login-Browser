@@ -61,28 +61,23 @@ async function startProfile(profileId, overrides = {}) {
     }
   }
 
-  // Xác định file thực thi Chromium (Hỗ trợ tự động fallback khi chuyển máy và ưu tiên MyBrowser 153)
+  // Xác định file thực thi Chromium (Tôn trọng lựa chọn nhân của Profile, chỉ fallback khi nhân không tồn tại)
   let kernelPath = overrides.kernel_path || profile.kernel_path;
   const portableKernel = path.join(BASE_DIR, 'bin', 'chromium', process.platform === 'win32' ? 'chrome.exe' : 'chrome');
   const hasPortable = fs.existsSync(portableKernel);
 
-  if (hasPortable && (!overrides.exactKernel)) {
-    // Nếu máy đã cài đặt MyBrowser 153 Portable, ưu tiên chạy nhân này nếu profile chưa gán hoặc đang trỏ Chrome/Edge thông thường
-    if (!kernelPath || !fs.existsSync(kernelPath) || kernelPath.toLowerCase().includes('google') || kernelPath.toLowerCase().includes('edge') || kernelPath.toLowerCase().includes('msedge')) {
-      if (profile.kernel_path !== portableKernel) {
-        console.log(`[Launcher] Tự động ưu tiên MyBrowser 153 Core (Portable) cho profile "${profile.name}" để đạt chuẩn Bypass 100% Iphey & Pixelscan!`);
-      }
-      kernelPath = portableKernel;
-    }
-  }
-
   if (!kernelPath || !fs.existsSync(kernelPath)) {
-    const fallbackKernel = getDefaultKernelPath();
-    if (fallbackKernel && fs.existsSync(fallbackKernel)) {
-      console.log(`[Launcher] Nhân trình duyệt của profile "${profile.name}" (${kernelPath || 'chưa gán'}) không có trên máy này. Tự động chuyển sang: ${fallbackKernel}`);
-      kernelPath = fallbackKernel;
+    if (hasPortable) {
+      console.log(`[Launcher] Nhân của profile "${profile.name}" chưa gán hoặc không có trên máy, tự động dùng MyBrowser 153 Portable.`);
+      kernelPath = portableKernel;
     } else {
-      throw new Error(`Không tìm thấy trình duyệt Chromium/Chrome/Edge nào trên máy tính! Vui lòng cài đặt Google Chrome hoặc Microsoft Edge để khởi chạy.`);
+      const fallbackKernel = getDefaultKernelPath();
+      if (fallbackKernel && fs.existsSync(fallbackKernel)) {
+        console.log(`[Launcher] Nhân trình duyệt của profile "${profile.name}" không tồn tại. Tự động chuyển sang: ${fallbackKernel}`);
+        kernelPath = fallbackKernel;
+      } else {
+        throw new Error(`Không tìm thấy trình duyệt Chromium/Chrome/Edge nào trên máy tính! Vui lòng cài đặt Google Chrome hoặc Microsoft Edge để khởi chạy.`);
+      }
     }
   }
 
@@ -117,7 +112,7 @@ async function startProfile(profileId, overrides = {}) {
   // Vá Preferences chống crash bubble
   preparePreferences(userDataDir);
 
-  // Xây dựng danh sách tham số khởi động chuẩn công nghiệp (Production Anti-detect Stability Matrix)
+  // Xây dựng danh sách tham số khởi động chuẩn ổn định (Pure Native Stability Matrix)
   const args = [
     `--user-data-dir=${userDataDir}`,
     '--no-sandbox',
@@ -129,34 +124,9 @@ async function startProfile(profileId, overrides = {}) {
     '--remote-debugging-address=127.0.0.1',
     '--disable-session-crashed-bubble',
     '--disable-restore-session-state',
-
-    // 1. Chống nổ mã ngắt Win11 STATUS_BREAKPOINT (0x80000003) cho nhân custom không chứng chỉ WHQL
-    '--disable-features=RendererCodeIntegrity,OutOfProcessOpusMultistream,OptimizationHints,OptimizationGuideModelDownloading,SegmentationPlatform',
-
-    // 2. Chống nghẽn CPU 100%, vòng lặp WerFault / Breakpad và đơ Task Manager khi tab gặp sự cố
     '--disable-breakpad',
     '--disable-crash-reporter',
     '--noerrdialogs',
-
-    // 3. Tối ưu đồ họa ANGLE Direct3D11 - Chống sập GPU Watchdog, chống màn hình đen (Black Screen) & crash WebGL/Canvas
-    '--disable-gpu-watchdog',
-    '--disable-gpu-process-crash-limit',
-    '--ignore-gpu-blocklist',
-    '--enable-webgl',
-    '--enable-accelerated-2d-canvas',
-    '--use-gl=angle',
-    '--use-angle=d3d11',
-
-    // 4. Triệt tiêu toàn bộ kết nối ngầm gây nghẽn băng thông, GCM lỗi xác thực & Telemetry của Google
-    '--disable-background-networking',
-    '--disable-component-update',
-    '--disable-domain-reliability',
-    '--disable-sync',
-    '--disable-client-side-phishing-detection',
-
-    // 5. Giữ Renderer và cửa sổ hoạt động liên tục (không bị đơ/lag khi cửa sổ nằm dưới nền)
-    '--disable-renderer-backgrounding',
-    '--disable-backgrounding-occluded-windows',
   ];
 
   if (fp.languages && fp.languages[0]) {
@@ -371,7 +341,8 @@ async function startProfile(profileId, overrides = {}) {
         events.emit('profile-crashed', { profileId });
       });
 
-      // Xử lý xác thực tự động dự phòng nếu có request auth từ Chromium
+      // CHỈ kích hoạt Auto-Attach và Fetch nếu profile có Proxy xác thực (Proxy User/Pass)
+      // Đối với duyệt web thông thường, KHÔNG tiêm DevTools/Debugger vào DOM để tránh bị trang web phát hiện hoặc gây lỗi STATUS_BREAKPOINT
       if (profile.proxy_user && profile.proxy_pass) {
         cdpClient.on('Fetch.authRequired', async (params, sessionId) => {
           try {
@@ -385,42 +356,30 @@ async function startProfile(profileId, overrides = {}) {
             }, sessionId || params.sessionId);
           } catch {}
         });
-      }
 
-      const setupSession = async (sId) => {
-        try {
-          await cdpClient.send('Page.enable', {}, sId).catch(() => {});
-          await cdpClient.send('Page.bringToFront', {}, sId).catch(() => {});
-          if (profile.proxy_user && profile.proxy_pass) {
-            await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sId).catch(() => {});
+        cdpClient.on('Target.attachedToTarget', async (params) => {
+          const sId = params.sessionId;
+          if (params.targetInfo && params.targetInfo.type === 'page') {
+            pageSessions.set(params.targetInfo.targetId, sId);
+            try {
+              await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sId).catch(() => {});
+            } catch {}
           }
-        } catch {}
-      };
+          if (params.waitingForDebugger) {
+            await cdpClient.send('Runtime.runIfWaitingForDebugger', {}, sId).catch(() => {});
+          }
+        });
 
-      // Lắng nghe tự động đính kèm (Auto-Attach) cho tab mới hoặc tab hiện tại
-      cdpClient.on('Target.attachedToTarget', async (params) => {
-        const sId = params.sessionId;
-        if (params.targetInfo && params.targetInfo.type === 'page') {
-          pageSessions.set(params.targetInfo.targetId, sId);
-          try {
-            await setupSession(sId);
-          } catch {}
-        }
-        if (params.waitingForDebugger) {
-          await cdpClient.send('Runtime.runIfWaitingForDebugger', {}, sId).catch(() => {});
-        }
-      });
+        cdpClient.on('Target.detachedFromTarget', (params) => {
+          if (params.targetId) pageSessions.delete(params.targetId);
+        });
 
-      cdpClient.on('Target.detachedFromTarget', (params) => {
-        if (params.targetId) pageSessions.delete(params.targetId);
-      });
-
-      // Kích hoạt tính năng tự động đính kèm (Auto-Attach) cho mọi tab/frame để quản lý phiên sạch sẽ
-      await cdpClient.send('Target.setAutoAttach', {
-        autoAttach: true,
-        waitForDebuggerOnStart: false,
-        flatten: true
-      });
+        await cdpClient.send('Target.setAutoAttach', {
+          autoAttach: true,
+          waitForDebuggerOnStart: false,
+          flatten: true
+        });
+      }
 
       console.log(`[CDP] Session connected cleanly in Pure Native Mode for Profile ${profileId}`);
     } catch (err) {
