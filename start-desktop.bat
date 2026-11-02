@@ -72,6 +72,11 @@ if exist "bin\node\node.exe" (
 )
 
 :run_desktop
+:: 4. Tu dong cap quyen Windows Low Integrity Sandbox cho bin\chromium de chong loi STATUS_BREAKPOINT
+if exist "bin\chromium" (
+    icacls "bin\chromium" /grant "*S-1-15-2-1:(OI)(CI)(RX)" /grant "Users:(OI)(CI)(RX)" /T /Q >nul 2>&1
+)
+
 "%NODE_EXE%" --experimental-sqlite desktop/launcher.js
 if errorlevel 1 goto :error_exit
 exit /b 0

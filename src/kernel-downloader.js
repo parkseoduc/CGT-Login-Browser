@@ -81,6 +81,7 @@ async function extractZip(zipFilePath, destDir) {
     exec(`tar.exe -xf "${zipFilePath}" -C "${destDir}"`, { windowsHide: true }, (err) => {
       if (!err) {
         normalizeKernelDir(destDir);
+        ensureKernelPermissions(destDir);
         return resolve();
       }
 
@@ -92,10 +93,21 @@ async function extractZip(zipFilePath, destDir) {
           return reject(new Error(`Giải nén thất bại: ${errPs.message}`));
         }
         normalizeKernelDir(destDir);
+        ensureKernelPermissions(destDir);
         resolve();
       });
     });
   });
+}
+
+function ensureKernelPermissions(destDir) {
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = require('node:child_process');
+      execSync(`icacls "${destDir}" /grant "*S-1-15-2-1:(OI)(CI)(RX)" /grant "Users:(OI)(CI)(RX)" /T /Q`, { stdio: 'ignore', windowsHide: true });
+      console.log('[Kernel Extractor] Đã tự động phân quyền chuẩn Windows Low Integrity Sandbox cho:', destDir);
+    } catch {}
+  }
 }
 
 // Nếu bên trong file zip có thư mục con (ví dụ: staging-chromium/chrome.exe), đưa tất cả ra ngoài destDir
