@@ -361,46 +361,8 @@ async function startProfile(profileId, overrides = {}) {
         events.emit('profile-crashed', { profileId });
       });
 
-      // CHỈ kích hoạt Auto-Attach và Fetch nếu profile có Proxy xác thực (Proxy User/Pass)
-      // Đối với duyệt web thông thường, KHÔNG tiêm DevTools/Debugger vào DOM để tránh bị trang web phát hiện hoặc gây lỗi STATUS_BREAKPOINT
-      if (profile.proxy_user && profile.proxy_pass) {
-        cdpClient.on('Fetch.authRequired', async (params, sessionId) => {
-          try {
-            await cdpClient.send('Fetch.continueWithAuth', {
-              requestId: params.requestId,
-              authChallengeResponse: {
-                response: 'ProvideCredentials',
-                username: profile.proxy_user,
-                password: profile.proxy_pass,
-              }
-            }, sessionId || params.sessionId);
-          } catch {}
-        });
-
-        cdpClient.on('Target.attachedToTarget', async (params) => {
-          const sId = params.sessionId;
-          if (params.targetInfo && params.targetInfo.type === 'page') {
-            pageSessions.set(params.targetInfo.targetId, sId);
-            try {
-              await cdpClient.send('Fetch.enable', { handleAuthRequests: true }, sId).catch(() => {});
-            } catch {}
-          }
-          if (params.waitingForDebugger) {
-            await cdpClient.send('Runtime.runIfWaitingForDebugger', {}, sId).catch(() => {});
-          }
-        });
-
-        cdpClient.on('Target.detachedFromTarget', (params) => {
-          if (params.targetId) pageSessions.delete(params.targetId);
-        });
-
-        await cdpClient.send('Target.setAutoAttach', {
-          autoAttach: true,
-          waitForDebuggerOnStart: false,
-          flatten: true
-        });
-      }
-
+      // Pure Native Stability Mode: Không can thiệp CDP Target.setAutoAttach hay Fetch.enable vào Web Workers
+      // Toàn bộ việc xác thực Proxy đã được xử lý 100% độc lập và an toàn tại Local Proxy Forwarder (src/proxy.js)
       console.log(`[CDP] Session connected cleanly in Pure Native Mode for Profile ${profileId}`);
     } catch (err) {
       console.warn(`[CDP] Warning: Could not inject dynamic fingerprint via CDP:`, err.message);
