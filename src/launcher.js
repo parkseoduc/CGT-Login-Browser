@@ -226,7 +226,8 @@ async function startProfile(profileId, overrides = {}) {
     console.warn('[Launcher] Warning loading extensions:', err.message);
   }
 
-  let startUrl = overrides.start_url || profile.start_url || 'https://iphey.com';
+  let rawUrl = (overrides.start_url !== undefined ? overrides.start_url : profile.start_url) || '';
+  let startUrl = rawUrl.trim();
   if (startUrl.startsWith('http://iphey.com')) {
     startUrl = startUrl.replace('http://iphey.com', 'https://iphey.com');
   }
@@ -289,7 +290,9 @@ async function startProfile(profileId, overrides = {}) {
       launchTarget = splashPath;
     } catch {}
   }
-  args.push(launchTarget);
+  if (launchTarget) {
+    args.push(launchTarget);
+  }
 
   // Dọn dẹp thư mục Sessions và Tabs cũ để tránh việc Chromium tự động khôi phục (restore) hàng loạt tab từ phiên trước
   const defaultDir = path.join(userDataDir, 'Default');

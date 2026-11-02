@@ -157,6 +157,7 @@
     observer.observe(selectEl, { childList: true, subtree: true, attributes: true, characterData: true });
 
     selectEl.addEventListener('change', syncOptions);
+    selectEl.addEventListener('input', syncOptions);
 
     syncOptions();
   }
@@ -200,8 +201,17 @@
     });
   }
 
+  function syncAllCustomSelects() {
+    document.querySelectorAll('select').forEach(el => {
+      if (typeof el._syncCustomSelect === 'function') {
+        el._syncCustomSelect();
+      }
+    });
+  }
+
   window.makeCustomSelect = makeCustomSelect;
   window.initAllCustomSelects = initAllCustomSelects;
+  window.syncAllCustomSelects = syncAllCustomSelects;
 
   // Auto-init on DOMContentLoaded and on periodic intervals for dynamically created modals
   if (document.readyState === 'loading') {

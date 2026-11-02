@@ -59,7 +59,7 @@ function initSchema() {
       screen_width INTEGER DEFAULT 1920,
       screen_height INTEGER DEFAULT 1080,
       custom_flags TEXT DEFAULT '',
-      start_url TEXT DEFAULT 'https://iphey.com',
+      start_url TEXT DEFAULT '',
       notes TEXT DEFAULT '',
       fingerprint TEXT,
       created_at TEXT NOT NULL,
@@ -225,7 +225,7 @@ function createProfile(data) {
     screenWidth,
     screenHeight,
     data.custom_flags || '',
-    data.start_url || 'https://iphey.com',
+    data.start_url !== undefined ? data.start_url : '',
     data.notes || '',
     fpJson,
     extensionIds,
@@ -330,7 +330,7 @@ function bulkCreateProfiles(options = {}) {
   const groupId = options.groupId || null;
   const osOption = options.os || 'windows';
   const webrtcMode = options.webrtc_mode || 'fake_ip';
-  const startUrl = options.start_url || 'https://iphey.com';
+  const startUrl = options.start_url !== undefined ? options.start_url : '';
   const notes = options.notes || '';
   const extensionIds = Array.isArray(options.extension_ids) ? options.extension_ids : [];
 

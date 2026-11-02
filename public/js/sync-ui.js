@@ -32,6 +32,11 @@ let syncCurrentState = 'idle';
  */
 function setSyncUIState(state, info = {}) {
   syncCurrentState = state;
+  isSyncActive = (state === 'live');
+  window.isSyncActive = (state === 'live');
+  if (typeof window.updateActiveProfileIndicator === 'function') {
+    window.updateActiveProfileIndicator();
+  }
   if (!btnToggleSync || !syncStatStatus) return;
 
   if (state === 'starting') {

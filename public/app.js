@@ -1,4 +1,6 @@
-const API_BASE = 'http://127.0.0.1:51888/api/v1';
+const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin.startsWith('http'))
+  ? `${window.location.origin}/api/v1`
+  : 'http://127.0.0.1:51888/api/v1';
 
 let allProfiles = [];
 let allGroups = [];
@@ -99,6 +101,8 @@ const modalContentExt = document.getElementById('modal-content-ext');
 const btnRandomizeFp = document.getElementById('btn-randomize-fp');
 const btnRandomizeSummary = document.getElementById('btn-randomize-summary');
 const btnQuickRandomUa = document.getElementById('btn-quick-random-ua');
+const uaPresetSelect = document.getElementById('ua-preset-select');
+const activeProfileIndicator = document.getElementById('active-profile-indicator');
 const formCookieInput = document.getElementById('form-cookie-input');
 const fpDeviceName = document.getElementById('fp-device-name');
 const quickProxyHubWrap = document.getElementById('quick-proxy-hub-wrap');
@@ -445,17 +449,17 @@ function populateKernelSelect(kernels, defaultKernel) {
       modalQuickBtn.style.borderColor = 'rgba(16, 185, 129, 0.3)';
     }
     if (kernelHint) {
-      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"/></svg><span style="color: #10B981; font-weight: 600;">MyBrowser 153 Core (Portable) đang được chọn. Tối ưu chống nhận diện 100% (Bypass Iphey & Pixelscan).</span>';
+      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="flex-shrink: 0;"><polyline points="20 6 9 17 4 12"/></svg><span style="color: #10B981; font-weight: 600;">Chromium 153 Core (Portable) đang được chọn. Tối ưu chống nhận diện 100% (Bypass Iphey & Pixelscan).</span>';
     }
   } else {
-    if (modalQuickText) modalQuickText.innerText = '⬇ Cài MyBrowser 153';
+    if (modalQuickText) modalQuickText.innerText = '⬇ Cài Chromium 153';
     if (modalQuickBtn) {
       modalQuickBtn.style.color = 'var(--primary)';
       modalQuickBtn.style.background = 'rgba(56, 103, 244, 0.12)';
       modalQuickBtn.style.borderColor = 'rgba(56, 103, 244, 0.3)';
     }
     if (kernelHint) {
-      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><span>Khuyên dùng: Bấm nút <b>Cài MyBrowser 153</b> phía trên để tải nhân chống phát hiện danh tính 100%.</span>';
+      kernelHint.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: var(--accent);"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg><span>Khuyên dùng: Bấm nút <b>Cài Chromium 153</b> phía trên để tải nhân chống phát hiện danh tính 100%.</span>';
     }
   }
 
@@ -739,6 +743,70 @@ function updateBatchToolbar() {
   }
 }
 
+// Hiển thị tên Profile đang mở và Master Profile đồng bộ gần thanh search (Item 9)
+function updateActiveProfileIndicator() {
+  if (!activeProfileIndicator) return;
+
+  const runningProfiles = allProfiles.filter(p => p.isRunning);
+
+  // 1. Nếu đang có phiên đồng bộ chuột phím (Sync)
+  if (typeof isSyncActive !== 'undefined' && isSyncActive) {
+    const masterSelect = document.getElementById('sync-master-select');
+    const masterName = (masterSelect && masterSelect.selectedIndex >= 0 && masterSelect.options[masterSelect.selectedIndex]) 
+      ? masterSelect.options[masterSelect.selectedIndex].text 
+      : 'Chính';
+    const cleanMasterName = masterName.split(' (')[0].trim();
+    activeProfileIndicator.style.display = 'inline-flex';
+    activeProfileIndicator.innerHTML = `
+      <span class="sync-master-pill" title="Phiên đồng bộ đang hoạt động. Thao tác từ Master sẽ truyền sang các máy Slaves.">
+        <span class="pulse-dot-blue"></span>
+        <span>👑 Master: <strong>${escapeHtml(cleanMasterName)}</strong> • Đang đồng bộ (${runningProfiles.length} máy)</span>
+      </span>
+    `;
+    return;
+  }
+
+  // 2. Không có profile nào đang chạy
+  if (runningProfiles.length === 0) {
+    activeProfileIndicator.style.display = 'none';
+    activeProfileIndicator.innerHTML = '';
+    return;
+  }
+
+  // 3. Có profile đang chạy
+  activeProfileIndicator.style.display = 'inline-flex';
+  if (runningProfiles.length === 1) {
+    const p = runningProfiles[0];
+    activeProfileIndicator.innerHTML = `
+      <span class="active-profile-pill" title="Hồ sơ đang mở. Nhấn để định vị trong bảng." onclick="window.focusProfile('${p.id}')">
+        <span class="pulse-dot-green"></span>
+        <span>Đang mở: <strong>${escapeHtml(p.name)}</strong></span>
+      </span>
+    `;
+  } else {
+    const first = runningProfiles[0];
+    activeProfileIndicator.innerHTML = `
+      <span class="active-profile-pill" title="${runningProfiles.map(p => p.name).join(', ')}" onclick="window.focusProfile('${first.id}')">
+        <span class="pulse-dot-green"></span>
+        <span>Đang mở: <strong>${escapeHtml(first.name)}</strong> (+${runningProfiles.length - 1})</span>
+      </span>
+    `;
+  }
+}
+
+window.focusProfile = function(id) {
+  const row = document.getElementById(`profile-row-${id}`);
+  if (row) {
+    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    row.style.transition = 'background-color 0.4s';
+    const oldBg = row.style.backgroundColor;
+    row.style.backgroundColor = 'rgba(56, 103, 244, 0.25)';
+    setTimeout(() => { row.style.backgroundColor = oldBg; }, 1400);
+  }
+};
+
+window.updateActiveProfileIndicator = updateActiveProfileIndicator;
+
 // Render Profiles Table
 function renderProfiles() {
   const query = (searchInput.value || '').toLowerCase().trim();
@@ -761,14 +829,34 @@ function renderProfiles() {
     sidebarPlanQuota.innerText = `${allProfiles.length}/${licenseInfo.max_profiles}`;
   }
 
+  updateActiveProfileIndicator();
+
   if (filtered.length === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
-          Không có hồ sơ nào phù hợp. Bấm "Tạo Hồ sơ mới" để bắt đầu!
-        </td>
-      </tr>
-    `;
+    if (allProfiles.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 50px 20px; color: var(--text-muted);">
+            <div style="width: 52px; height: 52px; border-radius: 12px; background: rgba(56, 103, 244, 0.1); border: 1px solid rgba(56, 103, 244, 0.25); display: inline-flex; align-items: center; justify-content: center; color: var(--primary); margin-bottom: 12px;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Chưa có hồ sơ nào</div>
+            <p style="font-size: 12.5px; color: var(--text-muted); max-width: 400px; margin: 0 auto 16px;">Tạo hồ sơ độc lập đầu tiên với dấu vân tay phần cứng và nhân Chromium chống nhận diện 100%.</p>
+            <button class="uiv-cta-primary" onclick="document.getElementById('btn-create-modal').click()" style="display: inline-flex; align-items: center; gap: 6px; margin: 0 auto; padding: 9px 18px; font-size: 13px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Tạo Hồ Sơ Đầu Tiên</span>
+            </button>
+          </td>
+        </tr>
+      `;
+    } else {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            Không tìm thấy hồ sơ nào khớp với bộ lọc tìm kiếm.
+          </td>
+        </tr>
+      `;
+    }
     updateBatchToolbar();
     return;
   }
@@ -1146,29 +1234,53 @@ function generateRandomDeviceName(os) {
   return `DESKTOP-${rand}`;
 }
 
+const UA_PRESETS = {
+  win11_chrome133: {
+    os: 'windows',
+    ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+  },
+  win10_chrome130: {
+    os: 'windows',
+    ua: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.117 Safari/537.36'
+  },
+  mac_chrome133: {
+    os: 'mac',
+    ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36'
+  },
+  mac_safari18: {
+    os: 'mac',
+    ua: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'
+  },
+  linux_chrome132: {
+    os: 'linux',
+    ua: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36'
+  },
+  android_chrome133: {
+    os: 'android',
+    ua: 'Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36'
+  }
+};
+
 const MODERN_USER_AGENTS = {
   windows: [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.117 Safari/537.36',
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.101 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.138 Safari/537.36',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0',
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.86 Safari/537.36'
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0'
   ],
   mac: [
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.117 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.101 Safari/537.36',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
-    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.86 Safari/537.36'
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15'
   ],
   linux: [
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36',
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.117 Safari/537.36',
-    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:131.0) Gecko/20100101 Firefox/131.0',
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.90 Safari/537.36'
+    'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0'
   ],
   android: [
-    'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.102 Mobile Safari/537.36',
-    'Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.6668.100 Mobile Safari/537.36',
-    'Mozilla/5.0 (Linux; Android 13; SM-G991B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.6613.127 Mobile Safari/537.36'
+    'Mozilla/5.0 (Linux; Android 15; Pixel 9 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.102 Mobile Safari/537.36'
   ]
 };
 
@@ -1301,15 +1413,38 @@ function setWorkstationOs(os, triggerRandom = false) {
   document.querySelectorAll('.os-select-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.os === os);
   });
-  if (fpOs) fpOs.value = os;
+  if (fpOs) {
+    fpOs.value = os;
+    fpOs.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   if (os === 'mac') {
-    if (fpWebgl) fpWebgl.value = 'apple_m2';
+    if (fpWebgl) {
+      fpWebgl.value = 'apple_m2';
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
   } else if (os === 'linux') {
-    if (fpWebgl && fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx3060';
+    if (fpWebgl) {
+      if (fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx3060';
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) uaPresetSelect.value = 'linux_chrome132';
+  } else if (os === 'android') {
+    if (fpWebgl) {
+      fpWebgl.value = 'iris_xe';
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) uaPresetSelect.value = 'android_chrome133';
   } else {
-    if (fpWebgl && fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx4070';
+    if (fpWebgl) {
+      if (fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx4070';
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) uaPresetSelect.value = 'win11_chrome133';
   }
+
+  if (uaPresetSelect) uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
   if (fpUserAgent) fpUserAgent.value = getRandomUa(os);
   if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(os);
@@ -1319,7 +1454,8 @@ function setWorkstationOs(os, triggerRandom = false) {
     randomizeFingerprint(os, true);
   }
   updateProfileSummary();
-  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
+  if (typeof syncAllCustomSelects === 'function') syncAllCustomSelects();
+  else if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 document.querySelectorAll('.os-select-btn').forEach(btn => {
@@ -1444,12 +1580,30 @@ function renderProxyHubCards() {
     });
   }
 
+  if (allProxies.length === 0) {
+    container.innerHTML = `
+      <div style="padding: 28px 16px; text-align: center; color: var(--text-muted); background: rgba(56, 103, 244, 0.04); border: 1.5px dashed rgba(56, 103, 244, 0.25); border-radius: 12px;">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(56, 103, 244, 0.1); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        </div>
+        <div style="font-size: 13.5px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Kho Proxy Đang Trống</div>
+        <p style="font-size: 12px; color: var(--text-muted); margin: 0 auto 12px; max-width: 340px;">Bạn có thể chuyển sang chế độ <strong>"Nhập Tùy Chỉnh"</strong> để dùng trực tiếp cho hồ sơ này.</p>
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button type="button" class="uiv-btn uiv-btn-secondary" onclick="setQuickProxyMode('custom')" style="font-size: 12px; padding: 6px 14px; font-weight: 600;">
+            <span>Chuyển sang Nhập Tùy Chỉnh</span>
+          </button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
   if (list.length === 0) {
     container.innerHTML = `
       <div style="padding: 32px 16px; text-align: center; color: var(--text-muted); background: rgba(255,255,255,0.02); border: 1px dashed var(--border-subtle); border-radius: 10px;">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom: 8px; opacity: 0.6;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <div style="font-size: 13px; font-weight: 600; color: var(--text-main);">Không tìm thấy Proxy phù hợp</div>
-        <div style="font-size: 11.5px; margin-top: 4px;">Thử đổi bộ lọc hoặc thêm Proxy mới vào kho quản lý.</div>
+        <div style="font-size: 11.5px; margin-top: 4px;">Thử đổi bộ lọc hoặc từ khóa tìm kiếm.</div>
       </div>
     `;
     return;
@@ -1974,51 +2128,107 @@ document.querySelectorAll('#quick-webrtc-pills .quick-pill-btn').forEach(btn => 
 
 async function randomizeFingerprint(selectedOs, silent = false) {
   const os = selectedOs || fpOs?.value || 'windows';
+  let fp = null;
+
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1200);
     const res = await fetch(`${API_BASE}/fingerprints/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ os })
+      body: JSON.stringify({ os }),
+      signal: controller.signal
     });
-    const data = await res.json();
-    if (data.success && data.fingerprint) {
-      const fp = data.fingerprint;
-      if (fpOs) fpOs.value = fp.os || 'windows';
-
-      // Cập nhật OS card tương ứng
-      document.querySelectorAll('.os-select-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.os === (fp.os || 'windows'));
-      });
-
-      if (fp.os === 'mac') {
-        if (fpWebgl) fpWebgl.value = 'apple_m2';
-      } else {
-        const pcKeys = ['rtx4070', 'rtx3060', 'rtx3080', 'rx6700', 'iris_xe'];
-        if (fpWebgl) fpWebgl.value = pcKeys[Math.floor(Math.random() * pcKeys.length)];
-      }
-
-      if (fpCpu) fpCpu.value = String(fp.hardwareConcurrency || 8);
-      if (fpRam) fpRam.value = String(fp.deviceMemory || 8);
-      if (fp.screen && formResolution) {
-        const resStr = `${fp.screen.width}x${fp.screen.height}`;
-        if (formResolution.querySelector(`option[value="${resStr}"]`)) {
-          formResolution.value = resStr;
-        }
-      }
-      if (fpUserAgent) fpUserAgent.value = fp.userAgent || getRandomUa(fp.os || 'windows');
-      if (fpCanvasNoise) fpCanvasNoise.checked = true;
-      if (fpAudioNoise) fpAudioNoise.checked = true;
-      if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(fp.os || 'windows');
-      if (sumMac) sumMac.innerText = generateRandomMac();
-
-      updateProfileSummary();
-
-      if (!silent) {
-        showToast(`🎲 Đã sinh ngẫu nhiên cấu hình vân tay (${(fp.os || 'windows').toUpperCase()} • ${fpCpu ? fpCpu.value : 8}C/${fpRam ? fpRam.value : 8}GB)`, 'info');
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.fingerprint) {
+        fp = data.fingerprint;
       }
     }
   } catch (err) {
-    console.error('Error generating fingerprint:', err);
+    console.warn('[Fingerprint] Offline local generator fallback active');
+  }
+
+  // Fallback ngoại tuyến 100% nếu máy chưa kết nối API hoặc chạy LAN
+  if (!fp) {
+    const cpus = [4, 6, 8, 12, 16];
+    const rams = [8, 16, 32];
+    const resList = ['1920x1080', '1536x864', '1440x900', '2560x1440'];
+    const chosenRes = resList[Math.floor(Math.random() * resList.length)].split('x');
+
+    fp = {
+      os,
+      hardwareConcurrency: cpus[Math.floor(Math.random() * cpus.length)],
+      deviceMemory: rams[Math.floor(Math.random() * rams.length)],
+      screen: { width: Number(chosenRes[0]), height: Number(chosenRes[1]) },
+      userAgent: getRandomUa(os)
+    };
+  }
+
+  if (fpOs) {
+    fpOs.value = fp.os || 'windows';
+    fpOs.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  // Cập nhật OS card tương ứng
+  document.querySelectorAll('.os-select-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.os === (fp.os || 'windows'));
+  });
+
+  if (fp.os === 'mac') {
+    if (fpWebgl) {
+      fpWebgl.value = 'apple_m2';
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
+  } else {
+    const pcKeys = ['rtx4070', 'rtx3060', 'rtx3080', 'rx6700', 'iris_xe'];
+    if (fpWebgl) {
+      fpWebgl.value = pcKeys[Math.floor(Math.random() * pcKeys.length)];
+      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (uaPresetSelect) {
+      uaPresetSelect.value = fp.os === 'linux' ? 'linux_chrome132' : (fp.os === 'android' ? 'android_chrome133' : 'win11_chrome133');
+    }
+  }
+
+  if (uaPresetSelect) uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+  if (fpCpu) {
+    fpCpu.value = String(fp.hardwareConcurrency || 8);
+    fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fpRam) {
+    fpRam.value = String(fp.deviceMemory || 8);
+    fpRam.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fp.screen && formResolution) {
+    const resStr = `${fp.screen.width}x${fp.screen.height}`;
+    if (formResolution.querySelector(`option[value="${resStr}"]`)) {
+      formResolution.value = resStr;
+      formResolution.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+  if (fpUserAgent) {
+    fpUserAgent.value = fp.userAgent || getRandomUa(fp.os || 'windows');
+  }
+  if (fpCanvasNoise) fpCanvasNoise.checked = true;
+  if (fpAudioNoise) fpAudioNoise.checked = true;
+  if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(fp.os || 'windows');
+  if (sumMac) sumMac.innerText = generateRandomMac();
+
+  // Đồng bộ lại tất cả custom select trực quan
+  if (typeof syncAllCustomSelects === 'function') {
+    syncAllCustomSelects();
+  } else if (typeof initAllCustomSelects === 'function') {
+    initAllCustomSelects();
+  }
+
+  updateProfileSummary();
+
+  if (!silent) {
+    showToast(`🎲 Đã sinh ngẫu nhiên cấu hình vân tay (${(fp.os || 'windows').toUpperCase()} • ${fpCpu ? fpCpu.value : 8}C/${fpRam ? fpRam.value : 8}GB)`, 'info');
   }
 }
 
@@ -2041,8 +2251,25 @@ if (btnQuickRandomUa) {
   btnQuickRandomUa.addEventListener('click', () => {
     const curOs = fpOs ? fpOs.value : 'windows';
     if (fpUserAgent) fpUserAgent.value = getRandomUa(curOs);
+    if (uaPresetSelect) {
+      uaPresetSelect.value = 'custom';
+      uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     updateProfileSummary();
     showToast('🎲 Đã cập nhật chuỗi User-Agent ngẫu nhiên mới', 'info');
+  });
+}
+
+if (uaPresetSelect) {
+  uaPresetSelect.addEventListener('change', () => {
+    const val = uaPresetSelect.value;
+    if (val && UA_PRESETS[val]) {
+      const preset = UA_PRESETS[val];
+      if (fpUserAgent) fpUserAgent.value = preset.ua;
+      setWorkstationOs(preset.os, false);
+      updateProfileSummary();
+      showToast(`Đã áp dụng User-Agent: ${preset.os.toUpperCase()}`, 'info');
+    }
   });
 }
 
@@ -2099,8 +2326,11 @@ window.editProfile = async function(id) {
     resetCustomProxyForm();
   }
 
-  if (formStartUrl) formStartUrl.value = p.start_url || 'https://iphey.com';
-  if (formResolution) formResolution.value = `${p.screen_width || 1920}x${p.screen_height || 1080}`;
+  if (formStartUrl) formStartUrl.value = p.start_url || '';
+  if (formResolution) {
+    formResolution.value = `${p.screen_width || 1920}x${p.screen_height || 1080}`;
+    formResolution.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   setQuickWebRtc(p.webrtc_mode || 'fake_ip');
   if (formNotes) formNotes.value = p.notes || '';
   if (formCookieInput) formCookieInput.value = '';
@@ -2124,12 +2354,23 @@ window.editProfile = async function(id) {
     else if (ren.includes('Iris')) fpWebgl.value = 'iris_xe';
     else if (ren.includes('M2') || ren.includes('Apple')) fpWebgl.value = 'apple_m2';
     else fpWebgl.value = 'rtx4070';
+    if (fpWebgl) fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
 
-    if (fpCpu) fpCpu.value = String(fp.hardwareConcurrency || p.cpu_cores || 8);
-    if (fpRam) fpRam.value = String(fp.deviceMemory || p.ram_gb || 8);
+    if (fpCpu) {
+      fpCpu.value = String(fp.hardwareConcurrency || p.cpu_cores || 8);
+      fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (fpRam) {
+      fpRam.value = String(fp.deviceMemory || p.ram_gb || 8);
+      fpRam.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     if (fpCanvasNoise) fpCanvasNoise.checked = fp.canvas?.mode !== 'real' && p.canvas_noise !== 0;
     if (fpAudioNoise) fpAudioNoise.checked = fp.audio?.mode !== 'real' && p.audio_noise !== 0;
     if (fpUserAgent) fpUserAgent.value = fp.userAgent || p.user_agent || '';
+    if (uaPresetSelect) {
+      uaPresetSelect.value = 'custom';
+      uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    }
     if (fpDeviceName) fpDeviceName.value = fp.deviceName || generateRandomDeviceName(fp.os || 'windows');
   } else {
     randomizeFingerprint('windows', true);
@@ -2137,6 +2378,8 @@ window.editProfile = async function(id) {
 
   if (sumMac) sumMac.innerText = generateRandomMac();
   updateProfileSummary();
+  if (typeof syncAllCustomSelects === 'function') syncAllCustomSelects();
+  else if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 
   let activeExtIds = [];
   try {
@@ -2201,18 +2444,44 @@ btnCreateModal.addEventListener('click', async () => {
   formGroupId.value = '';
   setQuickProxyMode('none');
   resetCustomProxyForm();
-  if (formStartUrl) formStartUrl.value = 'https://iphey.com';
-  if (formResolution) formResolution.value = '1920x1080';
+  if (formStartUrl) formStartUrl.value = '';
+  if (formResolution) {
+    formResolution.value = '1920x1080';
+    formResolution.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   setQuickWebRtc('fake_ip');
   if (formNotes) formNotes.value = '';
   if (formCookieInput) formCookieInput.value = '';
   if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName('windows');
   if (sumMac) sumMac.innerText = generateRandomMac();
   setWorkstationOs('windows', false);
-  await randomizeFingerprint('windows', true);
+  if (uaPresetSelect) {
+    uaPresetSelect.value = 'win11_chrome133';
+    uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fpUserAgent) {
+    fpUserAgent.value = UA_PRESETS.win11_chrome133.ua;
+  }
+  // Cấu hình dấu vân tay mặc định nhẹ nhất, tối ưu mượt mà (Item 6)
+  if (fpCpu) {
+    fpCpu.value = '8';
+    fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fpRam) {
+    fpRam.value = '8';
+    fpRam.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fpWebgl) {
+    fpWebgl.value = 'rtx4070';
+    fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (fpCanvasNoise) fpCanvasNoise.checked = true;
+  if (fpAudioNoise) fpAudioNoise.checked = true;
+
   renderProfileExtensionsChecklist([]);
   updateProfileSummary();
-  if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
+  if (typeof syncAllCustomSelects === 'function') syncAllCustomSelects();
+  else if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 });
 
 function closeModal() {
@@ -4344,7 +4613,7 @@ async function pollKernelStatus() {
     const progressTitle = document.getElementById('kernel-progress-title');
 
     if (data.isInstalled) {
-      if (statusTextEl) statusTextEl.innerText = 'Đã cài đặt MyBrowser 153 Core (Portable)';
+      if (statusTextEl) statusTextEl.innerText = 'Đã cài đặt Chromium 153 Core (Portable)';
       if (pathTextEl) pathTextEl.innerText = data.kernelPath || data.kernelDir || 'bin/chromium/chrome.exe';
       if (badgeEl) {
         badgeEl.className = 'badge badge-running';
@@ -4363,7 +4632,7 @@ async function pollKernelStatus() {
         btnStartAutoKernel.style.justifyContent = 'center';
         btnStartAutoKernel.style.padding = '10px';
       }
-      if (kernelLabel) kernelLabel.innerText = 'MyBrowser 153 (Sẵn sàng)';
+      if (kernelLabel) kernelLabel.innerText = 'Chromium 153 (Sẵn sàng)';
       if (sidebarKernelDot) {
         sidebarKernelDot.style.background = '#10B981';
         sidebarKernelDot.style.boxShadow = 'none';
@@ -4375,7 +4644,7 @@ async function pollKernelStatus() {
         btnKernelCenter.style.borderColor = 'rgba(16, 185, 129, 0.3)';
       }
     } else {
-      if (statusTextEl) statusTextEl.innerText = 'Chưa cài đặt MyBrowser 153 Core';
+      if (statusTextEl) statusTextEl.innerText = 'Chưa cài đặt Chromium 153 Core';
       if (pathTextEl) pathTextEl.innerText = 'bin/chromium/chrome.exe (Chưa tồn tại)';
       if (badgeEl) {
         badgeEl.className = 'badge badge-stopped';
@@ -4394,7 +4663,7 @@ async function pollKernelStatus() {
         btnStartAutoKernel.style.justifyContent = 'center';
         btnStartAutoKernel.style.padding = '11px';
       }
-      if (kernelLabel) kernelLabel.innerText = 'Chưa cài MyBrowser 153';
+      if (kernelLabel) kernelLabel.innerText = 'Chưa cài Chromium 153';
       if (sidebarKernelDot) {
         sidebarKernelDot.style.background = '#F59E0B';
         sidebarKernelDot.style.boxShadow = 'none';

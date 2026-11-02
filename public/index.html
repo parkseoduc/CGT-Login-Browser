@@ -195,6 +195,9 @@
               <span class="search-kbd-shortcut">Ctrl+K</span>
             </div>
 
+            <!-- Active Running Profile & Sync Master Indicator -->
+            <div id="active-profile-indicator" class="active-profile-indicator" style="display: none; align-items: center; gap: 8px; flex: 1; min-width: 0;"></div>
+
             <div style="display: flex; gap: 10px; align-items: center;">
               <select id="filter-group-select" class="form-control" style="width: auto; min-width: 170px; padding: 6px 12px; font-size: 13px; height: 38px;">
                 <option value="" style="background-color: #FFFFFF; color: #0F172A;">Tất Cả Nhóm</option>
@@ -288,14 +291,20 @@
                 <p style="font-size: 12px; color: var(--text-muted);">Phù hợp cá nhân chạy MMO, Affiliate, Nuôi tài khoản</p>
               </div>
               <div class="plan-card" data-plan="Team Plus">
-                <span style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Nhóm Làm Việc</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Nhóm Làm Việc</span>
+                  <span class="badge-coming-soon" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 103, 244, 0.15); color: #60a5fa; border: 1px solid rgba(56, 103, 244, 0.3); font-weight: 600;">Coming soon</span>
+                </div>
                 <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Team Plus</div>
-                <p style="font-size: 12px; color: var(--text-muted);">Hỗ trợ chia sẻ profile, phân quyền thành viên</p>
+                <p style="font-size: 12px; color: var(--text-muted);">Hỗ trợ chia sẻ profile, phân quyền thành viên (Sắp ra mắt)</p>
               </div>
               <div class="plan-card" data-plan="Company Plus">
-                <span style="font-size: 12.5px; font-weight: 700; color: var(--accent); text-transform: uppercase;">Doanh Nghiệp</span>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 12.5px; font-weight: 700; color: var(--accent); text-transform: uppercase;">Doanh Nghiệp</span>
+                  <span class="badge-coming-soon" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600;">Coming soon</span>
+                </div>
                 <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Company Plus</div>
-                <p style="font-size: 12px; color: var(--text-muted);">Không giới hạn profile, API automation tốc độ cao</p>
+                <p style="font-size: 12px; color: var(--text-muted);">Không giới hạn profile, API automation tốc độ cao (Sắp ra mắt)</p>
               </div>
             </div>
 
@@ -878,14 +887,23 @@ async function automateProfile(profileId) {
 
             <!-- User-Agent Input & Randomize -->
             <div class="form-group" style="margin-top: 10px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <label style="margin: 0;">User-Agent (Chuỗi nhận diện trình duyệt)</label>
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin: 0; font-weight: 600;">User-Agent (Chuỗi nhận diện trình duyệt)</label>
                 <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-quick-random-ua" style="font-size: 12px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px;">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                   <span>Đổi User-Agent</span>
                 </button>
               </div>
-              <input type="text" id="fp-user-agent" class="form-control" style="font-family: monospace; font-size: 12.5px;" value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.117 Safari/537.36">
+              <select id="ua-preset-select" class="form-control" style="margin-bottom: 8px; font-weight: 600;">
+                <option value="win11_chrome133">Windows 11 • Chrome 133 (Mới nhất - Khuyên dùng)</option>
+                <option value="win10_chrome130">Windows 10 • Chrome 130 (Ổn định)</option>
+                <option value="mac_chrome133">macOS Sonoma • Chrome 133</option>
+                <option value="mac_safari18">macOS Sonoma • Safari 18</option>
+                <option value="linux_chrome132">Linux Ubuntu • Chrome 132</option>
+                <option value="android_chrome133">Android 15 • Chrome 133 (Mobile)</option>
+                <option value="custom">Tùy chỉnh (Nhập chuỗi bên dưới)</option>
+              </select>
+              <input type="text" id="fp-user-agent" class="form-control" style="font-family: monospace; font-size: 12.5px;" value="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36">
             </div>
 
             <!-- Nhóm & URL mở đầu -->
@@ -897,8 +915,8 @@ async function automateProfile(profileId) {
                 </select>
               </div>
               <div class="form-group">
-                <label>URL Mở Đầu</label>
-                <input type="text" id="form-start-url" class="form-control" value="https://iphey.com">
+                <label>URL Mở Đầu (Để trống sẽ mở tab mặc định)</label>
+                <input type="text" id="form-start-url" class="form-control" value="" placeholder="https://... (để trống sẽ mở tab mặc định)">
               </div>
             </div>
 
@@ -1808,6 +1826,25 @@ async function automateProfile(profileId) {
       </div>
 
       <div class="modal-body" style="padding: 20px;">
+        <!-- Success Notification Box (Shows prominently on top when installed) -->
+        <div id="kernel-success-box" class="kernel-success-box" style="display: none; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 12px;">
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: #10B981; margin-top: 2px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div style="flex: 1;">
+              <div class="kernel-success-head" style="font-size: 14px; font-weight: 700; color: #10B981; letter-spacing: -0.01em;">ĐÃ TẢI & CÀI ĐẶT THÀNH CÔNG!</div>
+              <p class="kernel-success-body" style="font-size: 12.5px; color: var(--text-main); margin-top: 4px; line-height: 1.5;">
+                Nhân <strong>Chromium 153 Core (Portable)</strong> đã sẵn sàng tại thư mục <code>bin/chromium/</code>. Tất cả profile mới và hiện tại sẽ tự động ưu tiên chạy nhân này để chống nhận diện (Bypass 100% Iphey & Pixelscan).
+              </p>
+              <div style="margin-top: 8px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; background: rgba(56, 103, 244, 0.08); padding: 7px 11px; border-radius: 6px; border: 1px solid rgba(56, 103, 244, 0.15);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--primary); flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span><strong>Khuyên dùng:</strong> Bạn nên ưu tiên sử dụng nhân trình duyệt do hệ thống tạo (Chromium 153 Core) để đảm bảo độ ẩn danh và ổn định cao nhất.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Status Banner -->
         <div id="kernel-status-banner" class="kernel-status-banner">
           <div class="kernel-status-header">
@@ -1839,21 +1876,6 @@ async function automateProfile(profileId) {
             </div>
             <div class="kernel-path-text" id="kernel-modal-path-text">--</div>
           </div>
-
-        <!-- Success Notification Box (Shows prominently when completed) -->
-        <div id="kernel-success-box" class="kernel-success-box" style="display: none;">
-          <div style="display: flex; align-items: flex-start; gap: 12px;">
-            <div style="width: 28px; height: 28px; border-radius: 50%; background: #047857; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-            </div>
-            <div style="flex: 1;">
-              <div class="kernel-success-head">ĐÃ TẢI & CÀI ĐẶT THÀNH CÔNG!</div>
-              <p class="kernel-success-body">
-                Nhân <strong>Chromium 153 Core (Portable)</strong> đã sẵn sàng tại thư mục <code>bin/chromium/</code>. Tất cả profile mới và hiện tại sẽ tự động ưu tiên chạy nhân này để chống nhận diện (Bypass 100% Iphey & Pixelscan).
-              </p>
-            </div>
-          </div>
-        </div>
 
         <!-- Download Progress Box (Hidden when idle) -->
         <div id="kernel-progress-box" class="kernel-progress-container" style="display: none;">

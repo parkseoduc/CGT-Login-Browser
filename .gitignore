@@ -33,3 +33,4 @@ bin/node/*
 !bin/node/.gitkeep
 bin/temp_kernel.zip
 data/tmp_backups/
+data/license/
