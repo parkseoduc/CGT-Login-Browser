@@ -321,6 +321,12 @@ function createServer() {
         return sendJson(res, 200, { success: true, count: results.length, results });
       }
 
+      // Stop All Running Profiles
+      if (method === 'POST' && pathname === '/api/v1/profiles/stop-all') {
+        const result = await launcher.stopAllProfiles();
+        return sendJson(res, 200, result);
+      }
+
       // Batch Profiles Proxy Update
       if (method === 'POST' && pathname === '/api/v1/profiles/batch-proxy') {
         const body = await parseJsonBody(req);

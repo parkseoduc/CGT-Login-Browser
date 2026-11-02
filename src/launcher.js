@@ -124,9 +124,24 @@ async function startProfile(profileId, overrides = {}) {
     '--remote-debugging-address=127.0.0.1',
     '--disable-session-crashed-bubble',
     '--disable-restore-session-state',
+
+    // 1. Chống nổ mã ngắt Win11 STATUS_BREAKPOINT & vòng lặp dump WerFault gây nghẽn CPU 100%
     '--disable-breakpad',
     '--disable-crash-reporter',
     '--noerrdialogs',
+
+    // 2. Triệt tiêu toàn bộ tác vụ ngầm ngốn CPU, RAM và băng thông mạng
+    '--disable-background-networking',
+    '--disable-component-update',
+    '--disable-domain-reliability',
+    '--disable-sync',
+    '--disable-client-side-phishing-detection',
+    '--no-pings',
+    '--disable-features=MediaRouter',
+
+    // 3. Ổn định GPU cho môi trường Remote Desktop / RDP / Máy ảo và giới hạn bộ nhớ đệm
+    '--disable-gpu-watchdog',
+    '--disk-cache-size=104857600',
   ];
 
   if (fp.languages && fp.languages[0]) {
@@ -289,6 +304,11 @@ async function startProfile(profileId, overrides = {}) {
     if (proxyForwarder) {
       try { proxyForwarder.close(); } catch {}
     }
+    // Dọn sạch toàn bộ cây tiến trình con (GPU, Renderer, Crashpad)
+    if (pid) {
+      forceKillPid(pid);
+    }
+    cleanupOrphansForProfile(profileId);
     _running.delete(profileId);
     events.emit('profile-exited', { profileId, pid, code, signal });
   };
@@ -454,11 +474,11 @@ async function stopProfile(profileId, timeoutMs = 2500) {
     try { await info.proxyForwarder.close(); } catch {}
   }
 
-  // Bước 2: Nếu chưa tắt, cưỡng chế kill bằng taskkill
-  if (!closedGracefully && cdp.isPidAlive(info.pid)) {
-    console.log(`[Launcher] Graceful quit timed out for PID ${info.pid}, force killing...`);
+  // Bước 2: Dọn sạch toàn bộ tiến trình thuộc cây PID và tiến trình mồ côi
+  if (info.pid) {
     forceKillPid(info.pid);
   }
+  cleanupOrphansForProfile(profileId);
 
   // Bước 3: Dọn dẹp triệt để lockfiles và devtools port để giải phóng hoàn toàn profile
   const staleFiles = ['DevToolsActivePort', 'lockfile', 'SingletonLock', 'SingletonCookie', 'SingletonSocket'];
@@ -478,6 +498,32 @@ async function stopProfile(profileId, timeoutMs = 2500) {
     pid: info.pid,
     graceful: closedGracefully,
   };
+}
+
+// Dọn dẹp các tiến trình Chromium mồ côi liên quan đến profile
+function cleanupOrphansForProfile(profileId) {
+  if (process.platform !== 'win32' || !profileId) return;
+  try {
+    const { execSync } = require('node:child_process');
+    const script = `Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*${profileId}*' } | Stop-Process -Force`;
+    const b64 = Buffer.from(script, 'utf16le').toString('base64');
+    execSync(`powershell.exe -NoProfile -NonInteractive -EncodedCommand ${b64}`, { stdio: 'ignore', windowsHide: true });
+  } catch {}
+}
+
+// Đóng toàn bộ các Profile đang chạy
+async function stopAllProfiles(timeoutMs = 2000) {
+  const running = getRunningProfiles();
+  const results = [];
+  for (const p of running) {
+    try {
+      const res = await stopProfile(p.profileId, timeoutMs);
+      results.push({ profileId: p.profileId, success: true, ...res });
+    } catch (e) {
+      results.push({ profileId: p.profileId, success: false, error: e.message });
+    }
+  }
+  return { success: true, count: results.length, results };
 }
 
 // Kill cưỡng chế trên Windows
@@ -535,6 +581,8 @@ function getRunningInfo(profileId) {
 module.exports = {
   startProfile,
   stopProfile,
+  stopAllProfiles,
+  cleanupOrphansForProfile,
   getRunningProfiles,
   isProfileRunning,
   getRunningInfo,

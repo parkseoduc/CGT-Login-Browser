@@ -67,11 +67,12 @@ async function main() {
   console.log('  🚀 OmniBrowser Antidetect Hub - Desktop Launcher');
   console.log('============================================================\n');
 
+  let serverProc = null;
   // 1. Check & ensure backend is running
   const isUp = await checkServerReady(PORT);
   if (!isUp) {
     console.log('[Launcher] Dang khoi dong Backend Engine tren cong ' + PORT + '...');
-    const serverProc = spawn(process.execPath, ['--experimental-sqlite', path.join(ROOT_DIR, 'src', 'index.js')], {
+    serverProc = spawn(process.execPath, ['--experimental-sqlite', path.join(ROOT_DIR, 'src', 'index.js')], {
       cwd: ROOT_DIR,
       detached: true,
       stdio: 'ignore'
@@ -119,7 +120,11 @@ async function main() {
       '--app-id=OmniBrowserHub',
       '--disable-extensions',
       '--no-first-run',
-      '--no-default-browser-check'
+      '--no-default-browser-check',
+      '--disable-background-mode',
+      '--disable-breakpad',
+      '--disable-crash-reporter',
+      '--noerrdialogs'
     ];
 
     const child = spawn(browserExe, appArgs, {
@@ -132,8 +137,29 @@ async function main() {
     console.log('           (Cua so rieng biet, khong the tab, khong thanh dia chi URL)');
 
     child.on('exit', () => {
-      console.log('[Launcher] Cua so Desktop da dong.');
-      process.exit(0);
+      console.log('[Launcher] Cua so Desktop da dong. Dang thu hoi toan bo tai nguyen...');
+      try {
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: PORT,
+          path: '/api/v1/profiles/stop-all',
+          method: 'POST',
+          timeout: 1500
+        });
+        req.on('error', () => {});
+        req.end();
+      } catch {}
+
+      if (serverProc && serverProc.pid) {
+        try {
+          const { execSync } = require('node:child_process');
+          execSync(`taskkill.exe /PID ${serverProc.pid} /T /F`, { stdio: 'ignore' });
+        } catch {}
+      }
+
+      setTimeout(() => {
+        process.exit(0);
+      }, 500);
     });
     return;
   }
