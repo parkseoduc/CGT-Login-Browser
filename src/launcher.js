@@ -117,7 +117,7 @@ async function startProfile(profileId, overrides = {}) {
   // Vá Preferences chống crash bubble
   preparePreferences(userDataDir);
 
-  // Xây dựng danh sách tham số khởi động (Chế độ nhân sạch nguyên bản, không cờ rác can thiệp)
+  // Xây dựng danh sách tham số khởi động chuẩn công nghiệp (Production Anti-detect Stability Matrix)
   const args = [
     `--user-data-dir=${userDataDir}`,
     '--no-sandbox',
@@ -129,6 +129,34 @@ async function startProfile(profileId, overrides = {}) {
     '--remote-debugging-address=127.0.0.1',
     '--disable-session-crashed-bubble',
     '--disable-restore-session-state',
+
+    // 1. Chống nổ mã ngắt Win11 STATUS_BREAKPOINT (0x80000003) cho nhân custom không chứng chỉ WHQL
+    '--disable-features=RendererCodeIntegrity,OutOfProcessOpusMultistream,OptimizationHints,OptimizationGuideModelDownloading,SegmentationPlatform',
+
+    // 2. Chống nghẽn CPU 100%, vòng lặp WerFault / Breakpad và đơ Task Manager khi tab gặp sự cố
+    '--disable-breakpad',
+    '--disable-crash-reporter',
+    '--noerrdialogs',
+
+    // 3. Tối ưu đồ họa ANGLE Direct3D11 - Chống sập GPU Watchdog, chống màn hình đen (Black Screen) & crash WebGL/Canvas
+    '--disable-gpu-watchdog',
+    '--disable-gpu-process-crash-limit',
+    '--ignore-gpu-blocklist',
+    '--enable-webgl',
+    '--enable-accelerated-2d-canvas',
+    '--use-gl=angle',
+    '--use-angle=d3d11',
+
+    // 4. Triệt tiêu toàn bộ kết nối ngầm gây nghẽn băng thông, GCM lỗi xác thực & Telemetry của Google
+    '--disable-background-networking',
+    '--disable-component-update',
+    '--disable-domain-reliability',
+    '--disable-sync',
+    '--disable-client-side-phishing-detection',
+
+    // 5. Giữ Renderer và cửa sổ hoạt động liên tục (không bị đơ/lag khi cửa sổ nằm dưới nền)
+    '--disable-renderer-backgrounding',
+    '--disable-backgrounding-occluded-windows',
   ];
 
   if (fp.languages && fp.languages[0]) {
@@ -281,20 +309,25 @@ async function startProfile(profileId, overrides = {}) {
     throw new Error('Failed to spawn Chromium process');
   }
 
+  // Hàm dọn dẹp phiên profile chuẩn mực, triệt tiêu hoàn toàn rò rỉ bộ nhớ & tiến trình mồ côi
+  const cleanupProfile = (code = 0, signal = null) => {
+    const current = _running.get(profileId);
+    if (!current) return;
+    if (current.cdpClient) {
+      try { current.cdpClient.close(); } catch {}
+    }
+    if (proxyForwarder) {
+      try { proxyForwarder.close(); } catch {}
+    }
+    _running.delete(profileId);
+    events.emit('profile-exited', { profileId, pid, code, signal });
+  };
+
   // Theo dõi khi tiến trình tắt
   if (child) {
     child.on('exit', (code, signal) => {
       console.log(`[Launcher] Profile ${profileId} (PID: ${pid}) process exit event (code: ${code}, signal: ${signal})`);
-      const current = _running.get(profileId);
-      if (current && current.cdpClient && current.cdpClient.ws && current.cdpClient.ws.readyState === 1) {
-        console.log(`[Launcher] Profile ${profileId} browser session still active via CDP, maintaining running status.`);
-        return;
-      }
-      if (proxyForwarder) {
-        try { proxyForwarder.close(); } catch {}
-      }
-      _running.delete(profileId);
-      events.emit('profile-exited', { profileId, pid, code, signal });
+      cleanupProfile(code, signal);
     });
   } else {
     const exitTimer = setInterval(() => {
@@ -303,15 +336,7 @@ async function startProfile(profileId, overrides = {}) {
       } catch {
         clearInterval(exitTimer);
         console.log(`[Launcher] Profile ${profileId} (PID: ${pid}) process exited.`);
-        const current = _running.get(profileId);
-        if (current && current.cdpClient && current.cdpClient.ws && current.cdpClient.ws.readyState === 1) {
-          return;
-        }
-        if (proxyForwarder) {
-          try { proxyForwarder.close(); } catch {}
-        }
-        _running.delete(profileId);
-        events.emit('profile-exited', { profileId, pid, code: 0, signal: null });
+        cleanupProfile();
       }
     }, 1000);
   }
@@ -331,11 +356,19 @@ async function startProfile(profileId, overrides = {}) {
       // Lắng nghe khi trình duyệt đóng WebSocket CDP
       cdpClient.on('close', () => {
         console.log(`[Launcher] CDP connection closed for Profile ${profileId}`);
-        if (proxyForwarder) {
-          try { proxyForwarder.close(); } catch {}
-        }
-        _running.delete(profileId);
-        events.emit('profile-exited', { profileId, pid });
+        cleanupProfile();
+      });
+
+      // Bắt sự kiện Crash của Target/Inspector để ngắt kết nối an toàn, tránh treo và vòng lặp CPU
+      cdpClient.on('Target.targetCrashed', (params) => {
+        console.warn(`[CDP] Target ${params.targetId} crashed: status=${params.status}, errorCode=${params.errorCode}`);
+        pageSessions.delete(params.targetId);
+        events.emit('profile-crashed', { profileId, targetId: params.targetId, status: params.status, errorCode: params.errorCode });
+      });
+
+      cdpClient.on('Inspector.targetCrashed', () => {
+        console.warn(`[CDP] Inspector target crashed for Profile ${profileId}`);
+        events.emit('profile-crashed', { profileId });
       });
 
       // Xử lý xác thực tự động dự phòng nếu có request auth từ Chromium
@@ -466,6 +499,15 @@ async function stopProfile(profileId, timeoutMs = 2500) {
   if (!closedGracefully && cdp.isPidAlive(info.pid)) {
     console.log(`[Launcher] Graceful quit timed out for PID ${info.pid}, force killing...`);
     forceKillPid(info.pid);
+  }
+
+  // Bước 3: Dọn dẹp triệt để lockfiles và devtools port để giải phóng hoàn toàn profile
+  const staleFiles = ['DevToolsActivePort', 'lockfile', 'SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+  for (const f of staleFiles) {
+    try {
+      const targetP = path.join(info.userDataDir, f);
+      if (fs.existsSync(targetP)) fs.unlinkSync(targetP);
+    } catch {}
   }
 
   _running.delete(profileId);

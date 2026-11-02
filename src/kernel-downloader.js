@@ -148,9 +148,13 @@ async function startDownload(downloadUrl) {
   }
 
   // Tự động kiểm tra các vị trí file ZIP có sẵn trên máy để cài đặt siêu tốc 1.5s
+  const userHome = process.env.USERPROFILE || 'C:\\Users\\Admin';
   const commonZipLocations = [
     path.join(config.BASE_DIR, '..', 'MyBrowser-153-win64.zip'),
     path.join(config.BASE_DIR, 'MyBrowser-153-win64.zip'),
+    path.join(config.BASE_DIR, 'bin', 'MyBrowser-153-win64.zip'),
+    path.join(userHome, 'Downloads', 'MyBrowser-153-win64.zip'),
+    path.join(userHome, 'Desktop', 'MyBrowser-153-win64.zip'),
     'C:\\Users\\Admin\\.gemini\\antigravity\\scratch\\MyBrowser-153-win64.zip',
   ];
   for (const zipLoc of commonZipLocations) {
