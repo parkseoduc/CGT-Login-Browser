@@ -5316,9 +5316,14 @@ function initAuthControls() {
     const email = (document.getElementById('auth-login-email')?.value || '').trim();
     const password = document.getElementById('auth-login-password')?.value || '';
     const btnSubmit = document.getElementById('btn-submit-login');
-    if (!email || !password) {
-      return showToast('Vui lòng nhập đầy đủ Email và Mật khẩu', 'warning');
+
+    if (!email) {
+      return showToast('Vui lòng nhập Email đăng nhập', 'warning');
     }
+    if (!password) {
+      return showToast('Vui lòng nhập Mật khẩu', 'warning');
+    }
+
     if (btnSubmit) {
       btnSubmit.disabled = true;
       btnSubmit.textContent = 'Đang đăng nhập...';
@@ -5356,9 +5361,6 @@ function initAuthControls() {
   const btnSubmitLogin = document.getElementById('btn-submit-login');
   if (btnSubmitLogin) {
     btnSubmitLogin.onclick = (e) => {
-      if (formLogin) {
-        if (formLogin.checkValidity && !formLogin.checkValidity()) return;
-      }
       handleLoginSubmit(e);
     };
   }
@@ -5371,11 +5373,24 @@ function initAuthControls() {
     const password = document.getElementById('auth-reg-password')?.value || '';
     const confirm = document.getElementById('auth-reg-confirm')?.value || '';
 
-    if (!email || !password) {
-      return showToast('Vui lòng nhập Email và Mật khẩu', 'warning');
+    if (!email) {
+      return showToast('Vui lòng nhập Email đăng ký', 'warning');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return showToast('Địa chỉ Email không đúng định dạng', 'warning');
+    }
+    if (!password) {
+      return showToast('Vui lòng nhập Mật khẩu', 'warning');
+    }
+    if (password.length < 6) {
+      return showToast('Mật khẩu phải có tối thiểu 6 ký tự', 'warning');
+    }
+    if (!confirm) {
+      return showToast('Vui lòng nhập lại mật khẩu để xác nhận', 'warning');
     }
     if (password !== confirm) {
-      return showToast('Mật khẩu xác nhận không khớp', 'danger');
+      return showToast('Mật khẩu xác nhận không khớp, vui lòng kiểm tra lại', 'danger');
     }
 
     const btnSubmit = document.getElementById('btn-submit-register');
@@ -5416,9 +5431,6 @@ function initAuthControls() {
   const btnSubmitReg = document.getElementById('btn-submit-register');
   if (btnSubmitReg) {
     btnSubmitReg.onclick = (e) => {
-      if (formReg) {
-        if (formReg.checkValidity && !formReg.checkValidity()) return;
-      }
       handleRegisterSubmit(e);
     };
   }
