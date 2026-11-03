@@ -6,6 +6,7 @@ const db = require('./db');
 const launcher = require('./launcher');
 const license = require('./license-manager');
 const licenseAdmin = require('./license-admin');
+const auth = require('./auth');
 const fingerprint = require('./fingerprint');
 const proxy = require('./proxy');
 const synchronizer = require('./synchronizer');
@@ -184,7 +185,8 @@ function createServer() {
       if (method === 'POST' && pathname === '/api/v1/profiles/bulk-create') {
         const body = await parseJsonBody(req);
         const reqCount = Math.max(1, Math.min(Number(body.count) || 5, 200));
-        const quota = license.canCreateProfile(reqCount);
+        const user = await auth.getUserFromRequest(req);
+        const quota = license.canCreateProfile(reqCount, user);
         if (!quota.allowed) {
           return sendJson(res, 403, {
             success: false,
@@ -238,7 +240,8 @@ function createServer() {
 
       if (method === 'POST' && pathname === '/api/v1/profiles') {
         // Kiểm tra hạn mức License
-        const quota = license.canCreateProfile();
+        const user = await auth.getUserFromRequest(req);
+        const quota = license.canCreateProfile(1, user);
         if (!quota.allowed) {
           return sendJson(res, 403, {
             success: false,
@@ -271,9 +274,75 @@ function createServer() {
         return sendJson(res, 200, { success: true, fingerprint: fp });
       }
 
+      
+      // ----------------- AUTH & USER ACCOUNT API ----------------- //
+      if (method === 'POST' && pathname === '/api/v1/auth/register') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = await auth.register(body);
+          return sendJson(res, 201, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/login') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = await auth.login(body);
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/auth/me') {
+        try {
+          const user = await auth.getUserFromRequest(req);
+          return sendJson(res, 200, { success: true, user: user || null });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/logout') {
+        try {
+          const token = req.headers['authorization'] || req.headers['x-auth-token'];
+          await auth.logout(token);
+          return sendJson(res, 200, { success: true, message: 'Đã đăng xuất' });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/change-password') {
+        try {
+          const user = await auth.getUserFromRequest(req);
+          if (!user) return sendJson(res, 401, { success: false, error: 'Chưa đăng nhập' });
+          const body = await parseJsonBody(req);
+          await auth.changePassword(user.id, body.oldPassword, body.newPassword);
+          return sendJson(res, 200, { success: true, message: 'Đổi mật khẩu thành công' });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/activate-key') {
+        try {
+          const user = await auth.getUserFromRequest(req);
+          if (!user) return sendJson(res, 401, { success: false, error: 'Vui lòng đăng nhập để kích hoạt bản quyền cho tài khoản' });
+          const body = await parseJsonBody(req);
+          const updatedUser = await auth.activateKeyForUser(user.id, body.key);
+          return sendJson(res, 200, { success: true, user: updatedUser });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
       // 4. License API (CGT-License Engine)
       if (method === 'GET' && pathname === '/api/v1/license') {
-        return sendJson(res, 200, { success: true, license: license.getLicenseStatus() });
+        const user = await auth.getUserFromRequest(req);
+        return sendJson(res, 200, { success: true, license: license.getLicenseStatus(user) });
       }
 
       if (method === 'POST' && pathname === '/api/v1/license/activate') {

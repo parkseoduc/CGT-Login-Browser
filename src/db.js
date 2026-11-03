@@ -69,6 +69,30 @@ function initSchema() {
       FOREIGN KEY (proxy_id) REFERENCES proxies(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      name TEXT DEFAULT '',
+      role TEXT DEFAULT 'user',
+      plan TEXT DEFAULT 'Free Trial',
+      plan_code TEXT DEFAULT 'FREE_TRIAL',
+      license_key TEXT DEFAULT '',
+      max_profiles INTEGER DEFAULT 50,
+      expires_at TEXT,
+      status TEXT DEFAULT 'ACTIVE',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS sessions (
+      token TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS extensions (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -91,6 +115,112 @@ function initSchema() {
   try { _db.exec("ALTER TABLE proxies ADD COLUMN city TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN isp TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN rotation_api_url TEXT DEFAULT '';"); } catch {}
+
+  seedDefaultUserIfEmpty();
+}
+
+
+function seedDefaultUserIfEmpty() {
+  try {
+    const row = _db.prepare('SELECT count(*) as count FROM users').get();
+    if (row && row.count === 0) {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.scryptSync('TumyAdmin@2026!', salt, 64).toString('hex');
+      const passwordHash = salt + ':' + hash;
+      const now = new Date().toISOString();
+      const insert = _db.prepare(`
+        INSERT INTO users (id, email, password_hash, name, role, plan, plan_code, license_key, max_profiles, expires_at, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+      insert.run(
+        crypto.randomUUID(),
+        'cgt-license@cgtdev.space',
+        passwordHash,
+        'CGT Admin',
+        'admin',
+        'VIP Lifetime',
+        'VIP_LIFETIME',
+        'OMNI-JV6FN-6RFDQ-J00FP-FE7GS',
+        5000,
+        null,
+        'ACTIVE',
+        now,
+        now
+      );
+      console.log('[DB] Khởi tạo tài khoản Quản trị viên mặc định: cgt-license@cgtdev.space');
+    }
+  } catch (err) {
+    console.warn('[DB] seedDefaultUserIfEmpty error:', err.message);
+  }
+}
+
+function createUser(user) {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO users (id, email, password_hash, name, role, plan, plan_code, license_key, max_profiles, expires_at, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(
+    user.id,
+    user.email,
+    user.password_hash,
+    user.name || '',
+    user.role || 'user',
+    user.plan || 'Free Trial',
+    user.plan_code || 'FREE_TRIAL',
+    user.license_key || '',
+    user.max_profiles || 50,
+    user.expires_at || null,
+    user.status || 'ACTIVE',
+    user.created_at,
+    user.updated_at
+  );
+  return user;
+}
+
+function getUserByEmail(email) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email);
+}
+
+function getUserById(id) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+}
+
+function updateUser(id, updates) {
+  const db = getDb();
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return getUserById(id);
+  const setClauses = keys.map(k => `${k} = ?`).join(', ');
+  const values = keys.map(k => updates[k]);
+  values.push(id);
+  db.prepare(`UPDATE users SET ${setClauses} WHERE id = ?`).run(...values);
+  return getUserById(id);
+}
+
+function createSession(token, userId, expiresAt) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO sessions (token, user_id, created_at, expires_at)
+    VALUES (?, ?, ?, ?)
+  `).run(token, userId, now, expiresAt);
+}
+
+function getSession(token) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM sessions WHERE token = ?').get(token);
+}
+
+function deleteSession(token) {
+  const db = getDb();
+  db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+}
+
+function listUsers() {
+  const db = getDb();
+  return db.prepare('SELECT id, email, name, role, plan, plan_code, max_profiles, expires_at, status, created_at FROM users ORDER BY created_at DESC').all();
 }
 
 function autoRepairKernelPaths() {
@@ -668,4 +798,12 @@ module.exports = {
   toggleGlobalExtension,
   deleteExtension,
   getActiveExtensionPathsForProfile,
+  createUser,
+  getUserByEmail,
+  getUserById,
+  updateUser,
+  createSession,
+  getSession,
+  deleteSession,
+  listUsers,
 };

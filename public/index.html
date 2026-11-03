@@ -135,12 +135,6 @@
             <span id="btn-kernel-label" style="font-weight: 600;">Cài Đặt Kernel</span>
           </button>
 
-          <!-- Theme Toggle Button -->
-          <button class="btn btn-secondary btn-sm" id="btn-theme-toggle" title="Chuyển đổi giao diện Sáng / Tối" style="display: inline-flex; align-items: center; gap: 6px;">
-            <svg id="theme-svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-            <span id="theme-icon-text">Tối</span>
-          </button>
-
           <!-- Import Profile ZIP -->
           <button class="btn btn-secondary btn-sm" id="btn-import-profile-zip" title="Khôi phục hồ sơ từ file ZIP đã sao lưu" style="display: inline-flex; align-items: center; gap: 6px;">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -148,10 +142,81 @@
           </button>
           <input type="file" id="input-profile-zip-file" accept=".zip" style="display: none;">
 
-          <button class="btn btn-secondary btn-sm" id="btn-refresh">
+          <button class="btn btn-secondary btn-sm" id="btn-refresh" title="Làm mới danh sách">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
             <span>Làm mới</span>
           </button>
+
+          <!-- Theme Toggle (Moon / Sun) -->
+          <button class="btn btn-icon btn-sm" id="btn-theme-toggle" title="Chuyển đổi giao diện Sáng / Tối" style="padding: 7px 10px; border-radius: 8px;">
+            <svg id="theme-svg-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+
+          <!-- Language Selector (Vietnam Flag) -->
+          <div class="lang-badge" id="btn-lang-selector" title="Ngôn ngữ: Tiếng Việt" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-card); cursor: pointer; font-size: 16px;">
+            🇻🇳
+          </div>
+
+          <!-- User Account Area (PolyLogin style) -->
+          <div class="user-account-wrapper" id="user-account-wrapper" style="position: relative;">
+            <!-- Guest state: Open Login Modal Button -->
+            <button class="btn btn-primary btn-sm" id="btn-header-login" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span>Đăng nhập</span>
+            </button>
+
+            <!-- Logged-in state: PolyLogin Profile Pill -->
+            <div class="poly-user-pill" id="poly-user-pill" style="display: none;" title="Nhấn để mở menu tài khoản">
+              <div class="poly-avatar" id="poly-avatar">P</div>
+              <div class="poly-info">
+                <span class="poly-email" id="poly-email">pdu***@...</span>
+                <span class="poly-plan-days" id="poly-plan-days">VIP</span>
+              </div>
+              <svg class="poly-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+
+            <!-- Dropdown Menu (Exact PolyLogin Reference) -->
+            <div class="poly-dropdown-menu" id="poly-dropdown-menu">
+              <div class="poly-menu-header">
+                <div class="poly-menu-avatar" id="poly-menu-avatar">P</div>
+                <div class="poly-menu-user-details">
+                  <div class="poly-menu-name" id="poly-menu-name">CGT Admin</div>
+                  <div class="poly-menu-email" id="poly-menu-email">cgt-license@cgtdev.space</div>
+                  <div class="poly-menu-plan-tag" id="poly-menu-plan-tag">Gói: VIP Lifetime</div>
+                </div>
+              </div>
+              <div class="poly-menu-divider"></div>
+
+              <div class="poly-menu-item" id="poly-menu-key">
+                <span class="poly-menu-icon">🔑</span>
+                <span class="poly-menu-label">Kích hoạt Bản quyền (Nạp Key)</span>
+              </div>
+              <div class="poly-menu-item" id="poly-menu-change-pass">
+                <span class="poly-menu-icon">🔐</span>
+                <span class="poly-menu-label">Đổi mật khẩu</span>
+              </div>
+              <div class="poly-menu-item" id="poly-menu-settings">
+                <span class="poly-menu-icon">⚙️</span>
+                <span class="poly-menu-label">Cài đặt</span>
+              </div>
+              <div class="poly-menu-item" id="poly-menu-lang">
+                <span class="poly-menu-icon">🌐</span>
+                <span class="poly-menu-label">Ngôn ngữ</span>
+                <span class="poly-menu-sublabel">Tiếng Việt ›</span>
+              </div>
+              <div class="poly-menu-item" id="poly-menu-theme">
+                <span class="poly-menu-icon">🌓</span>
+                <span class="poly-menu-label">Chủ đề</span>
+                <span class="poly-menu-sublabel" id="poly-menu-theme-label">Tối ›</span>
+              </div>
+
+              <div class="poly-menu-divider"></div>
+              <div class="poly-menu-item poly-menu-logout" id="poly-menu-logout">
+                <span class="poly-menu-icon" style="color: #ef4444;">🚪</span>
+                <span class="poly-menu-label" style="color: #ef4444; font-weight: 600;">Đăng xuất</span>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -2243,6 +2308,187 @@ async function automateProfile(profileId) {
         <button class="uiv-cta-emerald" id="bulk-profile-modal-submit">
           Tạo Ngay Hồ Sơ
         </button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ================= AUTH MODAL (LOGIN / REGISTER) ================= -->
+  <div class="modal-overlay modal" id="auth-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="auth-modal-title" style="font-size: 18px; font-weight: 700;">Đăng Nhập Tài Khoản</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+            Đồng bộ License và cấu hình trình duyệt theo tài khoản
+          </p>
+        </div>
+        <button class="btn-close" id="auth-modal-close" title="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div style="display: flex; gap: 8px; border-bottom: 1px solid var(--border); margin: 0 20px 16px 20px;">
+        <button type="button" class="auth-tab-btn active" id="tab-btn-login" style="flex: 1; padding: 10px; font-weight: 700; font-size: 13.5px; background: none; border: none; border-bottom: 2px solid var(--primary); color: var(--primary); cursor: pointer;">
+          Đăng Nhập
+        </button>
+        <button type="button" class="auth-tab-btn" id="tab-btn-register" style="flex: 1; padding: 10px; font-weight: 600; font-size: 13.5px; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); cursor: pointer;">
+          Đăng Ký
+        </button>
+      </div>
+
+      <!-- Form Login -->
+      <form id="form-auth-login" class="modal-body" style="padding-top: 0;">
+        <div class="form-group">
+          <label>Email Đăng Nhập:</label>
+          <input type="email" id="auth-login-email" class="form-control" required placeholder="nhap-email@example.com">
+        </div>
+        <div class="form-group">
+          <label>Mật Khẩu:</label>
+          <div style="position: relative;">
+            <input type="password" id="auth-login-password" class="form-control" required placeholder="••••••••" style="padding-right: 36px;">
+            <button type="button" class="btn-toggle-pass" id="btn-toggle-login-pass" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px;">
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-size: 12.5px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+            <input type="checkbox" id="auth-remember-me" checked style="accent-color: var(--primary);"> Ghi nhớ đăng nhập
+          </label>
+        </div>
+
+        <button type="submit" class="uiv-cta-emerald" style="width: 100%; justify-content: center;" id="btn-submit-login">
+          Đăng Nhập Ngay
+        </button>
+
+        <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); text-align: center;">
+          <button type="button" id="btn-quick-admin-login" style="background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 6px 12px; font-size: 12px; color: var(--primary); cursor: pointer; width: 100%;">
+            ⚡ Điền nhanh tài khoản Quản trị viên CGT (VIP Lifetime)
+          </button>
+        </div>
+      </form>
+
+      <!-- Form Register -->
+      <form id="form-auth-register" class="modal-body" style="padding-top: 0; display: none;">
+        <div class="form-group">
+          <label>Họ và Tên:</label>
+          <input type="text" id="auth-reg-name" class="form-control" placeholder="Nguyễn Văn A">
+        </div>
+        <div class="form-group">
+          <label>Email Đăng Ký:</label>
+          <input type="email" id="auth-reg-email" class="form-control" required placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label>Mật Khẩu (Ít nhất 6 ký tự):</label>
+          <input type="password" id="auth-reg-password" class="form-control" required minlength="6" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Xác Nhận Mật Khẩu:</label>
+          <input type="password" id="auth-reg-confirm" class="form-control" required minlength="6" placeholder="••••••••">
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 10px; border-radius: 8px; margin-bottom: 16px; font-size: 12px; color: #10b981;">
+          🎁 Đăng ký tài khoản nhận ngay <strong>Gói Dùng thử 50 Profiles</strong> miễn phí.
+        </div>
+
+        <button type="submit" class="uiv-cta-emerald" style="width: 100%; justify-content: center;" id="btn-submit-register">
+          Tạo Tài Khoản Mới
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= CHANGE PASSWORD MODAL ================= -->
+  <div class="modal-overlay modal" id="change-password-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" style="font-size: 18px; font-weight: 700;">Đổi Mật Khẩu</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">Cập nhật mật khẩu bảo vệ tài khoản của bạn</p>
+        </div>
+        <button class="btn-close" id="change-password-modal-close" title="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="form-change-password" class="modal-body">
+        <div class="form-group">
+          <label>Mật Khẩu Hiện Tại:</label>
+          <input type="password" id="chg-old-password" class="form-control" required placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Mật Khẩu Mới (Ít nhất 6 ký tự):</label>
+          <input type="password" id="chg-new-password" class="form-control" required minlength="6" placeholder="••••••••">
+        </div>
+        <div class="form-group">
+          <label>Xác Nhận Mật Khẩu Mới:</label>
+          <input type="password" id="chg-confirm-password" class="form-control" required minlength="6" placeholder="••••••••">
+        </div>
+        <div class="modal-footer" style="padding: 12px 0 0 0;">
+          <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-cancel-change-password">Hủy</button>
+          <button type="submit" class="uiv-cta-emerald" id="btn-submit-change-password">Cập Nhật Mật Khẩu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ACCOUNT LICENSE KEY MODAL ================= -->
+  <div class="modal-overlay modal" id="account-key-modal" style="display: none;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" style="font-size: 18px; font-weight: 700;">Kích Hoạt Key Vào Tài Khoản</h2>
+          <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 2px;">
+            Bản quyền được gán trực tiếp theo tài khoản, đăng nhập ở máy nào cũng sử dụng được
+          </p>
+        </div>
+        <button class="btn-close" id="account-key-modal-close" title="Đóng">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Account info summary -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12.5px; color: var(--text-muted);">Tài khoản:</span>
+            <strong id="key-modal-account-email" style="font-size: 13px; color: var(--text-main);">cgt-license@cgtdev.space</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12.5px; color: var(--text-muted);">Gói hiện tại:</span>
+            <span class="badge" id="key-modal-plan-badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 700;">VIP Lifetime</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-size: 12.5px; color: var(--text-muted);">Hạn mức Profile:</span>
+            <strong id="key-modal-quota" style="font-size: 13px; color: var(--primary);">0 / 5000</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 12.5px; color: var(--text-muted);">Thời hạn bản quyền:</span>
+            <strong id="key-modal-expiry" style="font-size: 13px; color: var(--text-main);">Vĩnh viễn</strong>
+          </div>
+        </div>
+
+        <!-- Input Key -->
+        <div class="form-group">
+          <label>Nhập License Key của bạn:</label>
+          <input type="text" id="input-account-license-key" class="form-control" style="font-family: monospace; text-transform: uppercase; letter-spacing: 1px;" placeholder="OMNI-XXXXX-XXXXX-XXXXX-XXXXX">
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+            Key sẽ được xác thực và gán cố định vào tài khoản của bạn.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 14px;">
+          <button type="button" class="uiv-cta-emerald" id="btn-submit-activate-key" style="flex: 1; justify-content: center;">
+            Kích Hoạt Vào Tài Khoản
+          </button>
+        </div>
+
+        <div style="margin-top: 12px; text-align: center;">
+          <button type="button" id="btn-modal-auto-vip" style="background: none; border: 1px dashed var(--border); border-radius: 6px; padding: 6px 12px; font-size: 12px; color: var(--primary); cursor: pointer; width: 100%;">
+            ⚡ Tự động kích hoạt VIP trọn đời qua CGT Admin
+          </button>
+        </div>
       </div>
     </div>
   </div>

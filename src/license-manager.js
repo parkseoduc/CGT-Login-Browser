@@ -100,9 +100,30 @@ function getFallbackStatus() {
   };
 }
 
-function getLicenseStatus() {
+function getLicenseStatus(user = null) {
   const profileCount = db.listProfiles().length;
-  
+  if (user) {
+    const isAllowed = user.plan_code !== 'FREE_TRIAL';
+    return {
+      allowed: isAllowed,
+      mode: isAllowed ? 'pro' : 'free',
+      plan: user.plan || 'Free Trial',
+      plan_code: user.plan_code || 'FREE_TRIAL',
+      status: user.status || 'ACTIVE',
+      message: isAllowed ? `Bản quyền ${user.plan} của tài khoản ${user.maskedEmail || user.email}` : 'Tài khoản đang dùng gói Miễn phí (Tối đa 50 hồ sơ)',
+      device_id: user.email,
+      account_email: user.email,
+      masked_email: user.maskedEmail,
+      max_profiles: user.max_profiles || 50,
+      current_profiles: profileCount,
+      expires_at: user.expires_at || null,
+      days_remaining: user.days_remaining,
+      is_lifetime: user.is_lifetime,
+      license_key: user.license_key || '',
+      server_url: SERVER_URL,
+      features: {},
+    };
+  }
   if (!_licenseInstance || !_cachedStatus) {
     return {
       ...getFallbackStatus(),
@@ -168,8 +189,8 @@ async function deactivateLicense() {
   return getLicenseStatus();
 }
 
-function canCreateProfile(requestedCount = 1) {
-  const status = getLicenseStatus();
+function canCreateProfile(requestedCount = 1, user = null) {
+  const status = getLicenseStatus(user);
   const currentCount = status.current_profiles;
   if (currentCount + requestedCount > status.max_profiles) {
     const available = Math.max(0, status.max_profiles - currentCount);

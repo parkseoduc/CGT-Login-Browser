@@ -2,6 +2,47 @@ const API_BASE = (typeof window !== 'undefined' && window.location && window.loc
   ? `${window.location.origin}/api/v1`
   : 'http://127.0.0.1:51888/api/v1';
 
+
+// ==================== AUTH & TOKEN INTERCEPTOR ==================== //
+const AUTH_TOKEN_KEY = 'cgt_auth_token';
+let currentUser = null;
+
+function getAuthToken() {
+  return localStorage.getItem(AUTH_TOKEN_KEY) || '';
+}
+
+function setAuthToken(token) {
+  if (token) localStorage.setItem(AUTH_TOKEN_KEY, token);
+  else localStorage.removeItem(AUTH_TOKEN_KEY);
+}
+
+function clearAuthToken() {
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  currentUser = null;
+}
+
+// Intercept window.fetch to automatically append Authorization header
+const originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+  const token = getAuthToken();
+  if (token && typeof url === 'string' && (url.includes('/api/v1') || url.startsWith('/api/'))) {
+    options = options || {};
+    options.headers = options.headers || {};
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) {
+        options.headers.set('Authorization', 'Bearer ' + token);
+      }
+    } else if (Array.isArray(options.headers)) {
+      options.headers.push(['Authorization', 'Bearer ' + token]);
+    } else {
+      if (!options.headers['Authorization'] && !options.headers['authorization']) {
+        options.headers['Authorization'] = 'Bearer ' + token;
+      }
+    }
+  }
+  return originalFetch.apply(this, [url, options]);
+};
+
 let allProfiles = [];
 let allGroups = [];
 let allProxies = [];
@@ -4385,6 +4426,8 @@ document.querySelectorAll('.duration-btn').forEach(btn => {
     btn.classList.add('active');
     currentDiscount = parseInt(btn.dataset.discount, 10) || 0;
     calculatePrice();
+initAuthControls();
+checkAuthState();
   });
 });
 
@@ -5034,3 +5077,468 @@ fetchExtensions();
 if (typeof fetchSyncStatus === 'function') fetchSyncStatus();
 calculatePrice();
 
+
+
+// ==================== POLYSYNC AUTH & USER CONTROLS ==================== //
+
+async function checkAuthState() {
+  let token = getAuthToken();
+  const guestBtn = document.getElementById('btn-header-login');
+  const userPill = document.getElementById('poly-user-pill');
+  const dropdown = document.getElementById('poly-dropdown-menu');
+
+  // If no token on first launch, auto-login to default admin account
+  if (!token && !localStorage.getItem('cgt_manual_logout')) {
+    try {
+      const autoRes = await originalFetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'cgt-license@cgtdev.space', password: 'TumyAdmin@2026!' })
+      });
+      if (autoRes.ok) {
+        const autoData = await autoRes.json();
+        if (autoData.success && autoData.token) {
+          setAuthToken(autoData.token);
+          token = autoData.token;
+        }
+      }
+    } catch {}
+  }
+
+  if (!token) {
+    currentUser = null;
+    if (guestBtn) guestBtn.style.display = 'inline-flex';
+    if (userPill) userPill.style.display = 'none';
+    if (dropdown) dropdown.classList.remove('show');
+    return null;
+  }
+
+  try {
+    const res = await originalFetch(`${API_BASE}/auth/me`, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.success && data.user) {
+        currentUser = data.user;
+        renderPolyUserProfile(currentUser);
+        return currentUser;
+      }
+    }
+    // Token invalid
+    clearAuthToken();
+    if (guestBtn) guestBtn.style.display = 'inline-flex';
+    if (userPill) userPill.style.display = 'none';
+    if (dropdown) dropdown.classList.remove('show');
+    return null;
+  } catch (err) {
+    console.warn('[Auth] Check auth state error:', err.message);
+    return null;
+  }
+}
+
+function renderPolyUserProfile(user) {
+  const guestBtn = document.getElementById('btn-header-login');
+  const userPill = document.getElementById('poly-user-pill');
+  if (guestBtn) guestBtn.style.display = 'none';
+  if (!userPill) return;
+  userPill.style.display = 'inline-flex';
+
+  const initial = (user.name || user.email || 'P').trim()[0].toUpperCase();
+  const avatarEl = document.getElementById('poly-avatar');
+  const menuAvatarEl = document.getElementById('poly-menu-avatar');
+  if (avatarEl) avatarEl.textContent = initial;
+  if (menuAvatarEl) menuAvatarEl.textContent = initial;
+
+  const emailEl = document.getElementById('poly-email');
+  if (emailEl) emailEl.textContent = user.maskedEmail || user.email;
+
+  const daysEl = document.getElementById('poly-plan-days');
+  if (daysEl) {
+    if (user.is_lifetime) {
+      daysEl.textContent = 'VIP';
+      daysEl.style.color = '#10b981';
+      daysEl.style.background = 'rgba(16, 185, 129, 0.12)';
+    } else if (user.days_remaining !== null) {
+      daysEl.textContent = `${user.days_remaining}d`;
+      daysEl.style.color = user.days_remaining <= 3 ? '#ef4444' : '#10b981';
+      daysEl.style.background = user.days_remaining <= 3 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+    } else {
+      daysEl.textContent = 'Free';
+      daysEl.style.color = 'var(--text-muted)';
+      daysEl.style.background = 'rgba(255, 255, 255, 0.08)';
+    }
+  }
+
+  const menuNameEl = document.getElementById('poly-menu-name');
+  if (menuNameEl) menuNameEl.textContent = user.name || 'Người dùng CGT';
+
+  const menuEmailEl = document.getElementById('poly-menu-email');
+  if (menuEmailEl) menuEmailEl.textContent = user.email;
+
+  const menuPlanTag = document.getElementById('poly-menu-plan-tag');
+  if (menuPlanTag) {
+    menuPlanTag.textContent = `Gói: ${user.plan || 'Free Trial'}${user.is_lifetime ? ' (Vĩnh viễn)' : ''}`;
+  }
+
+  const themeLabel = document.getElementById('poly-menu-theme-label');
+  if (themeLabel) {
+    const isDark = document.body.classList.contains('dark-theme') || !document.body.classList.contains('light-theme');
+    themeLabel.textContent = (isDark ? 'Tối' : 'Sáng') + ' ›';
+  }
+
+  if (brandLicenseBadge) {
+    brandLicenseBadge.textContent = user.plan || 'Free';
+    brandLicenseBadge.className = 'license-badge ' + (user.plan_code !== 'FREE_TRIAL' ? 'pro' : 'free');
+  }
+}
+
+function initAuthControls() {
+  const userPill = document.getElementById('poly-user-pill');
+  const dropdown = document.getElementById('poly-dropdown-menu');
+  const btnHeaderLogin = document.getElementById('btn-header-login');
+  const authModal = document.getElementById('auth-modal');
+  const authModalClose = document.getElementById('auth-modal-close');
+
+  // Toggle user dropdown
+  if (userPill && dropdown) {
+    userPill.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.classList.toggle('show');
+      userPill.classList.toggle('active');
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdown.contains(e.target) && !userPill.contains(e.target)) {
+        dropdown.classList.remove('show');
+        userPill.classList.remove('active');
+      }
+    });
+  }
+
+  // Open Auth Modal
+  if (btnHeaderLogin && authModal) {
+    btnHeaderLogin.addEventListener('click', () => {
+      authModal.style.display = 'flex';
+      switchAuthTab('login');
+    });
+  }
+
+  if (authModalClose && authModal) {
+    authModalClose.addEventListener('click', () => {
+      authModal.style.display = 'none';
+    });
+  }
+
+  // Switch tabs in Auth Modal
+  const tabLogin = document.getElementById('tab-btn-login');
+  const tabReg = document.getElementById('tab-btn-register');
+  const formLogin = document.getElementById('form-auth-login');
+  const formReg = document.getElementById('form-auth-register');
+  const authTitle = document.getElementById('auth-modal-title');
+
+  function switchAuthTab(tab) {
+    if (tab === 'login') {
+      if (tabLogin) tabLogin.classList.add('active');
+      if (tabReg) tabReg.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'block';
+      if (formReg) formReg.style.display = 'none';
+      if (authTitle) authTitle.textContent = 'Đăng Nhập Tài Khoản';
+    } else {
+      if (tabReg) tabReg.classList.add('active');
+      if (tabLogin) tabLogin.classList.remove('active');
+      if (formLogin) formLogin.style.display = 'none';
+      if (formReg) formReg.style.display = 'block';
+      if (authTitle) authTitle.textContent = 'Đăng Ký Tài Khoản Mới';
+    }
+  }
+
+  if (tabLogin) tabLogin.addEventListener('click', () => switchAuthTab('login'));
+  if (tabReg) tabReg.addEventListener('click', () => switchAuthTab('register'));
+
+  // Quick Admin credentials fill
+  const btnQuickAdmin = document.getElementById('btn-quick-admin-login');
+  if (btnQuickAdmin) {
+    btnQuickAdmin.addEventListener('click', () => {
+      document.getElementById('auth-login-email').value = 'cgt-license@cgtdev.space';
+      document.getElementById('auth-login-password').value = 'TumyAdmin@2026!';
+      document.getElementById('btn-submit-login').click();
+    });
+  }
+
+  // Toggle show/hide password
+  const btnTogglePass = document.getElementById('btn-toggle-login-pass');
+  const passInput = document.getElementById('auth-login-password');
+  if (btnTogglePass && passInput) {
+    btnTogglePass.addEventListener('click', () => {
+      const isPass = passInput.type === 'password';
+      passInput.type = isPass ? 'text' : 'password';
+      btnTogglePass.textContent = isPass ? '🙈' : '👁️';
+    });
+  }
+
+  // Submit Login
+  if (formLogin) {
+    formLogin.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('auth-login-email').value.trim();
+      const password = document.getElementById('auth-login-password').value;
+      const btnSubmit = document.getElementById('btn-submit-login');
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Đang đăng nhập...';
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.removeItem('cgt_manual_logout');
+          setAuthToken(data.token);
+          authModal.style.display = 'none';
+          showToast(`🎉 Xin chào ${data.user.name || data.user.email}! Đăng nhập thành công.`, 'success');
+          await checkAuthState();
+          await fetchLicense();
+          await fetchProfiles();
+        } else {
+          showToast(data.error || 'Đăng nhập thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Đăng Nhập Ngay';
+      }
+    });
+  }
+
+  // Submit Register
+  if (formReg) {
+    formReg.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('auth-reg-name').value.trim();
+      const email = document.getElementById('auth-reg-email').value.trim();
+      const password = document.getElementById('auth-reg-password').value;
+      const confirm = document.getElementById('auth-reg-confirm').value;
+
+      if (password !== confirm) {
+        return showToast('Mật khẩu xác nhận không khớp', 'danger');
+      }
+
+      const btnSubmit = document.getElementById('btn-submit-register');
+      btnSubmit.disabled = true;
+      btnSubmit.textContent = 'Đang tạo tài khoản...';
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.removeItem('cgt_manual_logout');
+          setAuthToken(data.token);
+          authModal.style.display = 'none';
+          showToast(`🎉 Đăng ký thành công! Chào mừng ${data.user.email} (Gói Free 50 hồ sơ).`, 'success');
+          await checkAuthState();
+          await fetchLicense();
+          await fetchProfiles();
+        } else {
+          showToast(data.error || 'Đăng ký thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.textContent = 'Tạo Tài Khoản Mới';
+      }
+    });
+  }
+
+  // Logout
+  const menuLogout = document.getElementById('poly-menu-logout');
+  if (menuLogout) {
+    menuLogout.addEventListener('click', async () => {
+      const token = getAuthToken();
+      if (token) {
+        try {
+          await originalFetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        } catch {}
+      }
+      localStorage.setItem('cgt_manual_logout', '1');
+      clearAuthToken();
+      if (dropdown) dropdown.classList.remove('show');
+      if (userPill) userPill.classList.remove('active');
+      showToast('Đã đăng xuất khỏi tài khoản', 'info');
+      await checkAuthState();
+      await fetchLicense();
+      await fetchProfiles();
+    });
+  }
+
+  // Change Password Modal
+  const menuChangePass = document.getElementById('poly-menu-change-pass');
+  const chgModal = document.getElementById('change-password-modal');
+  const chgClose = document.getElementById('change-password-modal-close');
+  const chgCancel = document.getElementById('btn-cancel-change-password');
+  const chgForm = document.getElementById('form-change-password');
+
+  if (menuChangePass && chgModal) {
+    menuChangePass.addEventListener('click', () => {
+      if (dropdown) dropdown.classList.remove('show');
+      chgModal.style.display = 'flex';
+    });
+  }
+  if (chgClose && chgModal) chgClose.addEventListener('click', () => chgModal.style.display = 'none');
+  if (chgCancel && chgModal) chgCancel.addEventListener('click', () => chgModal.style.display = 'none');
+
+  if (chgForm) {
+    chgForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const oldPassword = document.getElementById('chg-old-password').value;
+      const newPassword = document.getElementById('chg-new-password').value;
+      const confirm = document.getElementById('chg-confirm-password').value;
+
+      if (newPassword !== confirm) return showToast('Mật khẩu mới xác nhận không khớp', 'danger');
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/change-password`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAuthToken() },
+          body: JSON.stringify({ oldPassword, newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('✅ Đổi mật khẩu thành công!', 'success');
+          chgModal.style.display = 'none';
+          chgForm.reset();
+        } else {
+          showToast(data.error || 'Đổi mật khẩu thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi: ' + err.message, 'danger');
+      }
+    });
+  }
+
+  // Account License Key Modal
+  const menuKey = document.getElementById('poly-menu-key');
+  const keyModal = document.getElementById('account-key-modal');
+  const keyClose = document.getElementById('account-key-modal-close');
+  const btnSubmitKey = document.getElementById('btn-submit-activate-key');
+  const btnAutoVip = document.getElementById('btn-modal-auto-vip');
+
+  if (menuKey && keyModal) {
+    menuKey.addEventListener('click', () => {
+      if (dropdown) dropdown.classList.remove('show');
+      if (!currentUser) {
+        showToast('Vui lòng đăng nhập trước khi kích hoạt Key', 'warning');
+        authModal.style.display = 'flex';
+        return;
+      }
+      document.getElementById('key-modal-account-email').textContent = currentUser.email;
+      document.getElementById('key-modal-plan-badge').textContent = currentUser.plan;
+      document.getElementById('key-modal-quota').textContent = `${allProfiles.length} / ${currentUser.max_profiles}`;
+      document.getElementById('key-modal-expiry').textContent = currentUser.is_lifetime ? 'Vĩnh viễn (Trọn đời)' : (currentUser.days_remaining !== null ? `${currentUser.days_remaining} ngày` : 'Chưa kích hoạt');
+      keyModal.style.display = 'flex';
+    });
+  }
+  if (keyClose && keyModal) keyClose.addEventListener('click', () => keyModal.style.display = 'none');
+
+  if (btnSubmitKey) {
+    btnSubmitKey.addEventListener('click', async () => {
+      const key = document.getElementById('input-account-license-key').value.trim();
+      if (!key) return showToast('Vui lòng nhập License Key', 'warning');
+
+      btnSubmitKey.disabled = true;
+      btnSubmitKey.textContent = 'Đang kích hoạt...';
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/activate-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAuthToken() },
+          body: JSON.stringify({ key })
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          showToast(`🎉 Kích hoạt thành công gói ${data.user.plan} vào tài khoản!`, 'success');
+          keyModal.style.display = 'none';
+          await checkAuthState();
+          await fetchLicense();
+        } else {
+          showToast(data.error || 'Kích hoạt thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi kích hoạt: ' + err.message, 'danger');
+      } finally {
+        btnSubmitKey.disabled = false;
+        btnSubmitKey.textContent = 'Kích Hoạt Vào Tài Khoản';
+      }
+    });
+  }
+
+  if (btnAutoVip) {
+    btnAutoVip.addEventListener('click', async () => {
+      btnAutoVip.disabled = true;
+      btnAutoVip.textContent = 'Đang kích hoạt VIP...';
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/activate-key`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getAuthToken() },
+          body: JSON.stringify({ key: 'OMNI-JV6FN-6RFDQ-J00FP-FE7GS' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🎉 Đã tự động kích hoạt VIP Lifetime vào tài khoản!', 'success');
+          keyModal.style.display = 'none';
+          await checkAuthState();
+          await fetchLicense();
+        } else {
+          showToast(data.error || 'Kích hoạt thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi: ' + err.message, 'danger');
+      } finally {
+        btnAutoVip.disabled = false;
+        btnAutoVip.textContent = '⚡ Tự động kích hoạt VIP trọn đời qua CGT Admin';
+      }
+    });
+  }
+
+  // Menu Settings Action
+  const menuSettings = document.getElementById('poly-menu-settings');
+  if (menuSettings) {
+    menuSettings.addEventListener('click', () => {
+      if (dropdown) dropdown.classList.remove('show');
+      const kernelBtn = document.getElementById('btn-kernel-center');
+      if (kernelBtn) kernelBtn.click();
+    });
+  }
+
+  // Menu Language & Theme Actions
+  const menuLang = document.getElementById('poly-menu-lang');
+  const btnLangSelector = document.getElementById('btn-lang-selector');
+  function notifyLang() {
+    showToast('🌐 Ngôn ngữ ứng dụng: Tiếng Việt (VN)', 'info');
+  }
+  if (menuLang) menuLang.addEventListener('click', notifyLang);
+  if (btnLangSelector) btnLangSelector.addEventListener('click', notifyLang);
+
+  const menuTheme = document.getElementById('poly-menu-theme');
+  if (menuTheme) {
+    menuTheme.addEventListener('click', () => {
+      const themeBtn = document.getElementById('btn-theme-toggle');
+      if (themeBtn) themeBtn.click();
+      const isDark = document.body.classList.contains('dark-theme') || !document.body.classList.contains('light-theme');
+      const themeLabel = document.getElementById('poly-menu-theme-label');
+      if (themeLabel) themeLabel.textContent = (isDark ? 'Tối' : 'Sáng') + ' ›';
+    });
+  }
+}
