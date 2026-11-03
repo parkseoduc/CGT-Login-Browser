@@ -5999,17 +5999,23 @@ select:focus {
   gap: 8px !important;
   border-radius: 10px !important;
   cursor: pointer !important;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3) !important;
+  border: 0 !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0.625em 1.2em 0 rgba(16, 185, 129, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .auth-submit-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.42) !important;
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%) !important;
+  box-shadow: 0 0.85em 1.45em 0 rgba(16, 185, 129, 0.48), 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-2px) !important;
+  color: #ffffff !important;
 }
 
 .auth-submit-btn:active {
-  transform: translateY(1px);
+  transform: translateY(1px) !important;
+  box-shadow: 0 0.35em 0.7em 0 rgba(16, 185, 129, 0.3) !important;
 }
 
 /* Quick Fill Admin Button */
@@ -6024,22 +6030,25 @@ select:focus {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(56, 103, 244, 0.06);
-  border: 1px dashed rgba(56, 103, 244, 0.35);
-  border-radius: 8px;
-  padding: 8px 14px;
+  background-color: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 16px;
   font-family: var(--font-family);
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--text-main);
+  box-shadow: 0 0.5em 1em 0 rgba(0, 0, 0, 0.15);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .auth-quick-fill-btn:hover {
-  background: rgba(56, 103, 244, 0.12);
-  border-color: var(--primary);
-  transform: translateY(-1px);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: rgba(56, 103, 244, 0.4);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 0.75em 1.25em 0 rgba(0, 0, 0, 0.25);
 }
 
 /* Ensure all modal form-controls have 100% width and box-sizing */
@@ -6051,3 +6060,105 @@ select:focus {
   box-sizing: border-box !important;
 }
 
+
+
+/* =============================================================
+   UIVERSE SWEET-RABBIT-5 BUTTON COMPONENT (BY ELIJAHGUMMER)
+   https://uiverse.io/elijahgummer/sweet-rabbit-5
+   ============================================================= */
+
+.btn-sweet-rabbit {
+  font: inherit;
+  font-family: var(--font-family) !important;
+  font-weight: 600;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13.5px;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  text-decoration: none;
+}
+
+/* Light / Secondary 3D sweet-rabbit style */
+.btn-sweet-rabbit-soft {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  box-shadow: 0 0.625em 1em 0 rgba(0, 0, 0, 0.18);
+}
+
+[data-theme="light"] .btn-sweet-rabbit-soft {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 0.625em 1em 0 rgba(0, 0, 0, 0.06);
+}
+
+.btn-sweet-rabbit-soft:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+  box-shadow: 0 0.8em 1.25em 0 rgba(0, 0, 0, 0.25);
+  transform: translateY(-2px);
+  color: var(--primary);
+  border-color: rgba(56, 103, 244, 0.4);
+}
+
+[data-theme="light"] .btn-sweet-rabbit-soft:hover {
+  background-color: #ffffff;
+  box-shadow: 0 0.8em 1.25em 0 rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.btn-sweet-rabbit-soft:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.3em 0.6em 0 rgba(0, 0, 0, 0.12);
+}
+
+/* Emerald 3D sweet-rabbit button (Primary CTA) */
+.btn-sweet-rabbit-emerald {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border: 0;
+  box-shadow: 0 0.625em 1.2em 0 rgba(16, 185, 129, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sweet-rabbit-emerald:hover {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  box-shadow: 0 0.85em 1.45em 0 rgba(16, 185, 129, 0.48), 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+.btn-sweet-rabbit-emerald:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.35em 0.7em 0 rgba(16, 185, 129, 0.3);
+}
+
+/* Primary Blue 3D sweet-rabbit button */
+.btn-sweet-rabbit-primary {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  font-weight: 700;
+  border: 0;
+  box-shadow: 0 0.625em 1.2em 0 rgba(37, 99, 235, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-sweet-rabbit-primary:hover {
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  box-shadow: 0 0.85em 1.45em 0 rgba(37, 99, 235, 0.48), 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  color: #ffffff;
+}
+
+.btn-sweet-rabbit-primary:active {
+  transform: translateY(1px);
+  box-shadow: 0 0.35em 0.7em 0 rgba(37, 99, 235, 0.3);
+}
