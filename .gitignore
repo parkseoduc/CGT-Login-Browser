@@ -39,3 +39,4 @@ data/license/
 releases/
 *.exe
 !bin/chromium/.gitkeep
+installer/*.db
