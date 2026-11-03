@@ -718,8 +718,79 @@ const stoppingProfileIds = new Set();
 const failedProfileIds = new Map();
 
 function updateBatchToolbar() {
+  const count = selectedProfileIds.size;
   const countEl = document.getElementById('batch-selected-count');
-  if (countEl) countEl.innerText = selectedProfileIds.size;
+  if (countEl) countEl.innerText = count;
+
+  // Cập nhật số lượng hồ sơ đã chọn trực tiếp lên chữ Đóng
+  const batchStopBtn = document.getElementById('batch-btn-stop');
+  if (batchStopBtn) {
+    const span = batchStopBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Đóng (${count})` : 'Đóng';
+    }
+    batchStopBtn.title = count > 0 ? `Đóng ${count} hồ sơ đã chọn` : 'Đóng các hồ sơ đã chọn';
+  }
+
+  // Cập nhật số lượng lên các nút thao tác hàng loạt khác
+  const batchStartBtn = document.getElementById('batch-btn-start');
+  if (batchStartBtn) {
+    const span = batchStartBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Mở (${count})` : 'Mở';
+    }
+    batchStartBtn.title = count > 0 ? `Khởi chạy ${count} hồ sơ đã chọn` : 'Khởi chạy các hồ sơ đã chọn';
+  }
+
+  const batchAutoBtn = document.getElementById('batch-btn-auto');
+  if (batchAutoBtn) {
+    const span = batchAutoBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Tự động hóa (${count})` : 'Tự động hóa';
+    }
+  }
+
+  const batchSyncBtn = document.getElementById('batch-btn-sync');
+  if (batchSyncBtn) {
+    const span = batchSyncBtn.querySelector('span');
+    if (span) {
+      span.innerText = count >= 2 ? `Bắt đầu đồng bộ hóa (${count})` : 'Bắt đầu đồng bộ hóa';
+    }
+  }
+
+  const batchProxyBtn = document.getElementById('batch-btn-proxy');
+  if (batchProxyBtn) {
+    const span = batchProxyBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Cập nhật proxy (${count})` : 'Cập nhật proxy';
+    }
+  }
+
+  const batchRandomizeBtn = document.getElementById('batch-btn-randomize');
+  if (batchRandomizeBtn) {
+    const span = batchRandomizeBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Đổi vân tay mới (${count})` : 'Đổi vân tay mới';
+    }
+  }
+
+  const batchDeleteBtn = document.getElementById('batch-btn-delete');
+  if (batchDeleteBtn) {
+    const span = batchDeleteBtn.querySelector('span');
+    if (span) {
+      span.innerText = count > 0 ? `Xóa (${count})` : 'Xóa';
+    }
+  }
+
+  // Cập nhật số lượng hồ sơ đang mở lên nút "Đóng tất cả" trên thanh header
+  const btnCloseAll = document.getElementById('btn-batch-close-all');
+  if (btnCloseAll && typeof allProfiles !== 'undefined' && Array.isArray(allProfiles)) {
+    const runningCount = allProfiles.filter(p => p.isRunning).length;
+    const span = btnCloseAll.querySelector('span');
+    if (span) {
+      span.innerText = runningCount > 0 ? `Đóng tất cả (${runningCount})` : 'Đóng tất cả';
+    }
+  }
 
   const thSelectAll = document.getElementById('th-select-all');
   if (thSelectAll) {
@@ -2733,10 +2804,12 @@ if (batchBtnStop) {
       showToast('Vui lòng tích chọn ít nhất 1 hồ sơ để đóng', 'warning');
       return;
     }
-    showToast(`Đang đóng ${selectedProfileIds.size} hồ sơ...`, 'info');
-    for (const id of selectedProfileIds) {
-      await stopProfile(id);
-    }
+    const count = selectedProfileIds.size;
+    showToast(`Đang đóng ${count} hồ sơ đã chọn...`, 'info');
+    const ids = Array.from(selectedProfileIds);
+    await Promise.allSettled(ids.map(id => stopProfile(id)));
+    await fetchProfiles();
+    showToast(`Đã đóng xong ${count} hồ sơ`, 'success');
   });
 }
 
