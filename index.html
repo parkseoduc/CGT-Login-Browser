@@ -299,92 +299,52 @@
             <div class="plan-tab active" data-subtab="packages">Gói Dịch Vụ</div>
             <div class="plan-tab" data-subtab="activate">Kích Hoạt License Key</div>
             <div class="plan-tab" data-subtab="device">Quản Lý Thiết Bị (HWID)</div>
+            <div class="plan-tab" data-subtab="admin">Quản Trị CGT-License</div>
           </div>
 
           <div id="subtab-packages-content">
             <!-- Package Selection Cards -->
             <div class="plan-grid">
-              <div class="plan-card active" data-plan="Solo Plus">
-                <span style="font-size: 12.5px; font-weight: 700; color: #F59E0B; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px;">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  <span>Phổ Biến</span>
-                </span>
-                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Solo Plus</div>
-                <p style="font-size: 12px; color: var(--text-muted);">Phù hợp cá nhân chạy MMO, Affiliate, Nuôi tài khoản</p>
+              <div class="plan-card" data-plan="Free Trial">
+                <span style="font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Dùng Thử</span>
+                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Gói Free Thử Nghiệm</div>
+                <p style="font-size: 12px; color: var(--text-muted);">Tối đa 50 hồ sơ, đầy đủ vân tay & Chromium 153 Core</p>
+                <div style="font-size: 18px; font-weight: 800; color: var(--text-main); margin-top: 8px;">0đ / vĩnh viễn</div>
               </div>
-              <div class="plan-card" data-plan="Team Plus">
+              <div class="plan-card" data-plan="OmniBrowser Pro">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 12.5px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Nhóm Làm Việc</span>
-                  <span class="badge-coming-soon" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 103, 244, 0.15); color: #60a5fa; border: 1px solid rgba(56, 103, 244, 0.3); font-weight: 600;">Coming soon</span>
+                  <span style="font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase;">Phổ Biến</span>
+                  <span class="badge" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(56, 103, 244, 0.15); color: #60a5fa; font-weight: 600;">500 Hồ Sơ</span>
                 </div>
-                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Team Plus</div>
-                <p style="font-size: 12px; color: var(--text-muted);">Hỗ trợ chia sẻ profile, phân quyền thành viên (Sắp ra mắt)</p>
+                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">OmniBrowser Pro</div>
+                <p style="font-size: 12px; color: var(--text-muted);">20 luồng đồng thời, đồng bộ thao tác, đổi IP xoay 4G</p>
+                <div style="font-size: 18px; font-weight: 800; color: var(--primary); margin-top: 8px;">199.000đ / tháng</div>
               </div>
-              <div class="plan-card" data-plan="Company Plus">
+              <div class="plan-card active" data-plan="OmniBrowser VIP Vĩnh Viễn" style="border-color: #10B981; background: rgba(16, 185, 129, 0.06);">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 12.5px; font-weight: 700; color: var(--accent); text-transform: uppercase;">Doanh Nghiệp</span>
-                  <span class="badge-coming-soon" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600;">Coming soon</span>
+                  <span style="font-size: 12px; font-weight: 700; color: #10B981; text-transform: uppercase; display: inline-flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span>VIP Trọn Đời</span>
+                  </span>
+                  <span class="badge" style="font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: rgba(16, 185, 129, 0.2); color: #10B981; font-weight: 700;">ĐANG SỬ DỤNG</span>
                 </div>
-                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">Company Plus</div>
-                <p style="font-size: 12px; color: var(--text-muted);">Không giới hạn profile, API automation tốc độ cao (Sắp ra mắt)</p>
-              </div>
-            </div>
-
-            <!-- Profile Slider -->
-            <div class="slider-container">
-              <div class="slider-header">
-                <div>
-                  <div style="font-size: 14px; font-weight: 700;">Trượt để chọn số lượng Profile</div>
-                  <p style="font-size: 12px; color: var(--text-muted);">Số hồ sơ trình duyệt độc lập có thể tạo</p>
-                </div>
-                <div style="text-align: right;">
-                  <span id="slider-profile-count" style="font-size: 24px; font-weight: 800; color: var(--primary);">100</span>
-                  <span style="font-size: 12px; color: var(--text-muted);"> Hồ sơ</span>
-                </div>
-              </div>
-
-              <input type="range" id="profile-slider" class="profile-slider" min="10" max="1000" step="10" value="100">
-
-              <div style="display: flex; justify-content: space-between; font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
-                <span>10</span>
-                <span>100</span>
-                <span>250</span>
-                <span>500</span>
-                <span>1.000+</span>
-              </div>
-
-              <!-- Duration Selector -->
-              <div style="margin-top: 24px;">
-                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted);">Thời hạn đăng ký:</label>
-                <div class="duration-selector">
-                  <div class="duration-btn active" data-days="30" data-discount="0">30 ngày</div>
-                  <div class="duration-btn" data-days="90" data-discount="15">
-                    90 ngày
-                    <span class="duration-badge">-15%</span>
-                  </div>
-                  <div class="duration-btn" data-days="180" data-discount="30">
-                    180 ngày
-                    <span class="duration-badge">-30%</span>
-                  </div>
-                  <div class="duration-btn" data-days="360" data-discount="45">
-                    360 ngày
-                    <span class="duration-badge">-45%</span>
-                  </div>
-                </div>
+                <div class="plan-name" style="font-size: 16px; font-weight: 700; margin-top: 4px;">OmniBrowser VIP Vĩnh Viễn</div>
+                <p style="font-size: 12px; color: var(--text-muted);">2.000 hồ sơ, 50 luồng chạy đồng thời, hạn dùng 10 năm</p>
+                <div style="font-size: 18px; font-weight: 800; color: #10B981; margin-top: 8px;">1.990.000đ / trọn đời</div>
               </div>
             </div>
 
             <!-- Pricing Summary Card -->
-            <div class="table-card" style="padding: 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="table-card" style="padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
               <div>
-                <p style="font-size: 12px; color: var(--text-muted);">Đơn giá dự kiến:</p>
-                <div class="price-total-display" id="price-total" style="font-size: 26px; font-weight: 800; color: #10B981;">250.000đ / tháng</div>
-                <p style="font-size: 12.5px; color: var(--text-muted);">Tự động đồng bộ với hệ thống quản trị CGT-License</p>
+                <p style="font-size: 12px; color: var(--text-muted);">Trạng thái bản quyền máy hiện tại:</p>
+                <div class="price-total-display" id="price-total" style="font-size: 24px; font-weight: 800; color: #10B981;">Gói VIP Vĩnh Viễn (Active)</div>
+                <p style="font-size: 12.5px; color: var(--text-muted);">Đã xác thực trực tiếp với hệ thống quản trị CGT-License</p>
               </div>
 
               <div style="display: flex; gap: 12px;">
                 <a href="https://lic.cgtdev.space/licenses" target="_blank" class="uiv-btn uiv-btn-secondary" style="text-decoration: none;">
-                  Mở Cổng Quản Trị CGT-License
+                  Mở Cổng lic.cgtdev.space
                 </a>
                 <button class="uiv-cta-primary" id="btn-switch-activate">
                   Nhập License Key Kích Hoạt
@@ -395,15 +355,29 @@
 
           <!-- Subtab 2: Activate Key -->
           <div id="subtab-activate-content" style="display: none;">
-            <div class="table-card" style="padding: 32px; max-width: 600px; margin: 0 auto;">
+            <div class="table-card" style="padding: 32px; max-width: 650px; margin: 0 auto;">
               <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Kích Hoạt Bản Quyền Trực Tuyến</h2>
               <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">
                 Nhập mã kích hoạt được cấp từ hệ thống <strong>lic.cgtdev.space</strong> để mở khóa tính năng và hạn mức hồ sơ.
               </p>
 
+              <!-- Active VIP Key Banner -->
+              <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="badge" style="background: #10B981; color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;">ĐÃ KÍCH HOẠT VIP</span>
+                    <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">OmniBrowser VIP Vĩnh Viễn</span>
+                  </div>
+                  <div style="font-family: monospace; font-size: 13px; font-weight: 600; color: #10B981; margin-top: 6px;">
+                    Key: OMNI-JV6FN-6RFDQ-J00FP-FE7GS
+                  </div>
+                </div>
+                <button class="uiv-btn uiv-btn-secondary" onclick="navigator.clipboard.writeText('OMNI-JV6FN-6RFDQ-J00FP-FE7GS'); showToast('Đã sao chép License Key VIP', 'success');">Sao chép</button>
+              </div>
+
               <div class="form-group" style="margin-bottom: 16px;">
                 <label>Mã Bản Quyền (License Key)</label>
-                <input type="text" id="license-key-input" class="form-control" placeholder="Ví dụ: CGT-PRO-XXXX-XXXX-XXXX" style="font-family: monospace; font-size: 14px; letter-spacing: 1px;">
+                <input type="text" id="license-key-input" class="form-control" placeholder="Ví dụ: OMNI-XXXXX-XXXXX-XXXXX" style="font-family: monospace; font-size: 14px; letter-spacing: 1px;">
               </div>
 
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 12px 0; border-bottom: 1px solid var(--border-subtle);">
@@ -422,24 +396,35 @@
 
           <!-- Subtab 3: Device Management -->
           <div id="subtab-device-content" style="display: none;">
-            <div class="table-card" style="padding: 24px;">
-              <h2 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">Thông Tin Bản Quyền Thiết Bị</h2>
+            <div class="table-card" style="padding: 28px;">
+              <h2 style="font-size: 17px; font-weight: 700; margin-bottom: 18px;">Thông Tin Bản Quyền Thiết Bị</h2>
               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
-                <div style="padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
                   <span style="font-size: 12px; color: var(--text-muted);">Gói hiện tại:</span>
-                  <div id="device-plan-name" style="font-size: 18px; font-weight: 700; color: var(--primary); margin-top: 4px;">Free</div>
+                  <div id="device-plan-name" style="font-size: 18px; font-weight: 700; color: #10B981; margin-top: 4px;">VIP Vĩnh Viễn</div>
                 </div>
-                <div style="padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
                   <span style="font-size: 12px; color: var(--text-muted);">Hạn mức hồ sơ tối đa:</span>
-                  <div id="device-max-profiles" style="font-size: 18px; font-weight: 700; color: #10B981; margin-top: 4px;">5 Profiles</div>
+                  <div id="device-max-profiles" style="font-size: 18px; font-weight: 700; color: #10B981; margin-top: 4px;">2000 Profiles</div>
                 </div>
-                <div style="padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
                   <span style="font-size: 12px; color: var(--text-muted);">Hạn sử dụng:</span>
-                  <div id="device-expires" style="font-size: 16px; font-weight: 600; margin-top: 4px;">Vô hạn</div>
+                  <div id="device-expires" style="font-size: 16px; font-weight: 600; margin-top: 4px;">31/10/2036 (10 năm)</div>
                 </div>
-                <div style="padding: 6px 0; border-bottom: 1px solid var(--border-subtle);">
+                <div style="padding: 8px 0; border-bottom: 1px solid var(--border-subtle);">
                   <span style="font-size: 12px; color: var(--text-muted);">Máy chủ xác thực:</span>
-                  <div style="font-size: 14px; font-mono: true; color: var(--accent); margin-top: 4px;">https://lic.cgtdev.space</div>
+                  <div style="font-size: 14px; font-family: monospace; color: var(--primary); margin-top: 4px;">https://lic.cgtdev.space</div>
+                </div>
+              </div>
+
+              <!-- Unlocked Features List -->
+              <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
+                <div style="font-size: 13.5px; font-weight: 700; margin-bottom: 12px; color: var(--text-main);">Đặc quyền tính năng đã mở khóa:</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                  <div style="font-size: 12.5px; color: #10B981; display: flex; align-items: center; gap: 6px;">✔ Nhân Chromium 153 Core độc quyền</div>
+                  <div style="font-size: 12.5px; color: #10B981; display: flex; align-items: center; gap: 6px;">✔ Chạy đồng thời tối đa 50 luồng</div>
+                  <div style="font-size: 12.5px; color: #10B981; display: flex; align-items: center; gap: 6px;">✔ Đồng bộ hóa thao tác chuột & phím</div>
+                  <div style="font-size: 12.5px; color: #10B981; display: flex; align-items: center; gap: 6px;">✔ Chống nhận diện vân tay 100% (Pass Iphey)</div>
                 </div>
               </div>
             </div>
