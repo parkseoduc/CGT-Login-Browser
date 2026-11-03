@@ -1994,7 +1994,9 @@ const btnParseCustomProxy = document.getElementById('btn-parse-custom-proxy');
 function handleCustomProxyQuickParse() {
   const str = customProxyQuickPaste?.value.trim();
   if (!str) return;
-  const parsed = parseProxyStringToFields(str);
+  const lines = str.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const targetStr = lines[0] || str;
+  const parsed = parseProxyStringToFields(targetStr);
   if (parsed) {
     setCustomProxyFormValues(parsed);
     showToast(`✨ Đã nhận diện Proxy: ${parsed.host}:${parsed.port} (${parsed.proto.toUpperCase()})`, 'success');
@@ -2006,7 +2008,7 @@ function handleCustomProxyQuickParse() {
 if (btnParseCustomProxy) btnParseCustomProxy.addEventListener('click', handleCustomProxyQuickParse);
 if (customProxyQuickPaste) {
   customProxyQuickPaste.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && (e.ctrlKey || !e.shiftKey)) {
       e.preventDefault();
       handleCustomProxyQuickParse();
     }

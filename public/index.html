@@ -1021,7 +1021,7 @@ async function automateProfile(profileId) {
 
             <!-- Hidden legacy elements for programmatic compatibility -->
             <input type="hidden" id="tab-proxy-source" value="hub">
-            <select id="tab-proxy-hub-select" style="display: none;"></select>
+            <select id="tab-proxy-hub-select" style="display: none !important;" aria-hidden="true" tabindex="-1"></select>
 
             <!-- PANEL 1: MODE NONE -->
             <div id="proxy-panel-none" class="proxy-subpanel" style="display: none;">
@@ -1099,26 +1099,29 @@ async function automateProfile(profileId) {
 
             <!-- PANEL 3: MODE CUSTOM (TÙY CHỈNH THỦ CÔNG) -->
             <div id="proxy-panel-custom" class="proxy-subpanel" style="display: none;">
-              <!-- Smart Quick Paste Box -->
+              <!-- Smart Quick Paste Box (Giao diện thoáng đãng chuẩn SaaS) -->
               <div class="smart-paste-box">
                 <div class="smart-paste-header">
                   <label>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
                     <span>Dán Nhanh Chuỗi Proxy (Tự Động Bóc Tách)</span>
                   </label>
-                  <span class="smart-paste-hint">host:port:user:pass hoặc http://user:pass@host:port</span>
+                  <span class="smart-paste-hint">Hỗ trợ: host:port:user:pass | http://user:pass@host:port | socks5://</span>
                 </div>
-                <div class="smart-paste-input-row">
-                  <input type="text" id="custom-proxy-quick-paste" class="form-control" placeholder="Ví dụ: 103.141.65.12:8080:admin:secret123" autocomplete="off">
-                  <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-parse-custom-proxy" style="white-space: nowrap; font-size: 12px; padding: 6px 14px;">
-                    <span>Phân Tích</span>
-                  </button>
+                <div class="smart-paste-input-row" style="flex-direction: column; gap: 10px;">
+                  <textarea id="custom-proxy-quick-paste" class="form-control monospace-input proxy-input" rows="3" placeholder="host:port:user:pass hoặc host:port&#10;Ví dụ:&#10;45.76.120.33:8080:username:password&#10;45.76.120.33:8080" style="resize: vertical; min-height: 75px; font-size: 13px; line-height: 1.5; padding: 10px 14px;"></textarea>
+                  <div style="display: flex; justify-content: flex-end;">
+                    <button type="button" class="uiv-btn uiv-btn-primary" id="btn-parse-custom-proxy" style="font-size: 12.5px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                      <span>Phân Tích & Điền Nhanh</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <!-- Protocol Segmented Buttons -->
-              <div class="form-group" style="margin-top: 12px;">
-                <label style="font-size: 12px; font-weight: 700;">Giao Thức Proxy (Protocol)</label>
+              <div class="form-group proxy-form-group" style="margin-top: 4px;">
+                <label>Loại Proxy (Giao thức)</label>
                 <div class="proto-segmented-row" id="custom-proxy-proto-group">
                   <button type="button" class="proto-pill active" data-proto="http">HTTP</button>
                   <button type="button" class="proto-pill" data-proto="https">HTTPS</button>
@@ -1127,47 +1130,47 @@ async function automateProfile(profileId) {
                 <input type="hidden" id="custom-proxy-proto-val" value="http">
               </div>
 
-              <!-- Detailed Inputs Grid -->
-              <div class="form-row" style="margin-top: 10px;">
-                <div class="form-group" style="flex: 2;">
-                  <label>Địa Chỉ Host / IP (*)</label>
-                  <input type="text" id="custom-proxy-host" class="form-control monospace" placeholder="123.45.67.89">
+              <!-- Detailed Inputs Grid (Rõ ràng, khoảng cách thoáng đãng, không bị dính vào nhau) -->
+              <div class="form-row proxy-form-row">
+                <div class="form-group proxy-form-group" style="flex: 2;">
+                  <label>Địa Chỉ Proxy Host / IP (*)</label>
+                  <input type="text" id="custom-proxy-host" class="form-control proxy-input monospace-input" placeholder="Ví dụ: 45.76.120.33">
                 </div>
-                <div class="form-group" style="flex: 1;">
-                  <label>Cổng (Port) (*)</label>
-                  <input type="number" id="custom-proxy-port" class="form-control monospace" placeholder="8080">
+                <div class="form-group proxy-form-group" style="flex: 1;">
+                  <label>Cổng Port (*)</label>
+                  <input type="number" id="custom-proxy-port" class="form-control proxy-input monospace-input" placeholder="Ví dụ: 8080">
                 </div>
               </div>
 
-              <div class="form-row" style="margin-top: 10px;">
-                <div class="form-group">
+              <div class="form-row proxy-form-row">
+                <div class="form-group proxy-form-group">
                   <label>Tài Khoản (Username - Nếu có)</label>
-                  <input type="text" id="custom-proxy-user" class="form-control" placeholder="user...">
+                  <input type="text" id="custom-proxy-user" class="form-control proxy-input" placeholder="Tên đăng nhập proxy...">
                 </div>
-                <div class="form-group">
+                <div class="form-group proxy-form-group">
                   <label>Mật Khẩu (Password - Nếu có)</label>
                   <div class="password-input-wrap">
-                    <input type="password" id="custom-proxy-pass" class="form-control" placeholder="password...">
+                    <input type="password" id="custom-proxy-pass" class="form-control proxy-input" placeholder="Mật khẩu proxy...">
                     <button type="button" class="btn-toggle-pwd" id="btn-toggle-custom-pwd" title="Ẩn/Hiện mật khẩu">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
                   </div>
                 </div>
               </div>
 
               <!-- API Rotation URL -->
-              <div class="form-group" style="margin-top: 10px;">
-                <label>Link API Xoay IP (Tùy chọn - Dcom 4G / TinProxy / TMProxy)</label>
-                <input type="text" id="custom-proxy-rotation-url" class="form-control" placeholder="https://api.tinproxy.com/proxy/get-new-ip?api_key=...">
+              <div class="form-group proxy-form-group">
+                <label>Liên Kết Thay Đổi IP (Proxy Xoay / Dcom 4G - Tùy chọn)</label>
+                <input type="text" id="custom-proxy-rotation-url" class="form-control proxy-input" placeholder="https://api.tinproxy.com/proxy/get-new-ip?api_key=...">
               </div>
 
               <!-- Test Custom Proxy Button & Result Box -->
-              <div style="margin-top: 12px;">
-                <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-test-custom-proxy" style="width: 100%; justify-content: center; padding: 10px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <div style="margin-top: 18px;">
+                <button type="button" class="btn-test-proxy-live" id="btn-test-custom-proxy" style="width: 100%; height: 42px; justify-content: center; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                   <span id="btn-test-custom-proxy-text">Kiểm Tra Kết Nối Proxy Này (Test Connection)</span>
                 </button>
-                <div class="proxy-test-result-box" id="custom-proxy-test-result" style="display: none; margin-top: 10px;"></div>
+                <div class="proxy-test-result-box" id="custom-proxy-test-result" style="display: none; margin-top: 14px;"></div>
               </div>
             </div>
           </div>

@@ -4066,33 +4066,154 @@ select option:disabled {
   font-weight: 700;
 }
 
-/* Smart Paste Box */
-.smart-paste-box {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px dashed var(--border-subtle);
+/* =========================================================================
+   Proxy Configuration Form & SaaS Inspector (Refined via Image Reference)
+   ========================================================================= */
+
+#modal-content-proxy,
+.proxy-subpanel {
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* 3-Mode Selection Cards Grid (Rộng rãi, thoáng đãng, tách biệt hoàn toàn) */
+.proxy-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 22px !important;
+}
+
+.proxy-mode-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
   border-radius: 10px;
-  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--border-subtle);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  user-select: none;
+}
+
+[data-theme="light"] .proxy-mode-card {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.proxy-mode-card:hover {
+  transform: translateY(-1.5px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="light"] .proxy-mode-card:hover {
+  border-color: #2563EB;
+  background: #F8FAFC;
+}
+
+.proxy-mode-card.active {
+  background: rgba(56, 103, 244, 0.12) !important;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1.5px var(--primary);
+}
+
+[data-theme="light"] .proxy-mode-card.active {
+  background: #EFF6FF !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 1.5px #2563EB;
+}
+
+/* Subpanels Spacing */
+.proxy-subpanel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Direct Mode Notice - Airy & Beautiful */
+.proxy-direct-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: 10px;
+  background: rgba(56, 103, 244, 0.08);
+  border: 1.5px solid rgba(56, 103, 244, 0.25);
+  margin-top: 4px;
+}
+
+[data-theme="light"] .proxy-direct-notice {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+
+.direct-notice-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(56, 103, 244, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.direct-notice-body strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+}
+
+[data-theme="light"] .direct-notice-body strong {
+  color: #1E40AF;
+}
+
+.direct-notice-body p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+[data-theme="light"] .direct-notice-body p {
+  color: #334155;
+}
+
+/* Smart Quick Paste Box */
+.smart-paste-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 18px;
 }
 
 [data-theme="light"] .smart-paste-box {
   background: #F8FAFC;
   border-color: #CBD5E1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .smart-paste-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .smart-paste-header label {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-main);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   margin: 0;
 }
 
@@ -4101,13 +4222,95 @@ select option:disabled {
 }
 
 .smart-paste-hint {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--text-muted);
 }
 
-.smart-paste-input-row {
+[data-theme="light"] .smart-paste-hint {
+  color: #64748B;
+}
+
+/* Proxy Form Rows & Groups - Spacious, breathing room */
+.proxy-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px !important;
+  margin-bottom: 16px !important;
+}
+
+.proxy-form-group {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 8px !important;
+  margin-bottom: 16px;
+}
+
+.proxy-form-group:last-child {
+  margin-bottom: 0;
+}
+
+.proxy-form-group label {
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: var(--text-main) !important;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+[data-theme="light"] .proxy-form-group label {
+  color: #334155 !important; /* Deep, readable Slate 700 */
+}
+
+/* Inputs & Textareas - Crisp, high-contrast borders and clear typography */
+.proxy-input,
+.form-control.proxy-input {
+  height: 42px !important;
+  padding: 0 14px !important;
+  font-family: 'Be Vietnam Pro', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  border: 1.5px solid var(--border-subtle) !important;
+  background: var(--bg-card) !important;
+  color: var(--text-main) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="light"] .proxy-input,
+[data-theme="light"] .form-control.proxy-input {
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+.proxy-input:focus,
+.form-control.proxy-input:focus {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 3px var(--border-focus) !important;
+}
+
+[data-theme="light"] .proxy-input:focus,
+[data-theme="light"] .form-control.proxy-input:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.16) !important;
+}
+
+textarea.proxy-input,
+textarea.form-control.proxy-input {
+  height: auto !important;
+  min-height: 75px !important;
+  padding: 10px 14px !important;
+  line-height: 1.55 !important;
+}
+
+.monospace-input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace !important;
+  font-size: 13px !important;
 }
 
 /* Distinct Action Buttons for Parse & Test */
@@ -4118,7 +4321,7 @@ select option:disabled {
   font-weight: 700;
   border: none;
   border-radius: 8px;
-  padding: 7px 16px;
+  padding: 8px 18px;
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
   cursor: pointer;
   transition: all 0.15s ease;
@@ -4130,35 +4333,45 @@ select option:disabled {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
 }
 
+.btn-test-proxy-live,
 #btn-test-custom-proxy,
 #btn-test-modal-proxy {
   background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
   color: #FFFFFF !important;
   font-weight: 700;
   border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 12.5px;
+  border-radius: 9px;
+  padding: 0 20px;
+  height: 42px;
+  font-size: 13.5px;
   box-shadow: 0 3px 10px rgba(37, 99, 235, 0.3);
   cursor: pointer;
   transition: all 0.2s ease;
+  user-select: none;
 }
 
+.btn-test-proxy-live:hover,
 #btn-test-custom-proxy:hover,
 #btn-test-modal-proxy:hover {
   transform: translateY(-1px);
   box-shadow: 0 5px 16px rgba(37, 99, 235, 0.45);
 }
 
+.btn-test-proxy-live:active,
+#btn-test-custom-proxy:active,
+#btn-test-modal-proxy:active {
+  transform: translateY(1px) scale(0.98);
+}
+
 /* Protocol Segmented Buttons */
 .proto-segmented-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.04);
-  padding: 3px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  margin-top: 6px;
+  padding: 4px;
+  border-radius: 9px;
+  border: 1.5px solid var(--border-subtle);
+  margin-top: 4px;
 }
 
 [data-theme="light"] .proto-segmented-row {
@@ -4168,11 +4381,11 @@ select option:disabled {
 
 .proto-pill {
   flex: 1;
-  padding: 6px 12px;
-  font-size: 12px;
+  padding: 8px 14px;
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
-  border-radius: 6px;
+  border-radius: 7px;
   border: none;
   background: transparent;
   color: var(--text-muted);
@@ -4180,14 +4393,24 @@ select option:disabled {
   transition: all 0.2s ease;
 }
 
+[data-theme="light"] .proto-pill {
+  color: #64748B;
+}
+
 .proto-pill:hover {
   color: var(--text-main);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .proto-pill:hover {
+  color: #0F172A;
+  background: rgba(255, 255, 255, 0.6);
 }
 
 .proto-pill.active {
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+  background: #2563EB !important;
   color: #FFFFFF !important;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
 }
 
 /* Password Toggle Eye Input */
@@ -4199,17 +4422,17 @@ select option:disabled {
 
 .password-input-wrap input {
   width: 100%;
-  padding-right: 36px;
+  padding-right: 40px !important;
 }
 
 .btn-toggle-pwd {
   position: absolute;
-  right: 8px;
+  right: 10px;
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4219,11 +4442,15 @@ select option:disabled {
   color: var(--text-main);
 }
 
+[data-theme="light"] .btn-toggle-pwd:hover {
+  color: #0F172A;
+}
+
 /* Live Test Result Callout Box */
 .proxy-test-result-box {
   border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
   animation: fadeIn 0.2s ease;
 }
 

@@ -7,6 +7,9 @@
 (function() {
   function makeCustomSelect(selectEl) {
     if (!selectEl) return;
+    if (selectEl.id === 'tab-proxy-hub-select' || selectEl.style.display === 'none' || selectEl.hidden || selectEl.getAttribute('aria-hidden') === 'true') {
+      return;
+    }
     if (selectEl.dataset.customized === 'true') {
       if (typeof selectEl._syncCustomSelect === 'function') {
         selectEl._syncCustomSelect();
@@ -186,8 +189,7 @@
       '#form-webrtc',
       '#bulk-form-group',
       '#bulk-form-os',
-      '#bulk-form-webrtc',
-      '#tab-proxy-hub-select'
+      '#bulk-form-webrtc'
     ];
 
     targets.forEach(sel => {
