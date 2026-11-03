@@ -5293,17 +5293,22 @@ function initAuthControls() {
     };
   }
 
-  // Toggle show/hide password
-  const btnTogglePass = document.getElementById('btn-toggle-login-pass');
-  const passInput = document.getElementById('auth-login-password');
-  if (btnTogglePass && passInput) {
-    btnTogglePass.onclick = (e) => {
+    // Toggle show/hide password with SVG icons
+  function setupAuthPassToggle(btnId, inputId) {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (!btn || !input) return;
+    btn.onclick = (e) => {
       e.preventDefault();
-      const isPass = passInput.type === 'password';
-      passInput.type = isPass ? 'text' : 'password';
-      btnTogglePass.textContent = isPass ? '🙈' : '👁️';
+      const isPass = input.type === 'password';
+      input.type = isPass ? 'text' : 'password';
+      btn.classList.toggle('revealed', isPass);
+      btn.setAttribute('title', isPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu');
     };
   }
+  setupAuthPassToggle('btn-toggle-login-pass', 'auth-login-password');
+  setupAuthPassToggle('btn-toggle-reg-pass', 'auth-reg-password');
+  setupAuthPassToggle('btn-toggle-reg-confirm', 'auth-reg-confirm');
 
   // Submit Login handler
   async function handleLoginSubmit(e) {
