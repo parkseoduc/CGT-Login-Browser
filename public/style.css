@@ -4301,11 +4301,22 @@ select option:disabled {
 }
 
 textarea.proxy-input,
-textarea.form-control.proxy-input {
+textarea.form-control.proxy-input,
+#custom-proxy-quick-paste {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: block !important;
   height: auto !important;
-  min-height: 75px !important;
-  padding: 10px 14px !important;
+  min-height: 85px !important;
+  padding: 12px 14px !important;
   line-height: 1.55 !important;
+  font-size: 13px !important;
+  border-radius: 8px !important;
+}
+
+.smart-paste-input-row {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .monospace-input {
