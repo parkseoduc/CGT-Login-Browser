@@ -205,7 +205,7 @@
         const buyerName = document.getElementById('chk-customer-name')?.value || currentOrder.customer_name || 'Quý khách';
         const buyerEmail = document.getElementById('chk-customer-email')?.value || currentOrder.customer_email || '';
         if (successMsg) {
-          successMsg.innerHTML = '🎉 Cảm ơn bạn <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong> đã nâng cấp bản quyền! Thư cảm ơn kèm mã License Key đã được gửi về hòm thư: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
+          successMsg.innerHTML = '🎉 Bản quyền đã được kích hoạt thành công cho <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong>! Mã License Key đã gửi về email: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
         }
 
         // Refresh global user state and license status
