@@ -1408,54 +1408,49 @@ function updateProfileSummary() {
   }
 }
 
+// Chống đệ quy & loop lặp vô tận khi đổi OS / User-Agent / Fingerprint
+let isSyncingOs = false;
+let isRandomizingFp = false;
+
 // Chuyển đổi OS trên Card Buttons kiểu PolyLogin
 function setWorkstationOs(os, triggerRandom = false) {
-  document.querySelectorAll('.os-select-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.os === os);
-  });
-  if (fpOs) {
-    fpOs.value = os;
-    fpOs.dispatchEvent(new Event('change', { bubbles: true }));
+  if (isSyncingOs) return;
+  isSyncingOs = true;
+  try {
+    document.querySelectorAll('.os-select-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.os === os);
+    });
+    if (fpOs) {
+      fpOs.value = os;
+    }
+
+    if (os === 'mac') {
+      if (fpWebgl) fpWebgl.value = 'apple_m2';
+      if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
+    } else if (os === 'linux') {
+      if (fpWebgl && fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx3060';
+      if (uaPresetSelect) uaPresetSelect.value = 'linux_chrome132';
+    } else if (os === 'android') {
+      if (fpWebgl) fpWebgl.value = 'iris_xe';
+      if (uaPresetSelect) uaPresetSelect.value = 'android_chrome133';
+    } else {
+      if (fpWebgl && fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx4070';
+      if (uaPresetSelect) uaPresetSelect.value = 'win11_chrome133';
+    }
+
+    if (fpUserAgent) fpUserAgent.value = getRandomUa(os);
+    if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(os);
+    if (sumMac) sumMac.innerText = generateRandomMac();
+
+    if (triggerRandom) {
+      randomizeFingerprint(os, true);
+    }
+    updateProfileSummary();
+    if (typeof syncAllCustomSelects === 'function') syncAllCustomSelects();
+    else if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
+  } finally {
+    isSyncingOs = false;
   }
-
-  if (os === 'mac') {
-    if (fpWebgl) {
-      fpWebgl.value = 'apple_m2';
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
-  } else if (os === 'linux') {
-    if (fpWebgl) {
-      if (fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx3060';
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (uaPresetSelect) uaPresetSelect.value = 'linux_chrome132';
-  } else if (os === 'android') {
-    if (fpWebgl) {
-      fpWebgl.value = 'iris_xe';
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (uaPresetSelect) uaPresetSelect.value = 'android_chrome133';
-  } else {
-    if (fpWebgl) {
-      if (fpWebgl.value === 'apple_m2') fpWebgl.value = 'rtx4070';
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (uaPresetSelect) uaPresetSelect.value = 'win11_chrome133';
-  }
-
-  if (uaPresetSelect) uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-  if (fpUserAgent) fpUserAgent.value = getRandomUa(os);
-  if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(os);
-  if (sumMac) sumMac.innerText = generateRandomMac();
-
-  if (triggerRandom) {
-    randomizeFingerprint(os, true);
-  }
-  updateProfileSummary();
-  if (typeof syncAllCustomSelects === 'function') syncAllCustomSelects();
-  else if (typeof initAllCustomSelects === 'function') initAllCustomSelects();
 }
 
 document.querySelectorAll('.os-select-btn').forEach(btn => {
@@ -2127,108 +2122,101 @@ document.querySelectorAll('#quick-webrtc-pills .quick-pill-btn').forEach(btn => 
 });
 
 async function randomizeFingerprint(selectedOs, silent = false) {
-  const os = selectedOs || fpOs?.value || 'windows';
-  let fp = null;
-
+  if (isRandomizingFp) return;
+  isRandomizingFp = true;
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 1200);
-    const res = await fetch(`${API_BASE}/fingerprints/generate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ os }),
-      signal: controller.signal
+    const os = selectedOs || fpOs?.value || 'windows';
+    let fp = null;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1200);
+      const res = await fetch(`${API_BASE}/fingerprints/generate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ os }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.fingerprint) {
+          fp = data.fingerprint;
+        }
+      }
+    } catch (err) {
+      console.warn('[Fingerprint] Offline local generator fallback active');
+    }
+
+    // Fallback ngoại tuyến 100% nếu máy chưa kết nối API hoặc chạy LAN
+    if (!fp) {
+      const cpus = [4, 6, 8, 12, 16];
+      const rams = [8, 16, 32];
+      const resList = ['1920x1080', '1536x864', '1440x900', '2560x1440'];
+      const chosenRes = resList[Math.floor(Math.random() * resList.length)].split('x');
+
+      fp = {
+        os,
+        hardwareConcurrency: cpus[Math.floor(Math.random() * cpus.length)],
+        deviceMemory: rams[Math.floor(Math.random() * rams.length)],
+        screen: { width: Number(chosenRes[0]), height: Number(chosenRes[1]) },
+        userAgent: getRandomUa(os)
+      };
+    }
+
+    const targetOs = fp.os || 'windows';
+    if (fpOs) {
+      fpOs.value = targetOs;
+    }
+
+    // Cập nhật OS card tương ứng
+    document.querySelectorAll('.os-select-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.os === targetOs);
     });
-    clearTimeout(timeoutId);
-    if (res.ok) {
-      const data = await res.json();
-      if (data.success && data.fingerprint) {
-        fp = data.fingerprint;
+
+    if (targetOs === 'mac') {
+      if (fpWebgl) fpWebgl.value = 'apple_m2';
+      if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
+    } else {
+      const pcKeys = ['rtx4070', 'rtx3060', 'rtx3080', 'rx6700', 'iris_xe'];
+      if (fpWebgl) {
+        fpWebgl.value = pcKeys[Math.floor(Math.random() * pcKeys.length)];
+      }
+      if (uaPresetSelect) {
+        uaPresetSelect.value = targetOs === 'linux' ? 'linux_chrome132' : (targetOs === 'android' ? 'android_chrome133' : 'win11_chrome133');
       }
     }
-  } catch (err) {
-    console.warn('[Fingerprint] Offline local generator fallback active');
-  }
 
-  // Fallback ngoại tuyến 100% nếu máy chưa kết nối API hoặc chạy LAN
-  if (!fp) {
-    const cpus = [4, 6, 8, 12, 16];
-    const rams = [8, 16, 32];
-    const resList = ['1920x1080', '1536x864', '1440x900', '2560x1440'];
-    const chosenRes = resList[Math.floor(Math.random() * resList.length)].split('x');
-
-    fp = {
-      os,
-      hardwareConcurrency: cpus[Math.floor(Math.random() * cpus.length)],
-      deviceMemory: rams[Math.floor(Math.random() * rams.length)],
-      screen: { width: Number(chosenRes[0]), height: Number(chosenRes[1]) },
-      userAgent: getRandomUa(os)
-    };
-  }
-
-  if (fpOs) {
-    fpOs.value = fp.os || 'windows';
-    fpOs.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-
-  // Cập nhật OS card tương ứng
-  document.querySelectorAll('.os-select-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.os === (fp.os || 'windows'));
-  });
-
-  if (fp.os === 'mac') {
-    if (fpWebgl) {
-      fpWebgl.value = 'apple_m2';
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    if (fpCpu) fpCpu.value = String(fp.hardwareConcurrency || 8);
+    if (fpRam) fpRam.value = String(fp.deviceMemory || 8);
+    if (fp.screen && formResolution) {
+      const resStr = `${fp.screen.width}x${fp.screen.height}`;
+      if (formResolution.querySelector(`option[value="${resStr}"]`)) {
+        formResolution.value = resStr;
+      }
     }
-    if (uaPresetSelect) uaPresetSelect.value = 'mac_chrome133';
-  } else {
-    const pcKeys = ['rtx4070', 'rtx3060', 'rtx3080', 'rx6700', 'iris_xe'];
-    if (fpWebgl) {
-      fpWebgl.value = pcKeys[Math.floor(Math.random() * pcKeys.length)];
-      fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
+    if (fpUserAgent) {
+      fpUserAgent.value = fp.userAgent || getRandomUa(targetOs);
     }
-    if (uaPresetSelect) {
-      uaPresetSelect.value = fp.os === 'linux' ? 'linux_chrome132' : (fp.os === 'android' ? 'android_chrome133' : 'win11_chrome133');
+    if (fpCanvasNoise) fpCanvasNoise.checked = true;
+    if (fpAudioNoise) fpAudioNoise.checked = true;
+    if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(targetOs);
+    if (sumMac) sumMac.innerText = generateRandomMac();
+
+    // Đồng bộ lại tất cả custom select trực quan
+    if (typeof syncAllCustomSelects === 'function') {
+      syncAllCustomSelects();
+    } else if (typeof initAllCustomSelects === 'function') {
+      initAllCustomSelects();
     }
-  }
 
-  if (uaPresetSelect) uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    updateProfileSummary();
 
-  if (fpCpu) {
-    fpCpu.value = String(fp.hardwareConcurrency || 8);
-    fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  if (fpRam) {
-    fpRam.value = String(fp.deviceMemory || 8);
-    fpRam.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  if (fp.screen && formResolution) {
-    const resStr = `${fp.screen.width}x${fp.screen.height}`;
-    if (formResolution.querySelector(`option[value="${resStr}"]`)) {
-      formResolution.value = resStr;
-      formResolution.dispatchEvent(new Event('change', { bubbles: true }));
+    if (!silent) {
+      showToast(`🎲 Đã sinh ngẫu nhiên cấu hình vân tay (${targetOs.toUpperCase()} • ${fpCpu ? fpCpu.value : 8}C/${fpRam ? fpRam.value : 8}GB)`, 'info');
     }
-  }
-  if (fpUserAgent) {
-    fpUserAgent.value = fp.userAgent || getRandomUa(fp.os || 'windows');
-  }
-  if (fpCanvasNoise) fpCanvasNoise.checked = true;
-  if (fpAudioNoise) fpAudioNoise.checked = true;
-  if (fpDeviceName) fpDeviceName.value = generateRandomDeviceName(fp.os || 'windows');
-  if (sumMac) sumMac.innerText = generateRandomMac();
-
-  // Đồng bộ lại tất cả custom select trực quan
-  if (typeof syncAllCustomSelects === 'function') {
-    syncAllCustomSelects();
-  } else if (typeof initAllCustomSelects === 'function') {
-    initAllCustomSelects();
-  }
-
-  updateProfileSummary();
-
-  if (!silent) {
-    showToast(`🎲 Đã sinh ngẫu nhiên cấu hình vân tay (${(fp.os || 'windows').toUpperCase()} • ${fpCpu ? fpCpu.value : 8}C/${fpRam ? fpRam.value : 8}GB)`, 'info');
+  } finally {
+    isRandomizingFp = false;
   }
 }
 
@@ -2253,7 +2241,6 @@ if (btnQuickRandomUa) {
     if (fpUserAgent) fpUserAgent.value = getRandomUa(curOs);
     if (uaPresetSelect) {
       uaPresetSelect.value = 'custom';
-      uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }
     updateProfileSummary();
     showToast('🎲 Đã cập nhật chuỗi User-Agent ngẫu nhiên mới', 'info');
@@ -2262,6 +2249,7 @@ if (btnQuickRandomUa) {
 
 if (uaPresetSelect) {
   uaPresetSelect.addEventListener('change', () => {
+    if (isSyncingOs) return;
     const val = uaPresetSelect.value;
     if (val && UA_PRESETS[val]) {
       const preset = UA_PRESETS[val];
@@ -2275,6 +2263,7 @@ if (uaPresetSelect) {
 
 if (fpOs) {
   fpOs.addEventListener('change', () => {
+    if (isSyncingOs) return;
     setWorkstationOs(fpOs.value, false);
   });
 }
@@ -2289,7 +2278,7 @@ if (formProxy) formProxy.addEventListener('input', updateProfileSummary);
 if (formProxySelect) formProxySelect.addEventListener('change', updateProfileSummary);
 
 window.editProfile = async function(id) {
-  await fetchStatus();
+  fetchStatus().catch(err => console.warn('fetchStatus editProfile err:', err));
   const p = allProfiles.find(x => x.id === id);
   if (!p) return;
 
@@ -2329,7 +2318,6 @@ window.editProfile = async function(id) {
   if (formStartUrl) formStartUrl.value = p.start_url || '';
   if (formResolution) {
     formResolution.value = `${p.screen_width || 1920}x${p.screen_height || 1080}`;
-    formResolution.dispatchEvent(new Event('change', { bubbles: true }));
   }
   setQuickWebRtc(p.webrtc_mode || 'fake_ip');
   if (formNotes) formNotes.value = p.notes || '';
@@ -2354,22 +2342,14 @@ window.editProfile = async function(id) {
     else if (ren.includes('Iris')) fpWebgl.value = 'iris_xe';
     else if (ren.includes('M2') || ren.includes('Apple')) fpWebgl.value = 'apple_m2';
     else fpWebgl.value = 'rtx4070';
-    if (fpWebgl) fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
 
-    if (fpCpu) {
-      fpCpu.value = String(fp.hardwareConcurrency || p.cpu_cores || 8);
-      fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-    if (fpRam) {
-      fpRam.value = String(fp.deviceMemory || p.ram_gb || 8);
-      fpRam.dispatchEvent(new Event('change', { bubbles: true }));
-    }
+    if (fpCpu) fpCpu.value = String(fp.hardwareConcurrency || p.cpu_cores || 8);
+    if (fpRam) fpRam.value = String(fp.deviceMemory || p.ram_gb || 8);
     if (fpCanvasNoise) fpCanvasNoise.checked = fp.canvas?.mode !== 'real' && p.canvas_noise !== 0;
     if (fpAudioNoise) fpAudioNoise.checked = fp.audio?.mode !== 'real' && p.audio_noise !== 0;
     if (fpUserAgent) fpUserAgent.value = fp.userAgent || p.user_agent || '';
     if (uaPresetSelect) {
       uaPresetSelect.value = 'custom';
-      uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
     }
     if (fpDeviceName) fpDeviceName.value = fp.deviceName || generateRandomDeviceName(fp.os || 'windows');
   } else {
@@ -2434,8 +2414,8 @@ if (formProxySelect) {
 }
 
 // Modal handlers
-btnCreateModal.addEventListener('click', async () => {
-  await fetchStatus();
+btnCreateModal.addEventListener('click', () => {
+  fetchStatus().catch(err => console.warn('fetchStatus err:', err));
   modal.classList.add('open');
   setModalTab('basic');
   modalTitle.innerText = 'Tạo Hồ Sơ Mới';
@@ -2445,10 +2425,7 @@ btnCreateModal.addEventListener('click', async () => {
   setQuickProxyMode('none');
   resetCustomProxyForm();
   if (formStartUrl) formStartUrl.value = '';
-  if (formResolution) {
-    formResolution.value = '1920x1080';
-    formResolution.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+  if (formResolution) formResolution.value = '1920x1080';
   setQuickWebRtc('fake_ip');
   if (formNotes) formNotes.value = '';
   if (formCookieInput) formCookieInput.value = '';
@@ -2457,24 +2434,14 @@ btnCreateModal.addEventListener('click', async () => {
   setWorkstationOs('windows', false);
   if (uaPresetSelect) {
     uaPresetSelect.value = 'win11_chrome133';
-    uaPresetSelect.dispatchEvent(new Event('change', { bubbles: true }));
   }
-  if (fpUserAgent) {
+  if (fpUserAgent && typeof UA_PRESETS !== 'undefined' && UA_PRESETS.win11_chrome133) {
     fpUserAgent.value = UA_PRESETS.win11_chrome133.ua;
   }
   // Cấu hình dấu vân tay mặc định nhẹ nhất, tối ưu mượt mà (Item 6)
-  if (fpCpu) {
-    fpCpu.value = '8';
-    fpCpu.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  if (fpRam) {
-    fpRam.value = '8';
-    fpRam.dispatchEvent(new Event('change', { bubbles: true }));
-  }
-  if (fpWebgl) {
-    fpWebgl.value = 'rtx4070';
-    fpWebgl.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+  if (fpCpu) fpCpu.value = '8';
+  if (fpRam) fpRam.value = '8';
+  if (fpWebgl) fpWebgl.value = 'rtx4070';
   if (fpCanvasNoise) fpCanvasNoise.checked = true;
   if (fpAudioNoise) fpAudioNoise.checked = true;
 
@@ -4811,7 +4778,7 @@ if (bulkProfileModalSubmit) {
     const groupId = document.getElementById('bulk-form-group').value || null;
     const os = document.getElementById('bulk-form-os').value;
     const rawProxies = document.getElementById('bulk-form-proxies').value.trim();
-    const startUrl = document.getElementById('bulk-form-start-url').value.trim() || 'https://iphey.com';
+    const startUrl = (document.getElementById('bulk-form-start-url')?.value || '').trim();
     const webrtc = document.getElementById('bulk-form-webrtc').value;
     const canvas = document.getElementById('bulk-form-canvas').checked ? 1 : 0;
     const audio = document.getElementById('bulk-form-audio').checked ? 1 : 0;

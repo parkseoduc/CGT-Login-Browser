@@ -969,6 +969,133 @@ body::after {
   color: var(--primary);
 }
 
+/* Filter Bar Actions & Prominent Action Buttons */
+.filter-actions-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Nút Tạo Hồ Sơ Mới - To, rõ ràng, màu nổi bật */
+#btn-create-modal.btn-create-highlight,
+.btn-create-highlight {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 20px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
+  border-radius: 9px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#btn-create-modal.btn-create-highlight::before,
+.btn-create-highlight::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transition: 0.55s ease;
+}
+
+#btn-create-modal.btn-create-highlight:hover::before,
+.btn-create-highlight:hover::before {
+  left: 100%;
+}
+
+#btn-create-modal.btn-create-highlight:hover,
+.btn-create-highlight:hover {
+  background: linear-gradient(135deg, #1D4ED8 0%, #1E40AF 100%) !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.52);
+}
+
+#btn-create-modal.btn-create-highlight:active,
+.btn-create-highlight:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+#btn-create-modal.btn-create-highlight svg,
+.btn-create-highlight svg {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#btn-create-modal.btn-create-highlight:hover svg,
+.btn-create-highlight:hover svg {
+  transform: rotate(90deg) scale(1.15);
+}
+
+/* Nút Tạo Hàng Loạt - To, rõ ràng, màu xanh ngọc Emerald */
+#btn-bulk-create-open.btn-bulk-highlight,
+.btn-bulk-highlight {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 18px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #10B981 !important;
+  background: rgba(16, 185, 129, 0.12) !important;
+  border: 1px solid rgba(16, 185, 129, 0.38) !important;
+  border-radius: 9px;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+#btn-bulk-create-open.btn-bulk-highlight:hover,
+.btn-bulk-highlight:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  border-color: #10B981 !important;
+  color: #059669 !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 5px 16px rgba(16, 185, 129, 0.28);
+}
+
+#btn-bulk-create-open.btn-bulk-highlight:active,
+.btn-bulk-highlight:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+[data-theme="light"] #btn-bulk-create-open.btn-bulk-highlight,
+[data-theme="light"] .btn-bulk-highlight {
+  color: #047857 !important;
+  background: #ECFDF5 !important;
+  border-color: #A7F3D0 !important;
+}
+
+[data-theme="light"] #btn-bulk-create-open.btn-bulk-highlight:hover,
+[data-theme="light"] .btn-bulk-highlight:hover {
+  background: #D1FAE5 !important;
+  border-color: #10B981 !important;
+  color: #065F46 !important;
+}
+
 /* Active Profile & Sync Master Indicator */
 .active-profile-indicator {
   display: flex;
