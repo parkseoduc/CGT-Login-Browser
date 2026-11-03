@@ -478,7 +478,7 @@
                 <div class="plan-price highlight">199.000đ / tháng</div>
                 <button class="uiv-cta-primary btn-buy-plan" data-plan="PRO_MONTHLY" style="width: 100%; margin-top: 14px; padding: 10px; font-size: 13.5px; justify-content: center;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                  <span>⚡ Mua Gói Pro (199K)</span>
+                  <span>Mua Gói Pro (199K)</span>
                 </button>
               </div>
               <div class="plan-card active" data-plan="OmniBrowser VIP Vĩnh Viễn">
@@ -493,8 +493,8 @@
                 <p class="plan-desc">2.000 hồ sơ, 50 luồng chạy đồng thời, hạn dùng 10 năm</p>
                 <div class="plan-price green">1.990.000đ / trọn đời</div>
                 <button class="uiv-cta-emerald btn-buy-plan" data-plan="VIP_LIFETIME" style="width: 100%; margin-top: 14px; padding: 10px; font-size: 13.5px; justify-content: center;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  <span>👑 Mua VIP Trọn Đời (1.990K)</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+                  <span>Mua VIP Trọn Đời (1.990K)</span>
                 </button>
               </div>
             </div>
@@ -2793,11 +2793,29 @@ async function automateProfile(profileId) {
                 </div>
               </div>
 
-              <div class="checkout-customer-box">
-                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">Email nhận License Key & Kích hoạt</label>
-                <input type="email" id="chk-customer-email" class="form-control" placeholder="example@gmail.com" style="margin-bottom: 10px; font-size: 13.5px;">
-                <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 6px;">Họ và tên người mua</label>
-                <input type="text" id="chk-customer-name" class="form-control" placeholder="Họ và tên..." style="font-size: 13.5px;">
+              <!-- Customer info for Logged-in user -->
+              <div class="checkout-customer-box" id="chk-customer-logged-in" style="display: none;">
+                <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Tài khoản nhận bản quyền:</div>
+                <div class="chk-user-badge">
+                  <div class="chk-user-avatar" id="chk-user-avatar">U</div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div id="chk-user-name" style="font-weight: 700; color: var(--text-main); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Họ tên</div>
+                    <div id="chk-user-email" style="font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">email@gmail.com</div>
+                  </div>
+                  <span class="badge badge-emerald-solid" style="font-size: 10px; white-space: nowrap;">Tự động kích hoạt</span>
+                </div>
+                <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0;">
+                  Dữ liệu khách hàng sẽ tự động đồng bộ sang <strong>lic.cgtdev.space</strong> khi mua gói.
+                </p>
+              </div>
+
+              <!-- Customer info for Guest user -->
+              <div class="checkout-customer-box" id="chk-customer-guest">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin: 0;">Email nhận License Key</label>
+                  <a href="javascript:void(0)" id="chk-btn-switch-login" style="font-size: 11.5px; color: var(--primary); text-decoration: none; font-weight: 600;">Đăng nhập ›</a>
+                </div>
+                <input type="email" id="chk-customer-email" class="form-control" placeholder="Nhập email của bạn (ví dụ: yourname@gmail.com)" style="font-size: 13px;">
               </div>
             </div>
 
@@ -2847,8 +2865,13 @@ async function automateProfile(profileId) {
                 </div>
 
                 <p class="vietqr-instruction">
-                  💡 Mở App ngân hàng quét mã QR để chuyển khoản. Hệ thống tự động xác nhận và cấp key trong vài giây.
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                  Quét mã QR bằng ứng dụng Ngân hàng để thanh toán tự động, hoặc mở cổng quản trị lic.cgtdev.space.
                 </p>
+                <a href="https://lic.cgtdev.space/licenses" target="_blank" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-bottom: 12px; font-size: 12.5px; text-decoration: none; gap: 6px;">
+                  <span>Mở Cổng Bản Quyền lic.cgtdev.space</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
 
                 <button class="chk-confirm-btn" id="btn-chk-confirm-payment">
                   <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>

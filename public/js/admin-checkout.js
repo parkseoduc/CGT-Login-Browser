@@ -52,13 +52,26 @@
     // Update plan pill active state
     updatePlanPillUI(planCode);
 
-    // Auto-fill user email & name if logged in
-    const emailInput = document.getElementById('chk-customer-email');
-    const nameInput = document.getElementById('chk-customer-name');
+    // Check if user is logged in
     const user = window.currentUser;
-    if (user) {
-      if (emailInput && !emailInput.value) emailInput.value = user.email || '';
-      if (nameInput && !nameInput.value) nameInput.value = user.name || '';
+    const boxLoggedIn = document.getElementById('chk-customer-logged-in');
+    const boxGuest = document.getElementById('chk-customer-guest');
+    const userAvatar = document.getElementById('chk-user-avatar');
+    const userName = document.getElementById('chk-user-name');
+    const userEmail = document.getElementById('chk-user-email');
+    const emailInput = document.getElementById('chk-customer-email');
+
+    if (user && user.email) {
+      if (boxLoggedIn) boxLoggedIn.style.display = 'block';
+      if (boxGuest) boxGuest.style.display = 'none';
+      const initial = (user.name || user.email || 'U')[0].toUpperCase();
+      if (userAvatar) userAvatar.textContent = initial;
+      if (userName) userName.textContent = user.name || user.email.split('@')[0];
+      if (userEmail) userEmail.textContent = user.email;
+      if (emailInput) emailInput.value = user.email;
+    } else {
+      if (boxLoggedIn) boxLoggedIn.style.display = 'none';
+      if (boxGuest) boxGuest.style.display = 'block';
     }
 
     modal.style.display = 'flex';
@@ -598,6 +611,15 @@
     const btnFinish = document.getElementById('btn-chk-finish');
     if (chkClose) chkClose.onclick = () => { if (chkModal) chkModal.style.display = 'none'; };
     if (btnFinish) btnFinish.onclick = () => { if (chkModal) chkModal.style.display = 'none'; };
+
+    const btnSwitchLogin = document.getElementById('chk-btn-switch-login');
+    if (btnSwitchLogin) {
+      btnSwitchLogin.onclick = () => {
+        if (chkModal) chkModal.style.display = 'none';
+        const authModal = document.getElementById('auth-modal');
+        if (authModal) authModal.style.display = 'flex';
+      };
+    }
 
     const pillPro = document.getElementById('chk-pill-pro');
     const pillVip = document.getElementById('chk-pill-vip');
