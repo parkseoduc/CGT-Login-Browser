@@ -4366,6 +4366,7 @@ const priceTotal = document.getElementById('price-total');
 let currentDiscount = 0;
 
 function calculatePrice() {
+  if (!profileSlider || !sliderProfileCount || !priceTotal) return;
   const count = parseInt(profileSlider.value, 10);
   sliderProfileCount.innerText = count;
   const basePricePerProfile = 2500; // 2.500đ / profile / tháng (giống PolyLogin)
@@ -4374,7 +4375,9 @@ function calculatePrice() {
   priceTotal.innerText = `${Math.round(discounted).toLocaleString('vi-VN')}đ / tháng`;
 }
 
-profileSlider.addEventListener('input', calculatePrice);
+if (profileSlider) {
+  profileSlider.addEventListener('input', calculatePrice);
+}
 
 document.querySelectorAll('.duration-btn').forEach(btn => {
   btn.addEventListener('click', () => {
