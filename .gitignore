@@ -34,3 +34,6 @@ bin/node/*
 bin/temp_kernel.zip
 data/tmp_backups/
 data/license/
+
+# Release archives
+releases/*.zip
