@@ -52,26 +52,18 @@
     // Update plan pill active state
     updatePlanPillUI(planCode);
 
-    // Check if user is logged in
+    // Populate email and name from logged in user if available
     const user = window.currentUser;
-    const boxLoggedIn = document.getElementById('chk-customer-logged-in');
-    const boxGuest = document.getElementById('chk-customer-guest');
-    const userAvatar = document.getElementById('chk-user-avatar');
-    const userName = document.getElementById('chk-user-name');
-    const userEmail = document.getElementById('chk-user-email');
     const emailInput = document.getElementById('chk-customer-email');
+    const nameInput = document.getElementById('chk-customer-name');
 
-    if (user && user.email) {
-      if (boxLoggedIn) boxLoggedIn.style.display = 'block';
-      if (boxGuest) boxGuest.style.display = 'none';
-      const initial = (user.name || user.email || 'U')[0].toUpperCase();
-      if (userAvatar) userAvatar.textContent = initial;
-      if (userName) userName.textContent = user.name || user.email.split('@')[0];
-      if (userEmail) userEmail.textContent = user.email;
-      if (emailInput) emailInput.value = user.email;
-    } else {
-      if (boxLoggedIn) boxLoggedIn.style.display = 'none';
-      if (boxGuest) boxGuest.style.display = 'block';
+    if (user) {
+      if (emailInput && (!emailInput.value || emailInput.value === 'guest@cgt.vn')) {
+        emailInput.value = user.email || '';
+      }
+      if (nameInput && !nameInput.value) {
+        nameInput.value = user.name || (user.email ? user.email.split('@')[0] : '');
+      }
     }
 
     modal.style.display = 'flex';
@@ -208,6 +200,13 @@
         if (stepPayment) stepPayment.style.display = 'none';
         if (stepSuccess) stepSuccess.style.display = 'block';
         if (keyDisplay) keyDisplay.textContent = data.key || currentOrder.license_key || 'OMNI-ACTIVE';
+
+        const successMsg = document.getElementById('chk-success-msg');
+        const buyerName = document.getElementById('chk-customer-name')?.value || currentOrder.customer_name || 'Quý khách';
+        const buyerEmail = document.getElementById('chk-customer-email')?.value || currentOrder.customer_email || '';
+        if (successMsg) {
+          successMsg.innerHTML = '🎉 Cảm ơn bạn <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong> đã nâng cấp bản quyền! Thư cảm ơn kèm mã License Key đã được gửi về hòm thư: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
+        }
 
         // Refresh global user state and license status
         if (typeof checkAuthState === 'function') checkAuthState();
@@ -554,19 +553,25 @@
      ========================================================================== */
 
   function initAdminAndCheckoutDOM() {
-    // Topbar upgrade button
+    // Topbar upgrade button: Link directly to "Bản quyền & Gói" tab
     const btnHeaderUpgrade = document.getElementById('btn-header-upgrade');
     if (btnHeaderUpgrade) {
-      btnHeaderUpgrade.onclick = () => openCheckoutModal('PRO_MONTHLY');
+      btnHeaderUpgrade.onclick = () => {
+        if (typeof switchTab === 'function') switchTab('license');
+        const pkgTab = document.querySelector('.plan-tab[data-subtab="packages"]');
+        if (pkgTab) pkgTab.click();
+      };
     }
 
-    // Poly dropdown upgrade & admin items
+    // Poly dropdown upgrade: Link directly to "Bản quyền & Gói" tab
     const menuUpgrade = document.getElementById('poly-menu-upgrade');
     if (menuUpgrade) {
       menuUpgrade.onclick = () => {
         const dropdown = document.getElementById('poly-dropdown-menu');
         if (dropdown) dropdown.classList.remove('show');
-        openCheckoutModal('PRO_MONTHLY');
+        if (typeof switchTab === 'function') switchTab('license');
+        const pkgTab = document.querySelector('.plan-tab[data-subtab="packages"]');
+        if (pkgTab) pkgTab.click();
       };
     }
 

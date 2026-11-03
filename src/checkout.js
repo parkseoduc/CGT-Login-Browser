@@ -190,6 +190,24 @@ async function confirmOrder({ orderId, userId }) {
     paid_at: now
   });
 
+  // Gửi thư cảm ơn và License Key về email người mua
+  try {
+    const mailer = require('./mailer');
+    mailer.sendThankYouEmail({
+      customerName: order.customer_name || 'Quý khách',
+      customerEmail: order.customer_email,
+      planName: order.plan_name,
+      planCode: order.plan_code,
+      licenseKey: issuedKey,
+      durationDays: order.duration_days,
+      maxProfiles: order.max_profiles,
+      maxThreads: order.plan_code === 'VIP_LIFETIME' ? 50 : 20,
+      orderId: order.id
+    }).catch(e => console.warn('[Checkout] Gửi email cảm ơn bị lỗi:', e.message));
+  } catch (mailErr) {
+    console.warn('[Checkout] Khởi tạo mailer lỗi:', mailErr.message);
+  }
+
   // Nếu có tài khoản người dùng, kích hoạt key trực tiếp vào tài khoản
   let targetUserId = userId || order.user_id;
   if (!targetUserId && order.customer_email) {

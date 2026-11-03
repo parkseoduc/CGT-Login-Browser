@@ -4387,11 +4387,9 @@ document.querySelectorAll('.nav-item').forEach(item => {
 const sidebarBtnUpgrade = document.getElementById('sidebar-btn-upgrade');
 if (sidebarBtnUpgrade) {
   sidebarBtnUpgrade.addEventListener('click', () => {
-    if (typeof openCheckoutModal === 'function') {
-      openCheckoutModal('PRO_MONTHLY');
-    } else {
-      switchTab('license');
-    }
+    if (typeof switchTab === 'function') switchTab('license');
+    const pkgTab = document.querySelector('.plan-tab[data-subtab="packages"]');
+    if (pkgTab) pkgTab.click();
   });
 }
 

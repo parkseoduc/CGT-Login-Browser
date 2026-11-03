@@ -43,3 +43,5 @@ installer/*.db
 
 data/.license_session.json
 data/*.db*
+data/sent_emails.json
+data/smtp_config.json

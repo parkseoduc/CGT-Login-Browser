@@ -16,7 +16,8 @@ if (Test-Path $zipPath) {
         "src/server.js",
         "src/auth.js",
         "src/db.js",
-        "src/license-admin.js"
+        "src/license-admin.js",
+        "src/mailer.js"
     )
 
     foreach ($rel in $filesToUpdate) {
