@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700;800&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.6.0">
+  <link rel="stylesheet" href="style.css?v=2.7.0">
 </head>
 <body>
   <div class="app-container">
@@ -2390,7 +2390,7 @@ async function automateProfile(profileId) {
             <span>Email Đăng Nhập:</span>
           </label>
           <div class="auth-input-box">
-            <input type="email" id="auth-login-email" class="auth-input" required placeholder="nhap-email@example.com">
+            <input type="email" id="auth-login-email" class="auth-input" required placeholder="ví dụ: admin@domain.com">
           </div>
         </div>
 
@@ -2400,7 +2400,7 @@ async function automateProfile(profileId) {
             <span>Mật Khẩu:</span>
           </label>
           <div class="auth-input-box">
-            <input type="password" id="auth-login-password" class="auth-input auth-input-password" required placeholder="••••••••">
+            <input type="password" id="auth-login-password" class="auth-input auth-input-password" required placeholder="Nhập mật khẩu...">
             <button type="button" class="auth-eye-btn" id="btn-toggle-login-pass" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2420,12 +2420,7 @@ async function automateProfile(profileId) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
-        <div class="auth-quick-fill-wrap">
-          <button type="button" class="auth-quick-fill-btn" id="btn-quick-admin-login">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            <span>Điền nhanh tài khoản Quản trị viên CGT (VIP Lifetime)</span>
-          </button>
-        </div>
+        
       </form>
 
       <!-- Form Register -->
@@ -2436,7 +2431,7 @@ async function automateProfile(profileId) {
             <span>Họ và Tên:</span>
           </label>
           <div class="auth-input-box">
-            <input type="text" id="auth-reg-name" class="auth-input" placeholder="Nguyễn Văn A">
+            <input type="text" id="auth-reg-name" class="auth-input" placeholder="Nhập họ và tên...">
           </div>
         </div>
 
@@ -2446,7 +2441,7 @@ async function automateProfile(profileId) {
             <span>Email Đăng Ký:</span>
           </label>
           <div class="auth-input-box">
-            <input type="email" id="auth-reg-email" class="auth-input" required placeholder="email@example.com">
+            <input type="email" id="auth-reg-email" class="auth-input" required placeholder="ví dụ: contact@domain.com">
           </div>
         </div>
 
@@ -2456,7 +2451,7 @@ async function automateProfile(profileId) {
             <span>Mật Khẩu (Ít nhất 6 ký tự):</span>
           </label>
           <div class="auth-input-box">
-            <input type="password" id="auth-reg-password" class="auth-input auth-input-password" required minlength="6" placeholder="••••••••">
+            <input type="password" id="auth-reg-password" class="auth-input auth-input-password" required minlength="6" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)...">
             <button type="button" class="auth-eye-btn" id="btn-toggle-reg-pass" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2470,7 +2465,7 @@ async function automateProfile(profileId) {
             <span>Xác Nhận Mật Khẩu:</span>
           </label>
           <div class="auth-input-box">
-            <input type="password" id="auth-reg-confirm" class="auth-input auth-input-password" required minlength="6" placeholder="••••••••">
+            <input type="password" id="auth-reg-confirm" class="auth-input auth-input-password" required minlength="6" placeholder="Nhập lại mật khẩu để xác nhận...">
             <button type="button" class="auth-eye-btn" id="btn-toggle-reg-confirm" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2592,7 +2587,7 @@ async function automateProfile(profileId) {
   <div class="toast-container" id="toast-container"></div>
 
   <script src="js/custom-select.js?v=2.3.1"></script>
-  <script src="app.js?v=2.6.0"></script>
+  <script src="app.js?v=2.7.0"></script>
   <script src="js/sync-ui.js?v=2.3.1"></script>
 </body>
 </html>
