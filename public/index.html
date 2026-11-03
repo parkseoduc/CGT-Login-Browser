@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700;800&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.9.0">
+  <link rel="stylesheet" href="style.css?v=3.0.0">
 </head>
 <body>
   <div class="app-container">
@@ -2355,7 +2355,7 @@ async function automateProfile(profileId) {
   </div>
 
   
-    <!-- ================= AUTH MODAL (EXACT DRIBBLE IMAGE 1 REPLICA) ================= -->
+      <!-- ================= AUTH MODAL (EXACT DRIBBLE IMAGE 2 - TIẾNG VIỆT) ================= -->
   <div class="modal-overlay modal" id="auth-modal" style="display: none;">
     <div class="modal-card dribbble-auth-card">
       <!-- Close Button (Clean & Subtle) -->
@@ -2366,13 +2366,13 @@ async function automateProfile(profileId) {
         </svg>
       </button>
 
-      <!-- Header: Title on Left + Switch Link on Right (Image 1) -->
+      <!-- Header: Title on Left + Switch Link on Right (Image 2) -->
       <div class="dribbble-auth-header">
-        <h1 class="dribbble-auth-title" id="auth-modal-title">Log In</h1>
-        <a href="javascript:void(0)" class="dribbble-auth-switch-link" id="auth-modal-switch-link">Sign Up</a>
+        <h1 class="dribbble-auth-title" id="auth-modal-title">Đăng Nhập</h1>
+        <a href="javascript:void(0)" class="dribbble-auth-switch-link" id="auth-modal-switch-link">Đăng Ký</a>
       </div>
 
-      <!-- Hidden tabs for backwards compatibility if needed -->
+      <!-- Hidden tabs for backwards compatibility -->
       <div style="display: none;">
         <button id="tab-btn-login" class="active"></button>
         <button id="tab-btn-register"></button>
@@ -2381,17 +2381,14 @@ async function automateProfile(profileId) {
       <!-- LOGIN FORM -->
       <form id="form-auth-login" class="dribbble-auth-form" novalidate>
         <div class="dribbble-field-group">
-          <label class="dribbble-label" for="auth-login-email">Your email</label>
+          <label class="dribbble-label" for="auth-login-email">Email của bạn</label>
           <input type="email" id="auth-login-email" class="dribbble-input" required placeholder="name@example.com">
         </div>
 
         <div class="dribbble-field-group">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label class="dribbble-label" for="auth-login-password">Your password</label>
-            <a href="javascript:void(0)" id="auth-forgot-pass-link" style="font-size: 13px; color: #2563EB; text-decoration: none;">Forgot?</a>
-          </div>
+          <label class="dribbble-label" for="auth-login-password">Mật khẩu</label>
           <div class="dribbble-input-wrap">
-            <input type="password" id="auth-login-password" class="dribbble-input dribbble-input-pass" required placeholder="Enter your password">
+            <input type="password" id="auth-login-password" class="dribbble-input dribbble-input-pass" required placeholder="Nhập mật khẩu...">
             <button type="button" class="dribbble-eye-btn" id="btn-toggle-login-pass" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2402,31 +2399,34 @@ async function automateProfile(profileId) {
         <div class="dribbble-extra-row">
           <label class="dribbble-checkbox-label">
             <input type="checkbox" id="auth-remember-me" checked>
-            <span>Remember me on this device</span>
+            <span>Ghi nhớ đăng nhập</span>
           </label>
         </div>
 
-        <button type="submit" class="dribbble-submit-btn" id="btn-submit-login">
-          <span>Log In</span>
-        </button>
+        <div class="dribbble-btn-wrap">
+          <button type="submit" class="dribbble-submit-btn" id="btn-submit-login">
+            <span>Đăng Nhập</span>
+          </button>
+          <a href="javascript:void(0)" id="auth-forgot-pass-link" class="dribbble-forgot-link">Quên mật khẩu?</a>
+        </div>
       </form>
 
-      <!-- REGISTER FORM -->
-      <form id="form-auth-register" class="dribbble-auth-form" style="display: none;" novalidate>
+      <!-- REGISTER FORM (Hidden by default) -->
+      <form id="form-auth-register" class="dribbble-auth-form auth-hidden" style="display: none;" novalidate>
         <div class="dribbble-field-group">
-          <label class="dribbble-label" for="auth-reg-name">Your full name</label>
-          <input type="text" id="auth-reg-name" class="dribbble-input" placeholder="e.g. Alex Johnson">
+          <label class="dribbble-label" for="auth-reg-name">Họ và tên</label>
+          <input type="text" id="auth-reg-name" class="dribbble-input" placeholder="Nhập họ và tên...">
         </div>
 
         <div class="dribbble-field-group">
-          <label class="dribbble-label" for="auth-reg-email">Your email</label>
+          <label class="dribbble-label" for="auth-reg-email">Email của bạn</label>
           <input type="email" id="auth-reg-email" class="dribbble-input" required placeholder="name@example.com">
         </div>
 
         <div class="dribbble-field-group">
-          <label class="dribbble-label" for="auth-reg-password">Password (min. 6 characters)</label>
+          <label class="dribbble-label" for="auth-reg-password">Mật khẩu (tối thiểu 6 ký tự)</label>
           <div class="dribbble-input-wrap">
-            <input type="password" id="auth-reg-password" class="dribbble-input dribbble-input-pass" required minlength="6" placeholder="Create a strong password">
+            <input type="password" id="auth-reg-password" class="dribbble-input dribbble-input-pass" required minlength="6" placeholder="Nhập mật khẩu mới...">
             <button type="button" class="dribbble-eye-btn" id="btn-toggle-reg-pass" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2435,9 +2435,9 @@ async function automateProfile(profileId) {
         </div>
 
         <div class="dribbble-field-group">
-          <label class="dribbble-label" for="auth-reg-confirm">Confirm password</label>
+          <label class="dribbble-label" for="auth-reg-confirm">Xác nhận mật khẩu</label>
           <div class="dribbble-input-wrap">
-            <input type="password" id="auth-reg-confirm" class="dribbble-input dribbble-input-pass" required minlength="6" placeholder="Repeat your password">
+            <input type="password" id="auth-reg-confirm" class="dribbble-input dribbble-input-pass" required minlength="6" placeholder="Nhập lại mật khẩu để xác nhận...">
             <button type="button" class="dribbble-eye-btn" id="btn-toggle-reg-confirm" title="Hiện/ẩn mật khẩu">
               <svg class="eye-icon-show" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
               <svg class="eye-icon-hide" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-.722-3.25"/><path d="M2 8a10.645 10.645 0 0 0 20 0"/><path d="m20 15-1.726-2.05"/><path d="m4 15 1.726-2.05"/><path d="m9 18 .722-3.25"/></svg>
@@ -2445,9 +2445,11 @@ async function automateProfile(profileId) {
           </div>
         </div>
 
-        <button type="submit" class="dribbble-submit-btn" id="btn-submit-register">
-          <span>Sign Up</span>
-        </button>
+        <div class="dribbble-btn-wrap">
+          <button type="submit" class="dribbble-submit-btn" id="btn-submit-register">
+            <span>Tạo Tài Khoản</span>
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -2548,7 +2550,7 @@ async function automateProfile(profileId) {
   <div class="toast-container" id="toast-container"></div>
 
   <script src="js/custom-select.js?v=2.3.1"></script>
-  <script src="app.js?v=2.9.0"></script>
+  <script src="app.js?v=3.0.0"></script>
   <script src="js/sync-ui.js?v=2.3.1"></script>
 </body>
 </html>

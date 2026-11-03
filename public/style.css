@@ -6211,16 +6211,16 @@ select:focus {
 }
 
 /* =============================================================
-   DRIBBLE MINIMALIST AI PLATFORM LOGIN (IMAGE 1 REPLICA)
+   DRIBBLE MINIMALIST AI PLATFORM LOGIN (IMAGE 2 REPLICA - VIETNAMESE)
    - Pure, spacious, distraction-free
-   - Large rounded corners (32px), clean labels, royal blue pill button
+   - Large rounded corners (32px), clean labels, centered royal blue pill button
    ============================================================= */
 
 .dribbble-auth-card {
   position: relative !important;
-  max-width: 460px !important;
-  width: 460px !important;
-  padding: 44px 40px 40px 40px !important;
+  max-width: 420px !important;
+  width: 420px !important;
+  padding: 40px 36px 36px 36px !important;
   border-radius: 32px !important;
   background: #FFFFFF !important;
   border: 1px solid rgba(0, 0, 0, 0.08) !important;
@@ -6239,8 +6239,8 @@ select:focus {
   position: absolute;
   top: 22px;
   right: 22px;
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   border: none;
   background: transparent;
@@ -6268,13 +6268,13 @@ select:focus {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 28px;
-  padding-right: 28px;
+  margin-bottom: 26px;
+  padding-right: 24px;
 }
 
 .dribbble-auth-title {
   font-family: var(--font-family) !important;
-  font-size: 28px !important;
+  font-size: 26px !important;
   font-weight: 700 !important;
   color: #111827 !important;
   margin: 0 !important;
@@ -6287,7 +6287,7 @@ select:focus {
 
 .dribbble-auth-switch-link {
   font-family: var(--font-family);
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 600;
   color: #2563EB;
   text-decoration: none;
@@ -6300,45 +6300,50 @@ select:focus {
   text-decoration: underline;
 }
 
-/* Form Container & Spacious 24px Gap */
+/* Form Container & Strictly Respect Display None */
 .dribbble-auth-form {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 22px !important;
-  padding: 0 !important;
-  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  margin: 0;
+}
+
+.dribbble-auth-form.auth-hidden,
+.dribbble-auth-form[style*="display: none"] {
+  display: none !important;
 }
 
 .dribbble-field-group {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 10px !important;
-  margin: 0 !important;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
 }
 
 .dribbble-label {
-  font-family: var(--font-family) !important;
-  font-size: 14.5px !important;
-  font-weight: 500 !important;
-  color: #374151 !important;
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #4B5563;
   letter-spacing: -0.01em;
-  margin: 0 !important;
+  margin: 0;
 }
 
 [data-theme="dark"] .dribbble-label {
-  color: #9CA3AF !important;
+  color: #9CA3AF;
 }
 
 /* Pristine Rounded Inputs */
 .dribbble-input {
   width: 100% !important;
   box-sizing: border-box !important;
-  height: 52px !important;
-  padding: 0 18px !important;
+  height: 50px !important;
+  padding: 0 16px !important;
   font-family: var(--font-family) !important;
-  font-size: 15px !important;
+  font-size: 14.5px !important;
   font-weight: 400 !important;
-  border-radius: 16px !important;
+  border-radius: 14px !important;
   border: 1.5px solid #E5E7EB !important;
   background: #FFFFFF !important;
   color: #111827 !important;
@@ -6360,7 +6365,7 @@ select:focus {
 
 .dribbble-input:focus {
   border-color: #2563EB !important;
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+  box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12) !important;
   outline: none !important;
   background: #FFFFFF !important;
 }
@@ -6368,7 +6373,7 @@ select:focus {
 [data-theme="dark"] .dribbble-input:focus {
   background: rgba(255, 255, 255, 0.07) !important;
   border-color: #3B82F6 !important;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 0 0 3.5px rgba(59, 130, 246, 0.2) !important;
 }
 
 .dribbble-input-wrap {
@@ -6377,7 +6382,7 @@ select:focus {
 }
 
 .dribbble-input-pass {
-  padding-right: 48px !important;
+  padding-right: 46px !important;
 }
 
 .dribbble-eye-btn {
@@ -6388,13 +6393,13 @@ select:focus {
   background: transparent;
   border: none;
   color: #9CA3AF;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 8px;
+  border-radius: 6px;
   transition: color 0.15s ease;
 }
 
@@ -6412,14 +6417,14 @@ select:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: -4px;
+  margin-top: -2px;
 }
 
 .dribbble-checkbox-label {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 400;
   color: #6B7280;
   cursor: pointer;
@@ -6431,40 +6436,64 @@ select:focus {
 }
 
 .dribbble-checkbox-label input[type="checkbox"] {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
   accent-color: #2563EB;
   cursor: pointer;
 }
 
-/* The Dribbble Royal Blue Pill Button (Image 1) */
+/* Centered Pill Button & Forgot Link Container (Image 2) */
+.dribbble-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  gap: 14px;
+}
+
 .dribbble-submit-btn {
-  width: 100% !important;
-  height: 52px !important;
+  width: auto !important;
+  min-width: 170px !important;
+  padding: 0 42px !important;
+  height: 48px !important;
   border-radius: 9999px !important;
   background: #2563EB !important;
   color: #FFFFFF !important;
   font-family: var(--font-family) !important;
-  font-size: 15.5px !important;
+  font-size: 15px !important;
   font-weight: 600 !important;
   border: none !important;
   cursor: pointer !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  margin-top: 6px !important;
-  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3) !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.28) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   user-select: none !important;
 }
 
 .dribbble-submit-btn:hover {
   background: #1D4ED8 !important;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45) !important;
+  box-shadow: 0 12px 26px rgba(37, 99, 235, 0.4) !important;
   transform: translateY(-1.5px) !important;
 }
 
 .dribbble-submit-btn:active {
   transform: translateY(1px) !important;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
+
+.dribbble-forgot-link {
+  font-family: var(--font-family);
+  font-size: 13.5px;
+  color: #9CA3AF;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.dribbble-forgot-link:hover {
+  color: #2563EB;
+  text-decoration: underline;
 }

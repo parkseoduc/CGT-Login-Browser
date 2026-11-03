@@ -5266,15 +5266,27 @@ function initAuthControls() {
   function switchAuthTab(tab) {
     currentAuthTab = tab;
     if (tab === 'login') {
-      if (formLogin) formLogin.style.display = 'flex';
-      if (formReg) formReg.style.display = 'none';
-      if (authTitle) authTitle.textContent = 'Log In';
-      if (switchLink) switchLink.textContent = 'Sign Up';
+      if (formLogin) {
+        formLogin.style.display = 'flex';
+        formLogin.classList.remove('auth-hidden');
+      }
+      if (formReg) {
+        formReg.style.display = 'none';
+        formReg.classList.add('auth-hidden');
+      }
+      if (authTitle) authTitle.textContent = 'Đăng Nhập';
+      if (switchLink) switchLink.textContent = 'Đăng Ký';
     } else {
-      if (formLogin) formLogin.style.display = 'none';
-      if (formReg) formReg.style.display = 'flex';
-      if (authTitle) authTitle.textContent = 'Sign Up';
-      if (switchLink) switchLink.textContent = 'Log In';
+      if (formLogin) {
+        formLogin.style.display = 'none';
+        formLogin.classList.add('auth-hidden');
+      }
+      if (formReg) {
+        formReg.style.display = 'flex';
+        formReg.classList.remove('auth-hidden');
+      }
+      if (authTitle) authTitle.textContent = 'Đăng Ký';
+      if (switchLink) switchLink.textContent = 'Đăng Nhập';
     }
   }
 
