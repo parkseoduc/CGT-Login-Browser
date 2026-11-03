@@ -1137,14 +1137,10 @@ async function automateProfile(profileId) {
     
         <!-- View 7: System & User Accounts Administration -->
         <div id="view-admin" class="view-section" style="display: none;">
-          <div class="admin-view-header">
-            <div>
-              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                <span class="badge badge-subtle-blue" style="font-weight: 700; padding: 4px 10px; font-size: 11px;">HỆ THỐNG QUẢN TRỊ</span>
-                <span class="badge badge-emerald-solid" style="font-size: 11px;">MÁY CHỦ LIC.CGTDEV.SPACE ĐÃ KẾT NỐI</span>
-              </div>
-              <h1 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0;">Quản Trị Người Dùng & Bản Quyền</h1>
-              <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0;">Quản lý tài khoản, nâng gói Pro / VIP trực tiếp, kiểm soát trạng thái và duyệt đơn hàng.</p>
+          <div class="admin-view-header" style="margin-bottom: 20px; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span class="badge badge-subtle-blue" style="font-weight: 700; padding: 5px 12px; font-size: 11.5px;">HỆ THỐNG QUẢN TRỊ</span>
+              <span class="badge badge-emerald-solid" style="font-size: 11.5px; padding: 5px 12px;" id="admin-server-status-badge">MÁY CHỦ LIC.CGTDEV.SPACE ĐÃ KẾT NỐI</span>
             </div>
             <div style="display: flex; gap: 10px; align-items: center;">
               <button class="uiv-btn uiv-btn-secondary" id="btn-admin-refresh">
@@ -2903,7 +2899,7 @@ async function automateProfile(profileId) {
 
     <!-- Admin Grant Plan Modal -->
     <div class="modal-overlay modal" id="admin-grant-modal" style="display: none;">
-      <div class="modal-container" style="max-width: 480px;">
+      <div class="modal-card modal-container" style="max-width: 480px; width: 100%; border-radius: 16px; margin: auto;">
         <div class="modal-header">
           <h2 class="modal-title">Cấp Gói Bản Quyền Trực Tiếp</h2>
           <button class="modal-close" id="admin-grant-close">&times;</button>
@@ -2939,7 +2935,7 @@ async function automateProfile(profileId) {
 
     <!-- Admin Reset Password Modal -->
     <div class="modal-overlay modal" id="admin-reset-pass-modal" style="display: none;">
-      <div class="modal-container" style="max-width: 440px;">
+      <div class="modal-card modal-container" style="max-width: 440px; width: 100%; border-radius: 16px; margin: auto;">
         <div class="modal-header">
           <h2 class="modal-title">Đặt Lại Mật Khẩu</h2>
           <button class="modal-close" id="admin-reset-pass-close">&times;</button>

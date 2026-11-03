@@ -315,7 +315,7 @@
 
       const keyText = u.license_key ? `<span class="mono-code" style="font-size:11.5px;">${u.license_key}</span>` : `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
       const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : '—';
-      const expiresText = u.expires_at ? new Date(u.expires_at).toLocaleDateString('vi-VN') : (u.plan_code?.includes('VIP') ? 'Vĩnh viễn' : 'Vô hạn');
+      const expiresText = u.expires_at ? new Date(u.expires_at).toLocaleDateString('vi-VN') : (u.plan_code?.includes('VIP') ? '<span style="font-weight:600; color:#10B981; font-family: inherit;">Vĩnh viễn</span>' : '<span style="color:var(--text-muted); font-family: inherit;">Vô hạn</span>');
 
       return `
         <tr>
@@ -332,7 +332,7 @@
           <td>${roleBadge}</td>
           <td>${planBadge}</td>
           <td>${keyText}</td>
-          <td style="font-size:12px;">${expiresText}</td>
+          <td style="font-size:12.5px; font-family: inherit;">${expiresText}</td>
           <td>${statusBadge}</td>
           <td style="font-size:12px; color:var(--text-muted);">${createdDate}</td>
           <td style="text-align: right;">

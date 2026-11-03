@@ -1560,7 +1560,8 @@ body::after {
 }
 
 .modal-card,
-.modal-window {
+.modal-window,
+.modal-container {
   width: 580px;
   max-width: 90vw;
   max-height: 85vh;
@@ -7281,4 +7282,54 @@ select:focus {
 [data-theme="light"] .admin-subtab-btn.active {
   color: #2563EB;
   border-bottom-color: #2563EB;
+}
+
+/* Admin Table & Controls Font Uniformity */
+.admin-table,
+.admin-table thead th,
+.admin-table tbody td,
+.admin-stat-card,
+.admin-search-input,
+.admin-select-filter,
+.admin-action-btn,
+.admin-subtab-btn {
+  font-family: var(--font-family) !important;
+}
+
+.modal-container {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  font-family: var(--font-family) !important;
+}
+
+[data-theme="light"] .modal-container {
+  background: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .modal-container .modal-header {
+  border-bottom: 1px solid #E2E8F0 !important;
+  background: #F8FAFC !important;
+}
+
+[data-theme="light"] .modal-container .modal-title {
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .modal-container .modal-body {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] .modal-container .form-control {
+  background: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
 }
