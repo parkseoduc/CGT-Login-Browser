@@ -36,4 +36,6 @@ data/tmp_backups/
 data/license/
 
 # Release archives
-releases/*.zip
+releases/
+*.exe
+!bin/chromium/.gitkeep
