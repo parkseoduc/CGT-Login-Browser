@@ -298,6 +298,107 @@ body::after {
   color: var(--text-muted);
 }
 
+/* Khuyên dùng Banner trên đỉnh thanh Header */
+.topbar-recommend-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  font-size: 12px;
+  line-height: 1.4;
+  background: rgba(56, 103, 244, 0.08);
+  border: 1px solid rgba(56, 103, 244, 0.25);
+  color: var(--text-main);
+  max-width: 540px;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 4px rgba(56, 103, 244, 0.06);
+  user-select: none;
+}
+
+.topbar-recommend-pill:hover {
+  background: rgba(56, 103, 244, 0.15);
+  border-color: rgba(56, 103, 244, 0.45);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(56, 103, 244, 0.15);
+}
+
+.recommend-pill-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(56, 103, 244, 0.15);
+  color: var(--primary, #3B82F6);
+}
+
+.recommend-pill-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.recommend-pill-tag {
+  font-weight: 700;
+  color: var(--primary, #3B82F6);
+}
+
+.recommend-pill-desc {
+  color: var(--text-muted);
+}
+
+.recommend-pill-desc b {
+  color: var(--text-main);
+}
+
+[data-theme="light"] .topbar-recommend-pill {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.08);
+}
+
+[data-theme="light"] .topbar-recommend-pill:hover {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+
+[data-theme="light"] .recommend-pill-icon {
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563EB;
+}
+
+[data-theme="light"] .recommend-pill-tag {
+  color: #1D4ED8;
+}
+
+[data-theme="light"] .recommend-pill-desc {
+  color: #1E40AF;
+}
+
+[data-theme="light"] .recommend-pill-desc b {
+  color: #1E3A8A;
+}
+
+@media (max-width: 1400px) {
+  .topbar-recommend-pill {
+    max-width: 420px;
+    font-size: 11.5px;
+    padding: 6px 12px;
+  }
+}
+
+@media (max-width: 1180px) {
+  .topbar-recommend-pill {
+    display: none;
+  }
+}
+
+
 .topbar-actions {
   display: flex;
   align-items: center;

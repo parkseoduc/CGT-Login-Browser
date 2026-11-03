@@ -4611,6 +4611,8 @@ function closeKernelModal() {
 
 if (btnKernelCenter) btnKernelCenter.addEventListener('click', openKernelModal);
 if (sidebarKernelCard) sidebarKernelCard.addEventListener('click', openKernelModal);
+const topbarRecommendPill = document.getElementById('topbar-recommend-pill');
+if (topbarRecommendPill) topbarRecommendPill.addEventListener('click', openKernelModal);
 if (btnModalOpenKernel) btnModalOpenKernel.addEventListener('click', openKernelModal);
 if (kernelModalClose) kernelModalClose.addEventListener('click', closeKernelModal);
 if (kernelModalCancel) kernelModalCancel.addEventListener('click', closeKernelModal);
