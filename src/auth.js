@@ -115,6 +115,10 @@ async function login({ email, password }) {
     throw new Error('Email hoặc mật khẩu không chính xác');
   }
 
+  if (user.status === 'BANNED') {
+    throw new Error('Tài khoản của bạn đã bị khóa bởi Quản trị viên. Vui lòng liên hệ hỗ trợ.');
+  }
+
   // Tạo phiên đăng nhập 30 ngày
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
@@ -138,6 +142,9 @@ async function getSessionUser(token) {
   }
 
   const user = db.getUserById(session.user_id);
+  if (!user || user.status === 'BANNED') {
+    return null;
+  }
   return publicUser(user);
 }
 

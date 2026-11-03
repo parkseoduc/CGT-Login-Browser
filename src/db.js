@@ -93,6 +93,25 @@ function initSchema() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS orders (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      customer_email TEXT NOT NULL,
+      customer_name TEXT DEFAULT '',
+      customer_phone TEXT DEFAULT '',
+      plan_code TEXT NOT NULL,
+      plan_name TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      duration_days INTEGER NOT NULL,
+      max_profiles INTEGER NOT NULL,
+      status TEXT DEFAULT 'PENDING',
+      transfer_content TEXT NOT NULL,
+      license_key TEXT DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      paid_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS extensions (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -771,6 +790,111 @@ function getActiveExtensionPathsForProfile(profileId) {
   return validPaths;
 }
 
+
+function deleteUser(id) {
+  const db = getDb();
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+  return db.prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
+function updateUserStatus(id, status) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE users SET status = ?, updated_at = ? WHERE id = ?').run(status, now, id);
+  if (status === 'BANNED') {
+    db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+  }
+  return getUserById(id);
+}
+
+function updateUserRole(id, role) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE users SET role = ?, updated_at = ? WHERE id = ?').run(role, now, id);
+  return getUserById(id);
+}
+
+function resetUserPassword(id, passwordHash) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare('UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?').run(passwordHash, now, id);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
+  return getUserById(id);
+}
+
+function createOrder(order) {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO orders (id, user_id, customer_email, customer_name, customer_phone, plan_code, plan_name, amount, duration_days, max_profiles, status, transfer_content, license_key, created_at, updated_at, paid_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(
+    order.id,
+    order.user_id || null,
+    order.customer_email,
+    order.customer_name || '',
+    order.customer_phone || '',
+    order.plan_code,
+    order.plan_name,
+    order.amount,
+    order.duration_days,
+    order.max_profiles,
+    order.status || 'PENDING',
+    order.transfer_content,
+    order.license_key || '',
+    order.created_at,
+    order.updated_at,
+    order.paid_at || null
+  );
+  return order;
+}
+
+function getOrderById(id) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM orders WHERE id = ?').get(id);
+}
+
+function listOrders(limit = 100) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM orders ORDER BY created_at DESC LIMIT ?').all(limit);
+}
+
+function updateOrder(id, updates) {
+  const db = getDb();
+  const keys = Object.keys(updates);
+  if (keys.length === 0) return getOrderById(id);
+  const setClauses = keys.map(k => `${k} = ?`).join(', ');
+  const values = keys.map(k => updates[k]);
+  values.push(id);
+  db.prepare(`UPDATE orders SET ${setClauses} WHERE id = ?`).run(...values);
+  return getOrderById(id);
+}
+
+function getAdminStats() {
+  const db = getDb();
+  const totalUsers = db.prepare('SELECT COUNT(*) as c FROM users').get()?.c || 0;
+  const proUsers = db.prepare("SELECT COUNT(*) as c FROM users WHERE plan_code LIKE '%PRO%'").get()?.c || 0;
+  const vipUsers = db.prepare("SELECT COUNT(*) as c FROM users WHERE plan_code LIKE '%VIP%'").get()?.c || 0;
+  const activeUsers = db.prepare("SELECT COUNT(*) as c FROM users WHERE status = 'ACTIVE'").get()?.c || 0;
+  const bannedUsers = db.prepare("SELECT COUNT(*) as c FROM users WHERE status = 'BANNED'").get()?.c || 0;
+  const totalProfiles = db.prepare('SELECT COUNT(*) as c FROM profiles').get()?.c || 0;
+  const totalOrders = db.prepare('SELECT COUNT(*) as c FROM orders').get()?.c || 0;
+  const paidOrders = db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'PAID'").get()?.c || 0;
+  const revenue = db.prepare("SELECT SUM(amount) as s FROM orders WHERE status = 'PAID'").get()?.s || 0;
+
+  return {
+    totalUsers,
+    proUsers,
+    vipUsers,
+    activeUsers,
+    bannedUsers,
+    totalProfiles,
+    totalOrders,
+    paidOrders,
+    revenue
+  };
+}
+
 module.exports = {
   getDb,
   listProfiles,
@@ -806,4 +930,13 @@ module.exports = {
   getSession,
   deleteSession,
   listUsers,
+  deleteUser,
+  updateUserStatus,
+  updateUserRole,
+  resetUserPassword,
+  createOrder,
+  getOrderById,
+  listOrders,
+  updateOrder,
+  getAdminStats,
 };

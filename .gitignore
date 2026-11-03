@@ -40,3 +40,6 @@ releases/
 *.exe
 !bin/chromium/.gitkeep
 installer/*.db
+
+data/.license_session.json
+data/*.db*

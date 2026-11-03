@@ -4089,6 +4089,7 @@ const views = {
   sync: { el: document.getElementById('view-sync'), title: 'Đồng Bộ Thao Tác Chuột & Phím', sub: 'Truyền tín hiệu bàn phím và chuột thời gian thực từ Master sang Slave qua CDP' },
   license: { el: document.getElementById('view-license'), title: 'Bản Quyền & Nâng Cấp Gói', sub: 'Tích hợp bảo mật bản quyền CGT-License Engine • lic.cgtdev.space' },
   api: { el: document.getElementById('view-api'), title: 'REST API & Automation Protocol', sub: 'Tự động hóa hoàn toàn với Puppeteer, Playwright, Python và MCP' },
+  admin: { el: document.getElementById('view-admin'), title: 'Quản Trị Người Dùng & Bản Quyền', sub: 'Quản lý tài khoản, nâng gói Pro / VIP và kết nối lic.cgtdev.space' },
 };
 
 function switchTab(tabId) {
@@ -4386,7 +4387,11 @@ document.querySelectorAll('.nav-item').forEach(item => {
 const sidebarBtnUpgrade = document.getElementById('sidebar-btn-upgrade');
 if (sidebarBtnUpgrade) {
   sidebarBtnUpgrade.addEventListener('click', () => {
-    switchTab('license');
+    if (typeof openCheckoutModal === 'function') {
+      openCheckoutModal('PRO_MONTHLY');
+    } else {
+      switchTab('license');
+    }
   });
 }
 

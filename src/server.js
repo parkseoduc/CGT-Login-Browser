@@ -7,6 +7,7 @@ const launcher = require('./launcher');
 const license = require('./license-manager');
 const licenseAdmin = require('./license-admin');
 const auth = require('./auth');
+const checkout = require('./checkout');
 const fingerprint = require('./fingerprint');
 const proxy = require('./proxy');
 const synchronizer = require('./synchronizer');
@@ -24,6 +25,16 @@ function sendJson(res, statusCode, data) {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   });
   res.end(JSON.stringify(data, null, 2));
+}
+
+
+async function requireAdmin(req, res) {
+  const user = await auth.getUserFromRequest(req);
+  if (!user || user.role !== 'admin') {
+    sendJson(res, 403, { success: false, error: 'Yêu cầu quyền Quản trị viên hệ thống (Admin)' });
+    return null;
+  }
+  return user;
 }
 
 function parseJsonBody(req) {
@@ -322,6 +333,191 @@ function createServer() {
           const body = await parseJsonBody(req);
           await auth.changePassword(user.id, body.oldPassword, body.newPassword);
           return sendJson(res, 200, { success: true, message: 'Đổi mật khẩu thành công' });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // ----------------- CHECKOUT & PRICING API ----------------- //
+      if (method === 'GET' && pathname === '/api/v1/checkout/plans') {
+        return sendJson(res, 200, {
+          success: true,
+          plans: checkout.getPlans(),
+          bankInfo: checkout.getBankConfig()
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/checkout/create-order') {
+        try {
+          const body = await parseJsonBody(req);
+          const currentUser = await auth.getUserFromRequest(req);
+          const result = await checkout.createOrder({
+            userId: currentUser?.id || null,
+            email: body.email || currentUser?.email,
+            name: body.name || currentUser?.name,
+            phone: body.phone || '',
+            planCode: body.planCode || 'PRO_MONTHLY'
+          });
+          return sendJson(res, 201, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/checkout/confirm') {
+        try {
+          const body = await parseJsonBody(req);
+          const currentUser = await auth.getUserFromRequest(req);
+          const result = await checkout.confirmOrder({
+            orderId: body.orderId,
+            userId: currentUser?.id || null
+          });
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // ----------------- ADMIN USERS & SYSTEM MANAGEMENT API ----------------- //
+      if (method === 'GET' && pathname === '/api/v1/admin/users') {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        const users = db.listUsers();
+        return sendJson(res, 200, { success: true, users });
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/admin/stats') {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        const stats = db.getAdminStats();
+        return sendJson(res, 200, { success: true, stats });
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/admin/orders') {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        const orders = db.listOrders(100);
+        return sendJson(res, 200, { success: true, orders });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/admin/orders/approve') {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const body = await parseJsonBody(req);
+          const result = await checkout.confirmOrder({ orderId: body.orderId });
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname.startsWith('/api/v1/admin/users/') && pathname.endsWith('/plan')) {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const targetUserId = pathname.split('/')[5];
+          const targetUser = db.getUserById(targetUserId);
+          if (!targetUser) return sendJson(res, 404, { success: false, error: 'Không tìm thấy tài khoản người dùng' });
+
+          const body = await parseJsonBody(req);
+          const planCode = body.planCode || 'PRO_MONTHLY';
+          let issuedKey = null;
+
+          if (planCode === 'FREE_TRIAL') {
+            db.updateUser(targetUserId, {
+              plan: 'Free Trial',
+              plan_code: 'FREE_TRIAL',
+              max_profiles: 50,
+              expires_at: null,
+              license_key: '',
+              updated_at: new Date().toISOString()
+            });
+          } else {
+            const durationDays = body.durationDays || (planCode === 'VIP_LIFETIME' ? 3650 : 30);
+            try {
+              const issued = await licenseAdmin.issueKey({
+                planCode,
+                durationDays,
+                notes: `Cấp bởi Admin cho ${targetUser.email}`,
+                customer: { name: targetUser.name, email: targetUser.email }
+              });
+              if (issued && issued.key) issuedKey = issued.key;
+            } catch (licErr) {
+              console.warn('[AdminUsers] Online issue key failed, using fallback:', licErr.message);
+              const prefix = planCode === 'VIP_LIFETIME' ? 'OMNI-VIP' : 'OMNI-PRO';
+              issuedKey = `${prefix}-${crypto.randomBytes(3).toString('hex').toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+            }
+
+            await auth.activateKeyForUser(targetUserId, issuedKey);
+          }
+
+          const updated = db.getUserById(targetUserId);
+          return sendJson(res, 200, { success: true, user: auth.publicUser(updated), key: issuedKey });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname.startsWith('/api/v1/admin/users/') && pathname.endsWith('/status')) {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const targetUserId = pathname.split('/')[5];
+          if (targetUserId === adminUser.id) {
+            return sendJson(res, 400, { success: false, error: 'Không thể tự khóa tài khoản của chính mình' });
+          }
+          const body = await parseJsonBody(req);
+          const newStatus = body.status === 'BANNED' ? 'BANNED' : 'ACTIVE';
+          const updated = db.updateUserStatus(targetUserId, newStatus);
+          return sendJson(res, 200, { success: true, user: auth.publicUser(updated) });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname.startsWith('/api/v1/admin/users/') && pathname.endsWith('/role')) {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const targetUserId = pathname.split('/')[5];
+          if (targetUserId === adminUser.id) {
+            return sendJson(res, 400, { success: false, error: 'Không thể tự thay đổi vai trò của chính mình' });
+          }
+          const body = await parseJsonBody(req);
+          const newRole = body.role === 'admin' ? 'admin' : 'user';
+          const updated = db.updateUserRole(targetUserId, newRole);
+          return sendJson(res, 200, { success: true, user: auth.publicUser(updated) });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname.startsWith('/api/v1/admin/users/') && pathname.endsWith('/reset-password')) {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const targetUserId = pathname.split('/')[5];
+          const body = await parseJsonBody(req);
+          const newPassword = body.newPassword || 'OmniBrowser@2026';
+          const hash = auth.hashPassword(newPassword);
+          db.resetUserPassword(targetUserId, hash);
+          return sendJson(res, 200, { success: true, message: 'Đã đặt lại mật khẩu thành công', newPassword });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'DELETE' && pathname.startsWith('/api/v1/admin/users/')) {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const targetUserId = pathname.split('/')[5];
+          if (targetUserId === adminUser.id) {
+            return sendJson(res, 400, { success: false, error: 'Không thể xóa tài khoản của chính mình' });
+          }
+          db.deleteUser(targetUserId);
+          return sendJson(res, 200, { success: true, message: 'Đã xóa tài khoản thành công' });
         } catch (err) {
           return sendJson(res, 400, { success: false, error: err.message });
         }
