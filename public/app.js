@@ -722,12 +722,21 @@ function updateBatchToolbar() {
   const countEl = document.getElementById('batch-selected-count');
   if (countEl) countEl.innerText = count;
 
-  // Cập nhật số lượng hồ sơ đã chọn trực tiếp lên chữ Đóng
+  // Cập nhật số lượng hồ sơ đã chọn lên nút Đóng
   const batchStopBtn = document.getElementById('batch-btn-stop');
   if (batchStopBtn) {
-    const span = batchStopBtn.querySelector('span');
-    if (span) {
-      span.innerText = count > 0 ? `Đóng (${count})` : 'Đóng';
+    const badge = batchStopBtn.querySelector('.batch-count-badge');
+    const label = batchStopBtn.querySelector('.btn-label') || batchStopBtn.querySelector('span');
+    if (badge) {
+      if (count > 0) {
+        badge.innerText = count;
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      if (label) label.innerText = 'Đóng';
+    } else if (label) {
+      label.innerText = count > 0 ? `Đóng (${count})` : 'Đóng';
     }
     batchStopBtn.title = count > 0 ? `Đóng ${count} hồ sơ đã chọn` : 'Đóng các hồ sơ đã chọn';
   }
@@ -735,9 +744,18 @@ function updateBatchToolbar() {
   // Cập nhật số lượng lên các nút thao tác hàng loạt khác
   const batchStartBtn = document.getElementById('batch-btn-start');
   if (batchStartBtn) {
-    const span = batchStartBtn.querySelector('span');
-    if (span) {
-      span.innerText = count > 0 ? `Mở (${count})` : 'Mở';
+    const badge = batchStartBtn.querySelector('.batch-count-badge');
+    const label = batchStartBtn.querySelector('.btn-label') || batchStartBtn.querySelector('span');
+    if (badge) {
+      if (count > 0) {
+        badge.innerText = count;
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      if (label) label.innerText = 'Mở';
+    } else if (label) {
+      label.innerText = count > 0 ? `Mở (${count})` : 'Mở';
     }
     batchStartBtn.title = count > 0 ? `Khởi chạy ${count} hồ sơ đã chọn` : 'Khởi chạy các hồ sơ đã chọn';
   }

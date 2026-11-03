@@ -2247,19 +2247,60 @@ select option:disabled {
 }
 
 #batch-btn-stop {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-main);
-  border-color: var(--border-subtle);
+  background: rgba(239, 68, 68, 0.1);
+  color: #F87171;
+  border-color: rgba(239, 68, 68, 0.3);
+  font-weight: 600;
 }
 [data-theme="light"] #batch-btn-stop {
-  background: #FFFFFF;
-  border-color: #CBD5E1;
-  color: #334155;
+  background: #FEF2F2;
+  border-color: #FECACA;
+  color: #DC2626;
 }
 #batch-btn-stop:hover {
-  background: rgba(239, 68, 68, 0.12);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #F87171 !important;
+  background: #DC2626;
+  border-color: #B91C1C;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+  transform: translateY(-1px);
+}
+#batch-btn-stop:hover svg {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Badge số lượng hồ sơ trên nút thao tác */
+.batch-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 3px;
+  transition: all 0.18s ease;
+}
+
+#batch-btn-stop .batch-count-badge {
+  background: rgba(239, 68, 68, 0.22);
+  color: #F87171;
+}
+[data-theme="light"] #batch-btn-stop .batch-count-badge {
+  background: rgba(220, 38, 38, 0.14);
+  color: #DC2626;
+}
+#batch-btn-stop:hover .batch-count-badge {
+  background: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+}
+
+#batch-btn-start .batch-count-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
 }
 
 #batch-btn-proxy {
