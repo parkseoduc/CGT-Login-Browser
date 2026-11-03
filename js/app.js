@@ -992,7 +992,7 @@ function renderProfiles() {
       osTooltip = 'Android';
     }
 
-    const kernelVersion = (p.kernel_path && p.kernel_path.includes('153')) || p.kernel_path.includes('Chromium_Workspace') ? '153' : '150';
+    const kernelVersion = (p.kernel_path && (p.kernel_path.includes('153') || p.kernel_path.includes('Chromium_Workspace'))) ? '153' : '150';
     const groupColor = (!p.group_color || p.group_color.toLowerCase() === '#3867f4') ? '#60A5FA' : p.group_color;
     const isChecked = selectedProfileIds.has(p.id);
 
