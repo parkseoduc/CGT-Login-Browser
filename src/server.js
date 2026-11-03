@@ -5,6 +5,7 @@ const config = require('./config');
 const db = require('./db');
 const launcher = require('./launcher');
 const license = require('./license-manager');
+const licenseAdmin = require('./license-admin');
 const fingerprint = require('./fingerprint');
 const proxy = require('./proxy');
 const synchronizer = require('./synchronizer');
@@ -288,6 +289,61 @@ function createServer() {
       if (method === 'POST' && pathname === '/api/v1/license/deactivate') {
         const result = await license.deactivateLicense();
         return sendJson(res, 200, { success: true, license: result });
+      }
+
+      // CGT-License Admin Integration
+      if (method === 'GET' && pathname === '/api/v1/license/admin/info') {
+        return sendJson(res, 200, {
+          success: true,
+          email: licenseAdmin.DEFAULT_ADMIN.email,
+          server_url: licenseAdmin.DEFAULT_ADMIN.serverUrl,
+          product_code: 'ANTIDETECT',
+          has_2fa: true,
+          active_key: 'OMNI-JV6FN-6RFDQ-J00FP-FE7GS'
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/license/admin/auto-activate') {
+        try {
+          let key = 'OMNI-JV6FN-6RFDQ-J00FP-FE7GS';
+          try {
+            const issued = await licenseAdmin.issueKey({
+              planCode: 'VIP_LIFETIME',
+              durationDays: 3650,
+              notes: 'Tự động kích hoạt VIP OmniBrowser'
+            });
+            if (issued && issued.key) key = issued.key;
+          } catch (issueErr) {
+            console.warn('[LicenseAdmin] Issue new key fallback to initial VIP key:', issueErr.message);
+          }
+          const result = await license.activateLicense(key);
+          return sendJson(res, 200, { success: true, license: result, key });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/license/admin/issue') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = await licenseAdmin.issueKey({
+            planCode: body.planCode || 'VIP_LIFETIME',
+            durationDays: Number(body.durationDays) || 3650,
+            notes: body.notes || 'Created via OmniBrowser Admin Portal'
+          });
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/license/admin/list') {
+        try {
+          const result = await licenseAdmin.listAdminLicenses();
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
       }
 
       // Batch Profiles Control

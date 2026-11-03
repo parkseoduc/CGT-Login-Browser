@@ -4399,43 +4399,129 @@ document.querySelectorAll('.plan-tab[data-subtab]').forEach(tab => {
     tab.classList.add('active');
 
     const sub = tab.dataset.subtab;
-    document.getElementById('subtab-packages-content').style.display = sub === 'packages' ? 'block' : 'none';
-    document.getElementById('subtab-activate-content').style.display = sub === 'activate' ? 'block' : 'none';
-    document.getElementById('subtab-device-content').style.display = sub === 'device' ? 'block' : 'none';
+    const pkgEl = document.getElementById('subtab-packages-content');
+    const actEl = document.getElementById('subtab-activate-content');
+    const devEl = document.getElementById('subtab-device-content');
+    const admEl = document.getElementById('subtab-admin-content');
+
+    if (pkgEl) pkgEl.style.display = sub === 'packages' ? 'block' : 'none';
+    if (actEl) actEl.style.display = sub === 'activate' ? 'block' : 'none';
+    if (devEl) devEl.style.display = sub === 'device' ? 'block' : 'none';
+    if (admEl) admEl.style.display = sub === 'admin' ? 'block' : 'none';
   });
 });
 
-document.getElementById('btn-switch-activate').addEventListener('click', () => {
-  document.querySelector('.plan-tab[data-subtab="activate"]').click();
-});
+const btnSwitchActivate = document.getElementById('btn-switch-activate');
+if (btnSwitchActivate) {
+  btnSwitchActivate.addEventListener('click', () => {
+    const actTab = document.querySelector('.plan-tab[data-subtab="activate"]');
+    if (actTab) actTab.click();
+  });
+}
 
 // License Key Submit
-document.getElementById('btn-submit-license').addEventListener('click', async () => {
-  const key = document.getElementById('license-key-input').value.trim();
-  if (!key) {
-    showToast('Vui lòng nhập License Key', 'danger');
-    return;
-  }
-
-  showToast('Đang xác thực với lic.cgtdev.space...', 'info');
-  try {
-    const res = await fetch(`${API_BASE}/license/activate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key })
-    });
-    const data = await res.json();
-    if (data.success && data.license) {
-      showToast(`Kích hoạt thành công gói ${data.license.plan}!`, 'success');
-      updateLicenseUI(data.license);
-      document.querySelector('.plan-tab[data-subtab="device"]').click();
-    } else {
-      showToast(`Kích hoạt thất bại: ${data.error}`, 'danger');
+const btnSubmitLicense = document.getElementById('btn-submit-license');
+if (btnSubmitLicense) {
+  btnSubmitLicense.addEventListener('click', async () => {
+    const key = document.getElementById('license-key-input').value.trim();
+    if (!key) {
+      showToast('Vui lòng nhập License Key', 'danger');
+      return;
     }
-  } catch (err) {
-    showToast(`Lỗi kích hoạt: ${err.message}`, 'danger');
-  }
-});
+
+    showToast('Đang xác thực với lic.cgtdev.space...', 'info');
+    try {
+      const res = await fetch(`${API_BASE}/license/activate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key })
+      });
+      const data = await res.json();
+      if (data.success && data.license) {
+        showToast(`Kích hoạt thành công gói ${data.license.plan}!`, 'success');
+        updateLicenseUI(data.license);
+        const devTab = document.querySelector('.plan-tab[data-subtab="device"]');
+        if (devTab) devTab.click();
+      } else {
+        showToast(`Kích hoạt thất bại: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi kích hoạt: ${err.message}`, 'danger');
+    }
+  });
+}
+
+// CGT-License Admin Fast Auto-Activate
+const btnAdminAutoActivate = document.getElementById('btn-admin-auto-activate');
+if (btnAdminAutoActivate) {
+  btnAdminAutoActivate.addEventListener('click', async () => {
+    showToast('Đang kết nối xác thực 2FA với lic.cgtdev.space...', 'info');
+    btnAdminAutoActivate.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/license/admin/auto-activate`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success && data.license) {
+        showToast('Đã cấp & kích hoạt thành công VIP Vĩnh Viễn!', 'success');
+        updateLicenseUI(data.license);
+        const devTab = document.querySelector('.plan-tab[data-subtab="device"]');
+        if (devTab) devTab.click();
+      } else {
+        showToast(`Kích hoạt tự động thất bại: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi: ${err.message}`, 'danger');
+    } finally {
+      btnAdminAutoActivate.disabled = false;
+    }
+  });
+}
+
+// CGT-License Admin Issue Key for Customers
+const btnAdminIssueKey = document.getElementById('btn-admin-issue-key');
+if (btnAdminIssueKey) {
+  btnAdminIssueKey.addEventListener('click', async () => {
+    const planCode = document.getElementById('admin-issue-plan')?.value || 'VIP_LIFETIME';
+    const notes = document.getElementById('admin-issue-notes')?.value.trim() || 'Tạo qua OmniBrowser Admin';
+    const durationDays = planCode === 'PRO_MONTHLY' ? 30 : 3650;
+
+    showToast('Đang kết nối máy chủ tạo License Key...', 'info');
+    btnAdminIssueKey.disabled = true;
+    try {
+      const res = await fetch(`${API_BASE}/license/admin/issue`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planCode, durationDays, notes })
+      });
+      const data = await res.json();
+      if (data.success && data.key) {
+        showToast(`Đã tạo License Key thành công: ${data.key}`, 'success');
+        const box = document.getElementById('admin-issued-key-box');
+        const textEl = document.getElementById('admin-issued-key-text');
+        if (box && textEl) {
+          textEl.innerText = data.key;
+          box.style.display = 'block';
+        }
+      } else {
+        showToast(`Tạo key thất bại: ${data.error}`, 'danger');
+      }
+    } catch (err) {
+      showToast(`Lỗi: ${err.message}`, 'danger');
+    } finally {
+      btnAdminIssueKey.disabled = false;
+    }
+  });
+}
+
+const btnAdminCopyIssuedKey = document.getElementById('btn-admin-copy-issued-key');
+if (btnAdminCopyIssuedKey) {
+  btnAdminCopyIssuedKey.addEventListener('click', async () => {
+    const key = document.getElementById('admin-issued-key-text')?.innerText.trim();
+    if (key) {
+      await safeCopyToClipboard(key);
+      showToast('Đã sao chép License Key vào bộ nhớ tạm', 'success');
+    }
+  });
+}
 
 // Copy HWID
 const btnCopyHwid = document.getElementById('btn-copy-hwid');
