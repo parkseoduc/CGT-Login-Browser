@@ -58,6 +58,21 @@ const filterGroupSelect = document.getElementById('filter-group-select');
 const kernelLabel = document.getElementById('core-kernel-label');
 const brandLicenseBadge = document.getElementById('brand-license-badge');
 
+function formatShortBadge(planStr) {
+  if (!planStr) return 'FREE';
+  const str = String(planStr).toUpperCase();
+  if (str.includes('VIP')) return 'VIP';
+  if (str.includes('PRO')) return 'PRO';
+  return 'FREE';
+}
+
+function updateBrandBadge(planStr) {
+  if (!brandLicenseBadge) return;
+  const shortText = formatShortBadge(planStr);
+  brandLicenseBadge.textContent = shortText;
+  brandLicenseBadge.className = 'brand-badge ' + shortText.toLowerCase();
+}
+
 const sidebarPlanName = document.getElementById('sidebar-plan-name');
 const sidebarPlanQuota = document.getElementById('sidebar-plan-quota');
 const sidebarPlanExpires = document.getElementById('sidebar-plan-expires');
@@ -541,7 +556,7 @@ function updateLicenseUI(info) {
   sidebarPlanName.innerText = `Gói ${info.plan}`;
   sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
   sidebarPlanExpires.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString() : 'Vô hạn';
-  brandLicenseBadge.innerText = info.plan.toUpperCase();
+  updateBrandBadge(info.plan);
   statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
 
   const hwidEl = document.getElementById('license-hwid-text');
@@ -5205,8 +5220,7 @@ function renderPolyUserProfile(user) {
   }
 
   if (brandLicenseBadge) {
-    brandLicenseBadge.textContent = user.plan || 'Free';
-    brandLicenseBadge.className = 'license-badge ' + (user.plan_code !== 'FREE_TRIAL' ? 'pro' : 'free');
+    updateBrandBadge(user.plan_code || user.plan);
   }
 }
 
