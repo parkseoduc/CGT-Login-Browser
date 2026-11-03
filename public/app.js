@@ -4515,6 +4515,22 @@ if (btnAdminIssueKey) {
   });
 }
 
+// Copy Helper with Visual Feedback
+window.copyVipKey = async function(btn) {
+  const key = 'OMNI-JV6FN-6RFDQ-J00FP-FE7GS';
+  await safeCopyToClipboard(key);
+  showToast('Đã sao chép License Key VIP vào bộ nhớ tạm', 'success');
+  if (btn) {
+    const origHTML = btn.innerHTML;
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span>Đã chép!</span>';
+    setTimeout(() => {
+      btn.innerHTML = origHTML;
+      btn.classList.remove('copied');
+    }, 1500);
+  }
+};
+
 const btnAdminCopyIssuedKey = document.getElementById('btn-admin-copy-issued-key');
 if (btnAdminCopyIssuedKey) {
   btnAdminCopyIssuedKey.addEventListener('click', async () => {
