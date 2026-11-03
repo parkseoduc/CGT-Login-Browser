@@ -305,9 +305,9 @@
 
       let planBadge = `<span class="badge" style="background: rgba(255,255,255,0.08);">${u.plan || 'Free'}</span>`;
       if ((u.plan_code || '').includes('VIP')) {
-        planBadge = `<span class="badge badge-emerald-solid">👑 VIP Vĩnh Viễn</span>`;
+        planBadge = `<span class="badge badge-emerald-solid">VIP Vĩnh Viễn</span>`;
       } else if ((u.plan_code || '').includes('PRO')) {
-        planBadge = `<span class="badge badge-subtle-blue">⚡ Pro 30 Ngày</span>`;
+        planBadge = `<span class="badge badge-subtle-blue">Pro 30 Ngày</span>`;
       }
 
       const statusBadge = isBanned
@@ -339,7 +339,7 @@
           <td style="text-align: right;">
             <div class="admin-action-group">
               <button class="admin-action-btn btn-grant" onclick="window.adminOpenGrantModal('${u.id}', '${escapeHtml(u.email)}')">
-                <span>⚡ Cấp Gói</span>
+                <span>Cấp Gói</span>
               </button>
               ${isBanned
                 ? `<button class="admin-action-btn btn-unlock" onclick="window.adminToggleUserStatus('${u.id}', 'ACTIVE')"><span>Mở</span></button>`
