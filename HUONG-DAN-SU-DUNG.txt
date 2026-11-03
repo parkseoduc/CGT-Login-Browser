@@ -1,0 +1,38 @@
+================================================================================
+   OMNIBROWSER ANTIDETECT WORKSTATION - HƯỚNG DẪN SỬ DỤNG DÀNH CHO NGƯỜI DÙNG
+================================================================================
+
+1. CÁCH KHỞI ĐỘNG ỨNG DỤNG (1-CLICK DÙNG NGAY):
+   - Nhấp đúp chuột trực tiếp vào file:
+     👉 OmniBrowser.exe
+
+   - Ứng dụng sẽ tự động khởi động hệ thống và mở cửa sổ Desktop độc lập.
+   - Hoàn toàn KHÔNG cần cài đặt Node.js hay bất kỳ phần mềm trung gian nào
+     (Đã nhúng sẵn Node.js Runtime & Chromium 153 Core Portable 100%).
+   - Nếu bạn muốn mở giao diện trên tab trình duyệt thông thường:
+     👉 Nhấp đúp vào start-web.bat
+
+2. TÍNH NĂNG CHỦ ĐẠO ĐÃ TÍCH HỢP SẴN:
+   ✔ Nhân Chromium 153 Core độc quyền (Bypass 100% Iphey, Pixelscan, CreepJS).
+   ✔ Đổi vân tay độc lập: Canvas Noise, Audio Noise, WebGL Vendor/Renderer, WebRTC Spoofing.
+   ✔ Hỗ trợ cấu hình Proxy đa giao thức: HTTP, HTTPS, SOCKS5, TMProxy, TinProxy, Xoay 4G.
+   ✔ Đồng bộ hóa thao tác chuột & bàn phím thời gian thực giữa các trình duyệt.
+   ✔ Quản lý phân nhóm hồ sơ, thêm hàng loạt hồ sơ siêu tốc chỉ trong 2 giây.
+   ✔ Tích hợp sẵn 4 tiện ích mở rộng chuẩn MMO:
+       • 2FA Authenticator (Tự động sinh mã xác thực 2 bước)
+       • Cookie Editor (Nhập/Xuất Cookie JSON nhanh)
+       • Facebook Helper (Hỗ trợ tài khoản Facebook)
+       • Proxy Inspector (Kiểm tra IP & Độ trễ Ping)
+   ✔ Bản quyền VIP Vĩnh Viễn (Hạn mức 2.000 hồ sơ, chạy cùng lúc 50 luồng)
+     kết nối máy chủ bảo mật CGT-License: https://lic.cgtdev.space
+
+3. LƯU Ý KHI SỬ DỤNG LẦN ĐẦU TRÊN MÁY TÍNH MỚI:
+   - Nếu Windows Defender SmartScreen hiện thông báo bảo vệ file mới:
+     ➜ Nhấn vào dòng chữ "More info" (Xem thêm)
+     ➜ Nhấn nút "Run anyway" (Vẫn chạy)
+   - Toàn bộ cơ sở dữ liệu hồ sơ được lưu an toàn tại thư mục data/ trên máy của bạn.
+   - Khi cần chuyển dữ liệu sang máy tính khác, chỉ cần sao chép toàn bộ thư mục data/.
+
+================================================================================
+   Hỗ trợ kỹ thuật & Cập nhật: CGT Development Team (https://cgtdev.space)
+================================================================================

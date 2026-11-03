@@ -8,7 +8,8 @@
     "desktop": "node --experimental-sqlite desktop/launcher.js",
     "test:core": "node --experimental-sqlite test/test-core.js",
     "test:api": "node --experimental-sqlite test/test-api.js",
-    "test:web": "node --experimental-sqlite test/test-web-ui-full.js"
+    "test:web": "node --experimental-sqlite test/test-web-ui-full.js",
+    "build:exe": "C:\\\\Windows\\\\Microsoft.NET\\\\Framework64\\\\v4.0.30319\\\\csc.exe /target:winexe /win32icon:app.ico /r:System.Windows.Forms.dll /r:System.Drawing.dll /out:OmniBrowser.exe src\\\\app-launcher.cs"
   },
   "engines": {
     "node": ">=22.5.0"
