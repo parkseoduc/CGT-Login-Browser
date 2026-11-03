@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600;700;800&family=Lexend:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=2.7.0">
+  <link rel="stylesheet" href="style.css?v=2.8.0">
 </head>
 <body>
   <div class="app-container">
@@ -163,9 +163,16 @@
           <!-- User Account Area (PolyLogin style) -->
           <div class="user-account-wrapper" id="user-account-wrapper" style="position: relative;">
             <!-- Guest state: Open Login Modal Button -->
-            <button class="btn btn-primary btn-sm" id="btn-header-login" style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>Đăng nhập</span>
+            <!-- Guest state: Open Login Modal Button (pixbugius AI Platform Style) -->
+            <button class="pix-btn-header-login" id="btn-header-login" title="Nhấn để Đăng Nhập hoặc Tạo Tài Khoản">
+              <span class="pix-btn-shimmer"></span>
+              <svg class="pix-btn-star" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+              <span class="pix-btn-label">Đăng Nhập</span>
+              <svg class="pix-btn-arrow" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </button>
 
             <!-- Logged-in state: PolyLogin Profile Pill -->
@@ -2353,9 +2360,9 @@ async function automateProfile(profileId) {
     <div class="modal-card auth-modal-card">
       <div class="modal-header auth-modal-header">
         <div style="display: flex; align-items: center; gap: 14px;">
-          <div class="auth-modal-header-icon">
+          <div class="auth-modal-header-icon pix-header-ai-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
             </svg>
           </div>
           <div>
@@ -2415,9 +2422,10 @@ async function automateProfile(profileId) {
           </label>
         </div>
 
-        <button type="submit" class="uiv-cta-emerald auth-submit-btn" id="btn-submit-login">
+        <button type="submit" class="auth-submit-btn pix-btn-submit-login" id="btn-submit-login">
+          <span class="pix-btn-shimmer"></span>
           <span>Đăng Nhập Ngay</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="pix-submit-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
 
         
@@ -2483,9 +2491,10 @@ async function automateProfile(profileId) {
           </div>
         </div>
 
-        <button type="submit" class="uiv-cta-emerald auth-submit-btn" id="btn-submit-register">
+        <button type="submit" class="auth-submit-btn pix-btn-submit-reg" id="btn-submit-register">
+          <span class="pix-btn-shimmer"></span>
           <span>Tạo Tài Khoản Mới</span>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg class="pix-submit-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </form>
     </div>
@@ -2587,7 +2596,7 @@ async function automateProfile(profileId) {
   <div class="toast-container" id="toast-container"></div>
 
   <script src="js/custom-select.js?v=2.3.1"></script>
-  <script src="app.js?v=2.7.0"></script>
+  <script src="app.js?v=2.8.0"></script>
   <script src="js/sync-ui.js?v=2.3.1"></script>
 </body>
 </html>
