@@ -38,6 +38,122 @@ function preparePreferences(userDataDir) {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Đảm bảo extension nội bộ tự động gắn tên Profile vào tiêu đề trang và tab trình duyệt.
+ * Giúp người dùng nhận diện ngay profile trên Taskbar Windows, Alt+Tab, và tiêu đề tab (kể cả với SPA như YouTube).
+ */
+function ensureProfileTitleExtension(userDataDir, profileName) {
+  const extDir = path.join(userDataDir, 'title_extension');
+  fs.mkdirSync(extDir, { recursive: true });
+
+  const safeName = (profileName || 'Profile').trim();
+  const manifest = {
+    manifest_version: 3,
+    name: `Profile Tag: ${safeName}`,
+    version: '1.0.0',
+    description: 'Internal profile title tagger for taskbar and tab identification',
+    content_scripts: [
+      {
+        matches: ['<all_urls>'],
+        js: ['content.js'],
+        run_at: 'document_start',
+        all_frames: false,
+      },
+    ],
+  };
+
+  const contentScript = `(() => {
+  const TAG = '[' + ${JSON.stringify(safeName)} + ']';
+  let isSetting = false;
+
+  function formatTitle(raw) {
+    if (!raw) return TAG;
+    const trimmed = raw.trim();
+    if (trimmed.startsWith(TAG)) return trimmed;
+    return TAG + ' ' + trimmed;
+  }
+
+  function applyTitle() {
+    if (isSetting) return;
+    const cur = document.title || '';
+    if (!cur && document.readyState === 'loading') {
+      return;
+    }
+    if (!cur.startsWith(TAG)) {
+      isSetting = true;
+      try {
+        const next = formatTitle(cur);
+        document.title = next;
+      } catch (e) {
+        try {
+          let t = document.querySelector('title');
+          if (!t) {
+            t = document.createElement('title');
+            (document.head || document.documentElement).appendChild(t);
+          }
+          t.textContent = formatTitle(cur);
+        } catch {}
+      } finally {
+        Promise.resolve().then(() => {
+          isSetting = false;
+        });
+      }
+    }
+  }
+
+  // 1. Chạy ngay khi nạp trang
+  applyTitle();
+
+  // 2. Chạy khi DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', applyTitle, { once: true });
+  }
+
+  // 3. Chạy khi window load
+  window.addEventListener('load', applyTitle, { once: true });
+
+  // 4. Quan sát DOM mutations cho SPA (YouTube chuyển bài, Facebook chuyển tab động...)
+  const observer = new MutationObserver(() => {
+    applyTitle();
+  });
+
+  const checkAndObserve = () => {
+    const target = document.querySelector('head') || document.documentElement;
+    if (target) {
+      observer.observe(target, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+      return true;
+    }
+    return false;
+  };
+
+  if (!checkAndObserve()) {
+    const poll = setInterval(() => {
+      if (checkAndObserve()) clearInterval(poll);
+    }, 50);
+  }
+})();
+`;
+
+  fs.writeFileSync(path.join(extDir, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+  fs.writeFileSync(path.join(extDir, 'content.js'), contentScript, 'utf8');
+
+  return extDir;
+}
+
 // Bắt đầu một Profile
 async function startProfile(profileId, overrides = {}) {
   const profile = db.getProfile(profileId);
@@ -213,15 +329,15 @@ async function startProfile(profileId, overrides = {}) {
     args.push(...tokens);
   }
 
-  // Nạp danh sách Extensions (Toàn cục + Riêng lẻ cho profile)
+  // Nạp danh sách Extensions (Extension nội bộ gắn tên Profile vào tiêu đề + Extension người dùng)
   try {
-    const extPaths = db.getActiveExtensionPathsForProfile(profileId);
-    if (extPaths && extPaths.length > 0) {
-      const joinedExts = extPaths.join(',');
-      args.push(`--load-extension=${joinedExts}`);
-      args.push(`--disable-extensions-except=${joinedExts}`);
-      console.log(`[Launcher] Loaded ${extPaths.length} extension(s) for profile ${profileId}`);
-    }
+    const titleExtDir = ensureProfileTitleExtension(userDataDir, profile.name);
+    const userExtPaths = db.getActiveExtensionPathsForProfile(profileId) || [];
+    const allExts = [titleExtDir, ...userExtPaths];
+    const joinedExts = allExts.join(',');
+    args.push(`--load-extension=${joinedExts}`);
+    args.push(`--disable-extensions-except=${joinedExts}`);
+    console.log(`[Launcher] Loaded Profile Title Extension + ${userExtPaths.length} extension(s) for "${profile.name}"`);
   } catch (err) {
     console.warn('[Launcher] Warning loading extensions:', err.message);
   }
@@ -232,18 +348,20 @@ async function startProfile(profileId, overrides = {}) {
     startUrl = startUrl.replace('http://iphey.com', 'https://iphey.com');
   }
 
-  // Khởi động mượt mà (Cold-Boot Graceful Splash):
+  // Khởi động mượt mà (Cold-Boot Graceful Splash & Welcome):
   // Giúp GPU Process và ANGLE D3D11 device khởi tạo ấm êm 350ms trước khi tải các trang fingerprint nặng
-  // Triệt tiêu hoàn toàn race condition gây mã ngắt STATUS_BREAKPOINT khi khởi động lạnh
+  // Đồng thời gán sẵn tên Profile vào tiêu đề trang và tab để người dùng nhận biết ngay trên Taskbar
   let launchTarget = startUrl;
+  const splashPath = path.join(userDataDir, 'start.html');
+  const safeProfileDisplayName = (profile.name || 'OmniBrowser').trim();
+
   if (startUrl && startUrl !== 'about:blank' && !startUrl.startsWith('data:')) {
-    const splashPath = path.join(userDataDir, 'start.html');
     const splashContent = `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="utf-8">
   <meta name="referrer" content="no-referrer">
-  <title>OmniBrowser Workstation</title>
+  <title>[${escapeHtml(safeProfileDisplayName)}] OmniBrowser Workstation</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -268,6 +386,17 @@ async function startProfile(profileId, overrides = {}) {
       animation: spin 0.8s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .badge {
+      display: inline-block;
+      padding: 4px 14px;
+      margin-bottom: 12px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #60a5fa;
+    }
     h3 { font-size: 18px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em; }
     p { font-size: 13px; color: #94a3b8; }
   </style>
@@ -280,6 +409,7 @@ async function startProfile(profileId, overrides = {}) {
 <body>
   <div class="card">
     <div class="spinner"></div>
+    <div class="badge">[${escapeHtml(safeProfileDisplayName)}]</div>
     <h3>OmniBrowser Workstation</h3>
     <p>Đang chuẩn bị môi trường bảo mật...</p>
   </div>
@@ -287,6 +417,128 @@ async function startProfile(profileId, overrides = {}) {
 </html>`;
     try {
       fs.writeFileSync(splashPath, splashContent, 'utf8');
+      launchTarget = splashPath;
+    } catch {}
+  } else if (!startUrl) {
+    // Khi người dùng để trống Start URL, mở trang Chào mừng có gắn sẵn tên hồ sơ
+    const welcomeContent = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="referrer" content="no-referrer">
+  <title>[${escapeHtml(safeProfileDisplayName)}] OmniBrowser Workstation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      user-select: none;
+    }
+    .card {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 36px 44px;
+      text-align: center;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.5);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      margin-bottom: 16px;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 9999px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #60a5fa;
+      letter-spacing: 0.02em;
+    }
+    h2 { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
+    p.desc { font-size: 14px; color: #94a3b8; margin-bottom: 24px; line-height: 1.5; }
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .search-box input {
+      flex: 1;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-box input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+    }
+    .search-box button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 0 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .search-box button:hover { background: #1d4ed8; }
+    .quick-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+    }
+    .quick-links a {
+      color: #cbd5e1;
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .quick-links a:hover {
+      background: rgba(59, 130, 246, 0.2);
+      border-color: #3b82f6;
+      color: #93c5fd;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">[${escapeHtml(safeProfileDisplayName)}]</div>
+    <h2>OmniBrowser Workstation</h2>
+    <p class="desc">Môi trường trình duyệt sạch, biệt lập vân tay đã sẵn sàng hoạt động.</p>
+    <form class="search-box" action="https://www.google.com/search" method="GET">
+      <input type="text" name="q" placeholder="Tìm kiếm trên Google hoặc nhập URL..." autofocus>
+      <button type="submit">Tìm kiếm</button>
+    </form>
+    <div class="quick-links">
+      <a href="https://iphey.com" target="_self">🛡️ Kiểm tra Iphey</a>
+      <a href="https://pixelscan.net" target="_self">🔍 Pixelscan</a>
+      <a href="https://whoer.net" target="_self">🌐 Whoer</a>
+      <a href="https://youtube.com" target="_self">▶️ YouTube</a>
+      <a href="https://facebook.com" target="_self">📘 Facebook</a>
+    </div>
+  </div>
+</body>
+</html>`;
+    try {
+      fs.writeFileSync(splashPath, welcomeContent, 'utf8');
       launchTarget = splashPath;
     } catch {}
   }
