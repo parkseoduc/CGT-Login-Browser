@@ -518,9 +518,13 @@ function updateLicenseUI(info) {
 
 async function fetchGroups() {
   try {
-    const res = await fetch(`${API_BASE}/groups`);
-    const data = await res.json();
-    allGroups = data.groups || [];
+    if (window.CRM_CONFIG && window.CRM_CONFIG.USE_MOCK_DATA && window.MockDb) {
+      allGroups = window.MockDb.getGroups();
+    } else {
+      const res = await fetch(`${API_BASE}/groups`);
+      const data = await res.json();
+      allGroups = data.groups || [];
+    }
     
     // Update Profile Modal group select
     formGroupId.innerHTML = '<option value="">(Không chọn nhóm)</option>' +
@@ -586,9 +590,13 @@ function renderGroups() {
 
 async function fetchProxies() {
   try {
-    const res = await fetch(`${API_BASE}/proxies`);
-    const data = await res.json();
-    allProxies = data.proxies || [];
+    if (window.CRM_CONFIG && window.CRM_CONFIG.USE_MOCK_DATA && window.MockDb) {
+      allProxies = window.MockDb.getProxies();
+    } else {
+      const res = await fetch(`${API_BASE}/proxies`);
+      const data = await res.json();
+      allProxies = data.proxies || [];
+    }
 
     if (formProxySelect) {
       const curVal = formProxySelect.value;
@@ -694,6 +702,11 @@ function renderProxies() {
 
 async function fetchProfiles() {
   try {
+    if (window.CRM_CONFIG && window.CRM_CONFIG.USE_MOCK_DATA && window.MockDb) {
+      allProfiles = window.MockDb.getProfiles();
+      renderProfiles();
+      return;
+    }
     const res = await fetch(`${API_BASE}/profiles`);
     const data = await res.json();
     allProfiles = data.profiles || [];
@@ -707,7 +720,11 @@ async function fetchProfiles() {
     }
     renderProfiles();
   } catch (err) {
-    console.error('Error fetching profiles:', err);
+    console.log('[CRM Template] Chạy chế độ Mock Data:', err.message);
+    if (window.MockDb) {
+      allProfiles = window.MockDb.getProfiles();
+      renderProfiles();
+    }
   }
 }
 
@@ -1108,6 +1125,12 @@ function escapeHtml(str) {
 
 // Actions
 window.startProfile = async function(id) {
+  if (window.CRM_CONFIG && window.CRM_CONFIG.USE_MOCK_DATA && window.MockDb) {
+    window.MockDb.updateProfile(id, { isRunning: true, last_run_at: new Date().toISOString() });
+    showToast('Đã khởi chạy hồ sơ (Demo Mode)', 'success');
+    await fetchProfiles();
+    return;
+  }
   try {
     launchingProfileIds.add(id);
     failedProfileIds.delete(id);
@@ -1134,6 +1157,12 @@ window.startProfile = async function(id) {
 };
 
 window.stopProfile = async function(id) {
+  if (window.CRM_CONFIG && window.CRM_CONFIG.USE_MOCK_DATA && window.MockDb) {
+    window.MockDb.updateProfile(id, { isRunning: false });
+    showToast('Đã đóng hồ sơ (Demo Mode)', 'success');
+    await fetchProfiles();
+    return;
+  }
   try {
     stoppingProfileIds.add(id);
     renderProfiles();
