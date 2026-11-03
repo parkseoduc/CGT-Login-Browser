@@ -5260,22 +5260,30 @@ function initAuthControls() {
   const formReg = document.getElementById('form-auth-register');
   const authTitle = document.getElementById('auth-modal-title');
 
+  let currentAuthTab = 'login';
+  const switchLink = document.getElementById('auth-modal-switch-link');
+
   function switchAuthTab(tab) {
+    currentAuthTab = tab;
     if (tab === 'login') {
-      if (tabLogin) tabLogin.classList.add('active');
-      if (tabReg) tabReg.classList.remove('active');
-      if (formLogin) formLogin.style.display = 'block';
+      if (formLogin) formLogin.style.display = 'flex';
       if (formReg) formReg.style.display = 'none';
-      if (authTitle) authTitle.textContent = 'Đăng Nhập Tài Khoản';
+      if (authTitle) authTitle.textContent = 'Log In';
+      if (switchLink) switchLink.textContent = 'Sign Up';
     } else {
-      if (tabReg) tabReg.classList.add('active');
-      if (tabLogin) tabLogin.classList.remove('active');
       if (formLogin) formLogin.style.display = 'none';
-      if (formReg) formReg.style.display = 'block';
-      if (authTitle) authTitle.textContent = 'Đăng Ký Tài Khoản Mới';
+      if (formReg) formReg.style.display = 'flex';
+      if (authTitle) authTitle.textContent = 'Sign Up';
+      if (switchLink) switchLink.textContent = 'Log In';
     }
   }
 
+  if (switchLink) {
+    switchLink.onclick = (e) => {
+      e.preventDefault();
+      switchAuthTab(currentAuthTab === 'login' ? 'register' : 'login');
+    };
+  }
   if (tabLogin) tabLogin.onclick = () => switchAuthTab('login');
   if (tabReg) tabReg.onclick = () => switchAuthTab('register');
 

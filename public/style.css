@@ -6209,3 +6209,262 @@ select:focus {
   width: 100% !important;
   box-sizing: border-box !important;
 }
+
+/* =============================================================
+   DRIBBLE MINIMALIST AI PLATFORM LOGIN (IMAGE 1 REPLICA)
+   - Pure, spacious, distraction-free
+   - Large rounded corners (32px), clean labels, royal blue pill button
+   ============================================================= */
+
+.dribbble-auth-card {
+  position: relative !important;
+  max-width: 460px !important;
+  width: 460px !important;
+  padding: 44px 40px 40px 40px !important;
+  border-radius: 32px !important;
+  background: #FFFFFF !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 24px 70px -10px rgba(0, 0, 0, 0.16) !important;
+  overflow: visible !important;
+}
+
+[data-theme="dark"] .dribbble-auth-card {
+  background: #111318 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 30px 80px -10px rgba(0, 0, 0, 0.7), 0 0 40px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Subtle Close Button in Top-Right */
+.dribbble-auth-close {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.dribbble-auth-close:hover {
+  background: #F3F4F6;
+  color: #111827;
+}
+
+[data-theme="dark"] .dribbble-auth-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+/* Header: Clean Title + Switch Link */
+.dribbble-auth-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  padding-right: 28px;
+}
+
+.dribbble-auth-title {
+  font-family: var(--font-family) !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin: 0 !important;
+  letter-spacing: -0.02em;
+}
+
+[data-theme="dark"] .dribbble-auth-title {
+  color: #FFFFFF !important;
+}
+
+.dribbble-auth-switch-link {
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: 600;
+  color: #2563EB;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.dribbble-auth-switch-link:hover {
+  color: #1D4ED8;
+  text-decoration: underline;
+}
+
+/* Form Container & Spacious 24px Gap */
+.dribbble-auth-form {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.dribbble-field-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  margin: 0 !important;
+}
+
+.dribbble-label {
+  font-family: var(--font-family) !important;
+  font-size: 14.5px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  letter-spacing: -0.01em;
+  margin: 0 !important;
+}
+
+[data-theme="dark"] .dribbble-label {
+  color: #9CA3AF !important;
+}
+
+/* Pristine Rounded Inputs */
+.dribbble-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  height: 52px !important;
+  padding: 0 18px !important;
+  font-family: var(--font-family) !important;
+  font-size: 15px !important;
+  font-weight: 400 !important;
+  border-radius: 16px !important;
+  border: 1.5px solid #E5E7EB !important;
+  background: #FFFFFF !important;
+  color: #111827 !important;
+  transition: all 0.2s ease !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .dribbble-input {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #F9FAFB !important;
+}
+
+.dribbble-input::placeholder {
+  color: #9CA3AF !important;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+.dribbble-input:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12) !important;
+  outline: none !important;
+  background: #FFFFFF !important;
+}
+
+[data-theme="dark"] .dribbble-input:focus {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: #3B82F6 !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2) !important;
+}
+
+.dribbble-input-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.dribbble-input-pass {
+  padding-right: 48px !important;
+}
+
+.dribbble-eye-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #9CA3AF;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+}
+
+.dribbble-eye-btn:hover {
+  color: #2563EB;
+}
+
+.dribbble-eye-btn .eye-icon-show { display: block; }
+.dribbble-eye-btn .eye-icon-hide { display: none; }
+.dribbble-eye-btn.revealed .eye-icon-show { display: none; }
+.dribbble-eye-btn.revealed .eye-icon-hide { display: block; color: #2563EB; }
+
+/* Subtle Checkbox Row */
+.dribbble-extra-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -4px;
+}
+
+.dribbble-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: #6B7280;
+  cursor: pointer;
+  user-select: none;
+}
+
+[data-theme="dark"] .dribbble-checkbox-label {
+  color: #9CA3AF;
+}
+
+.dribbble-checkbox-label input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #2563EB;
+  cursor: pointer;
+}
+
+/* The Dribbble Royal Blue Pill Button (Image 1) */
+.dribbble-submit-btn {
+  width: 100% !important;
+  height: 52px !important;
+  border-radius: 9999px !important;
+  background: #2563EB !important;
+  color: #FFFFFF !important;
+  font-family: var(--font-family) !important;
+  font-size: 15.5px !important;
+  font-weight: 600 !important;
+  border: none !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-top: 6px !important;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  user-select: none !important;
+}
+
+.dribbble-submit-btn:hover {
+  background: #1D4ED8 !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.45) !important;
+  transform: translateY(-1.5px) !important;
+}
+
+.dribbble-submit-btn:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+}
