@@ -5141,23 +5141,25 @@ async function checkAuthState() {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('preview_mode') === '1') {
     const pTab = urlParams.get('tab') || 'profiles';
-    const theme = urlParams.get('theme') || 'dark';
-    if (theme === 'dark') {
-      document.body.classList.add('dark-theme');
-      document.body.classList.remove('light-theme');
+    const theme = urlParams.get('theme') || 'light';
+    if (typeof applyTheme === 'function') {
+      applyTheme(theme);
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
     }
     const polyScreen = document.getElementById('polylogin-auth-screen');
     const appContainer = document.querySelector('.app-container');
     if (polyScreen) polyScreen.style.display = 'none';
     if (appContainer) appContainer.style.display = 'flex';
     currentUser = {
-      id: 'f833aa6e-673a-4956-b5bc-8b683064db67',
-      email: 'admin@omni.vn',
-      name: 'Quản Trị Viên OmniBrowser',
-      role: 'admin',
-      plan: 'OmniBrowser VIP Vĩnh Viễn',
-      plan_code: 'VIP_LIFETIME',
-      max_profiles: 2000
+      id: '2a918683-0c2c-4f0a-90ce-99e4df3bb0b1',
+      email: 'pduc42620@gmail.com',
+      name: 'Phạm Chí Đức',
+      role: 'user',
+      plan: 'Pro 30 Ngày',
+      plan_code: 'PRO_MONTHLY',
+      max_profiles: 500,
+      expires_at: '2026-12-03T08:52:38.404Z'
     };
     renderPolyUserProfile(currentUser);
     if (typeof switchTab === 'function') switchTab(pTab);
