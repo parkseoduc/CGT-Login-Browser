@@ -314,8 +314,23 @@
         : `<span class="badge badge-running"><span class="badge-pulse"></span> Hoạt động</span>`;
 
       const keyText = u.license_key ? `<span class="mono-code" style="font-size:11.5px;">${u.license_key}</span>` : `<span style="color:var(--text-muted); font-size:12px;">—</span>`;
-      const createdDate = u.created_at ? new Date(u.created_at).toLocaleDateString('vi-VN') : '—';
-      const expiresText = u.expires_at ? new Date(u.expires_at).toLocaleDateString('vi-VN') : (u.plan_code?.includes('VIP') ? '<span style="font-weight:600; color:#10B981; font-family: inherit;">Vĩnh viễn</span>' : '<span style="color:var(--text-muted); font-family: inherit;">Vô hạn</span>');
+      const formatVn = window.formatVnDate || function(d) {
+        if (!d) return '—';
+        const date = new Date(d);
+        if (isNaN(date.getTime())) return '—';
+        return String(date.getDate()).padStart(2, '0') + '/' + String(date.getMonth() + 1).padStart(2, '0') + '/' + date.getFullYear();
+      };
+      const buyDate = u.created_at ? formatVn(u.created_at) : '—';
+      let endDate = 'Vô hạn';
+      if (u.expires_at) {
+        endDate = formatVn(u.expires_at);
+      } else if (u.plan_code?.includes('VIP')) {
+        endDate = '<span style="font-weight:600; color:#10B981; font-family: inherit;">Vĩnh viễn</span>';
+      } else {
+        endDate = '<span style="color:var(--text-muted); font-family: inherit;">Vô hạn</span>';
+      }
+      const periodRange = `${buyDate} — ${endDate}`;
+      const createdDate = buyDate;
 
       return `
         <tr>
@@ -332,7 +347,7 @@
           <td>${roleBadge}</td>
           <td>${planBadge}</td>
           <td>${keyText}</td>
-          <td style="font-size:12.5px; font-family: inherit;">${expiresText}</td>
+          <td style="font-size:12.5px; font-family: inherit; white-space: nowrap; font-weight: 500;">${periodRange}</td>
           <td>${statusBadge}</td>
           <td style="font-size:12px; color:var(--text-muted);">${createdDate}</td>
           <td style="text-align: right;">
@@ -814,10 +829,16 @@
   // Hook into switchTab to trigger loadAdminData when switching to admin tab
   const originalSwitchTab = window.switchTab;
   window.switchTab = function (tabId) {
-    if (typeof originalSwitchTab === 'function') originalSwitchTab(tabId);
     if (tabId === 'admin') {
+      const user = window.currentUser;
+      if (!user || user.role !== 'admin') {
+        if (typeof showToast === 'function') showToast('Bạn không có quyền truy cập trang Quản Trị Admin', 'warning');
+        if (typeof originalSwitchTab === 'function') originalSwitchTab('profiles');
+        return;
+      }
       loadAdminData();
     }
+    if (typeof originalSwitchTab === 'function') originalSwitchTab(tabId);
   };
 
   // Run DOM initialization

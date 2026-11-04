@@ -58,6 +58,17 @@ const filterGroupSelect = document.getElementById('filter-group-select');
 const kernelLabel = document.getElementById('core-kernel-label');
 const brandLicenseBadge = document.getElementById('brand-license-badge');
 
+function formatVnDate(dateInput) {
+  if (!dateInput) return '—';
+  const d = new Date(dateInput);
+  if (isNaN(d.getTime())) return '—';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+window.formatVnDate = formatVnDate;
+
 function formatShortBadge(planStr) {
   if (!planStr) return 'FREE';
   const str = String(planStr).toUpperCase();
@@ -553,9 +564,24 @@ async function fetchLicense() {
 }
 
 function updateLicenseUI(info) {
-  sidebarPlanName.innerText = `Gói ${info.plan}`;
-  sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
-  sidebarPlanExpires.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString() : 'Vô hạn';
+  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${info.plan}`;
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
+  if (sidebarPlanExpires) {
+    if (info.is_lifetime || String(info.plan).toUpperCase().includes('VIP')) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn';
+    } else if (info.expires_at) {
+      sidebarPlanExpires.innerText = formatVnDate(info.expires_at);
+    } else {
+      sidebarPlanExpires.innerText = 'Vô hạn';
+    }
+  }
+  const sidebarBadge = document.getElementById('sidebar-plan-badge');
+  if (sidebarBadge) {
+    const isVip = Boolean(info.is_lifetime || String(info.plan).toUpperCase().includes('VIP'));
+    const isPro = String(info.plan).toUpperCase().includes('PRO');
+    sidebarBadge.textContent = isVip ? 'VIP' : (isPro ? 'PRO' : 'FREE');
+    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+  }
   updateBrandBadge(info.plan);
   statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
 
@@ -5138,10 +5164,7 @@ async function checkAuthState() {
   }
 
   if (!token) {
-    currentUser = null;
-    if (guestBtn) guestBtn.style.display = 'inline-flex';
-    if (userPill) userPill.style.display = 'none';
-    if (dropdown) dropdown.classList.remove('show');
+    renderGuestUI();
     return null;
   }
 
@@ -5159,9 +5182,7 @@ async function checkAuthState() {
     }
     // Token invalid or expired
     clearAuthToken();
-    if (guestBtn) guestBtn.style.display = 'inline-flex';
-    if (userPill) userPill.style.display = 'none';
-    if (dropdown) dropdown.classList.remove('show');
+    renderGuestUI();
     return null;
   } catch (err) {
     console.warn('[Auth] Check auth state error:', err.message);
@@ -5169,12 +5190,85 @@ async function checkAuthState() {
   }
 }
 
-function renderPolyUserProfile(user) {
+function renderGuestUI() {
+  currentUser = null;
+  window.currentUser = null;
   const guestBtn = document.getElementById('btn-header-login');
   const userPill = document.getElementById('poly-user-pill');
+  const dropdown = document.getElementById('poly-dropdown-menu');
+  const navAdmin = document.getElementById('nav-item-admin');
+  const menuAdmin = document.getElementById('poly-menu-admin');
+
+  if (guestBtn) guestBtn.style.display = 'inline-flex';
+  if (userPill) userPill.style.display = 'none';
+  if (dropdown) dropdown.classList.remove('show');
+
+  // Hide admin controls for guest
+  if (navAdmin) navAdmin.style.display = 'none';
+  if (menuAdmin) menuAdmin.style.display = 'none';
+
+  // If user is currently on admin view, switch back to profiles
+  const adminView = document.getElementById('view-admin');
+  if (adminView && adminView.style.display !== 'none') {
+    if (typeof switchTab === 'function') switchTab('profiles');
+  }
+
+  updateBrandBadge('FREE');
+  if (sidebarPlanName) sidebarPlanName.innerText = 'Gói Free';
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = '0/50';
+  if (sidebarPlanExpires) sidebarPlanExpires.innerText = 'Vô hạn';
+  const sidebarBadge = document.getElementById('sidebar-plan-badge');
+  if (sidebarBadge) {
+    sidebarBadge.textContent = 'FREE';
+    sidebarBadge.className = 'badge badge-subtle-gray';
+  }
+}
+window.renderGuestUI = renderGuestUI;
+
+function renderPolyUserProfile(user) {
+  currentUser = user;
+  window.currentUser = user;
+  const guestBtn = document.getElementById('btn-header-login');
+  const userPill = document.getElementById('poly-user-pill');
+  const navAdmin = document.getElementById('nav-item-admin');
+  const menuAdmin = document.getElementById('poly-menu-admin');
+
   if (guestBtn) guestBtn.style.display = 'none';
   if (!userPill) return;
   userPill.style.display = 'inline-flex';
+
+  // Toggle Admin Menu based strictly on user.role === 'admin'
+  const isAdmin = Boolean(user && user.role === 'admin');
+  if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
+  if (menuAdmin) menuAdmin.style.display = isAdmin ? 'flex' : 'none';
+
+  // If regular user somehow landed on admin tab, redirect to profiles
+  if (!isAdmin) {
+    const adminView = document.getElementById('view-admin');
+    if (adminView && adminView.style.display !== 'none') {
+      if (typeof switchTab === 'function') switchTab('profiles');
+    }
+  }
+
+  // Update sidebar plan card with real user info
+  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${user.plan || 'Free Trial'}`;
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `0/${user.max_profiles || 50}`;
+  if (sidebarPlanExpires) {
+    if (user.is_lifetime || String(user.plan_code).includes('VIP')) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn';
+    } else if (user.expires_at) {
+      sidebarPlanExpires.innerText = formatVnDate(user.expires_at);
+    } else {
+      sidebarPlanExpires.innerText = 'Vô hạn';
+    }
+  }
+  const sidebarBadge = document.getElementById('sidebar-plan-badge');
+  if (sidebarBadge) {
+    const isVip = Boolean(user.is_lifetime || String(user.plan_code).includes('VIP'));
+    const isPro = String(user.plan_code).includes('PRO');
+    sidebarBadge.textContent = isVip ? 'VIP' : (isPro ? 'PRO' : 'FREE');
+    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+  }
 
   const initial = (user.name || user.email || 'P').trim()[0].toUpperCase();
   const avatarEl = document.getElementById('poly-avatar');
@@ -5487,10 +5581,14 @@ function initAuthControls() {
       }
       localStorage.setItem('cgt_manual_logout', '1');
       clearAuthToken();
-      if (dropdown) dropdown.classList.remove('show');
-      if (userPill) userPill.classList.remove('active');
+      renderGuestUI();
       showToast('Đã đăng xuất khỏi tài khoản', 'info');
-      await checkAuthState();
+
+      // Tự động chuyển ngay về trang hồ sơ trắng
+      if (typeof switchTab === 'function') {
+        switchTab('profiles');
+      }
+
       await fetchLicense();
       await fetchProfiles();
     };
@@ -5677,3 +5775,5 @@ if (document.readyState === 'loading') {
     checkAuthState();
   });
 }
+
+window.renderPolyUserProfile = renderPolyUserProfile;
