@@ -173,7 +173,7 @@ async function changePassword(userId, oldPassword, newPassword) {
 }
 
 // Kích hoạt License Key vào Tài khoản người dùng
-async function activateKeyForUser(userId, licenseKey) {
+async function activateKeyForUser(userId, licenseKey, options = {}) {
   if (!userId) throw new Error('Cần đăng nhập để kích hoạt bản quyền cho tài khoản');
   if (!licenseKey || !licenseKey.trim()) throw new Error('Vui lòng nhập License Key hợp lệ');
 
@@ -181,22 +181,37 @@ async function activateKeyForUser(userId, licenseKey) {
   const user = db.getUserById(userId);
   if (!user) throw new Error('Tài khoản không tồn tại');
 
-  let plan = 'Pro Plus';
-  let planCode = 'PRO_PLUS';
-  let maxProfiles = 1000;
-  let expiresAt = new Date(Date.now() + 365 * 24 * 3600 * 1000).toISOString(); // 1 năm
+  let durationDays = options.durationDays !== undefined && options.durationDays !== null ? Number(options.durationDays) : null;
+  let plan = options.plan || 'Pro 30 Ngày';
+  let planCode = options.planCode || 'PRO_MONTHLY';
+  let maxProfiles = options.maxProfiles || 500;
+  let expiresAt = null;
 
-  // Nhận diện loại key
-  if (cleanKey.includes('VIP') || cleanKey.includes('LIFE') || cleanKey.startsWith('OMNI-JV6FN')) {
-    plan = 'VIP Lifetime';
-    planCode = 'VIP_LIFETIME';
-    maxProfiles = 5000;
+  // Xác định gói VIP Lifetime (Vĩnh viễn)
+  const isVipOrLifetime = cleanKey.includes('VIP') || cleanKey.includes('LIFE') || cleanKey.startsWith('OMNI-JV6FN') || planCode === 'VIP_LIFETIME' || (durationDays !== null && durationDays >= 3650);
+
+  if (isVipOrLifetime) {
+    plan = options.plan || 'VIP Lifetime';
+    planCode = options.planCode || 'VIP_LIFETIME';
+    maxProfiles = options.maxProfiles || 2000;
     expiresAt = null; // Vĩnh viễn
-  } else if (cleanKey.includes('ENT')) {
-    plan = 'Enterprise';
-    planCode = 'ENTERPRISE';
-    maxProfiles = 10000;
+  } else if (cleanKey.includes('ENT') || planCode === 'ENTERPRISE') {
+    plan = options.plan || 'Enterprise';
+    planCode = options.planCode || 'ENTERPRISE';
+    maxProfiles = options.maxProfiles || 10000;
     expiresAt = null;
+  } else {
+    // Gói Pro tính theo số ngày cụ thể (mặc định 30 ngày nếu không chỉ định)
+    if (durationDays === null || isNaN(durationDays) || durationDays <= 0) {
+      durationDays = 30;
+    }
+    expiresAt = new Date(Date.now() + durationDays * 24 * 3600 * 1000).toISOString();
+    if (!options.plan) {
+      plan = durationDays <= 31 ? 'Pro 30 Ngày' : (durationDays <= 366 ? 'Pro 1 Năm' : 'Pro Plus');
+    }
+    if (!options.planCode) {
+      planCode = durationDays <= 31 ? 'PRO_MONTHLY' : 'PRO_PLUS';
+    }
   }
 
   // Thử kết nối xác thực với License Server lic.cgtdev.space nếu khả dụng
@@ -217,6 +232,10 @@ async function activateKeyForUser(userId, licenseKey) {
     }
   } catch (netErr) {
     console.warn('[Auth] License server lookup offline fallback:', netErr.message);
+  }
+
+  if (options.expiresAt !== undefined) {
+    expiresAt = options.expiresAt;
   }
 
   const updates = {

@@ -218,7 +218,11 @@ async function confirmOrder({ orderId, userId }) {
   let updatedUser = null;
   if (targetUserId) {
     try {
-      updatedUser = await auth.activateKeyForUser(targetUserId, issuedKey);
+      updatedUser = await auth.activateKeyForUser(targetUserId, issuedKey, {
+        durationDays: order.duration_days,
+        plan: order.plan_name,
+        planCode: order.plan_code
+      });
     } catch (actErr) {
       console.warn('[Checkout] activateKeyForUser warning:', actErr.message);
     }

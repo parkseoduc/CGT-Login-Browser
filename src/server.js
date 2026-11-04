@@ -449,7 +449,14 @@ function createServer() {
               issuedKey = `${prefix}-${crypto.randomBytes(3).toString('hex').toUpperCase()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
             }
 
-            await auth.activateKeyForUser(targetUserId, issuedKey);
+            const planName = planCode === 'VIP_LIFETIME' ? 'VIP Lifetime' : (durationDays <= 31 ? 'Pro 30 Ngày' : 'Pro Plus');
+            const maxProfiles = planCode === 'VIP_LIFETIME' ? 2000 : 500;
+            await auth.activateKeyForUser(targetUserId, issuedKey, {
+              durationDays,
+              plan: planName,
+              planCode,
+              maxProfiles
+            });
           }
 
           const updated = db.getUserById(targetUserId);

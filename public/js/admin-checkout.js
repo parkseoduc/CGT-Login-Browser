@@ -469,9 +469,13 @@
     const modal = document.getElementById('admin-grant-modal');
     const idInput = document.getElementById('admin-grant-user-id');
     const emailInput = document.getElementById('admin-grant-user-email');
+    const planSelect = document.getElementById('admin-grant-plan-select');
+    const daysInput = document.getElementById('admin-grant-days');
     if (modal && idInput && emailInput) {
       idInput.value = userId;
       emailInput.value = userEmail;
+      if (planSelect) planSelect.value = 'PRO_MONTHLY';
+      if (daysInput) daysInput.value = '30';
       modal.style.display = 'flex';
     }
   };
@@ -724,6 +728,20 @@
     const grantClose = document.getElementById('admin-grant-close');
     const grantCancel = document.getElementById('btn-admin-grant-cancel');
     const grantSubmit = document.getElementById('btn-admin-grant-submit');
+    const grantPlanSelect = document.getElementById('admin-grant-plan-select');
+    const grantDaysInput = document.getElementById('admin-grant-days');
+
+    if (grantPlanSelect && grantDaysInput) {
+      grantPlanSelect.onchange = () => {
+        if (grantPlanSelect.value === 'PRO_MONTHLY') {
+          grantDaysInput.value = '30';
+        } else if (grantPlanSelect.value === 'VIP_LIFETIME') {
+          grantDaysInput.value = '3650';
+        } else if (grantPlanSelect.value === 'FREE_TRIAL') {
+          grantDaysInput.value = '0';
+        }
+      };
+    }
 
     function closeGrantModal() {
       if (grantModal) grantModal.style.display = 'none';

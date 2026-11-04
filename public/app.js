@@ -5143,26 +5143,6 @@ async function checkAuthState() {
   const userPill = document.getElementById('poly-user-pill');
   const dropdown = document.getElementById('poly-dropdown-menu');
 
-  // If no token on first launch, auto-login to default admin account
-  if (!token && !localStorage.getItem('cgt_manual_logout')) {
-    try {
-      const autoRes = await originalFetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: 'cgt-license@cgtdev.space', password: 'TumyAdmin@2026!' })
-      });
-      if (autoRes.ok) {
-        const autoData = await autoRes.json();
-        if (autoData.success && autoData.token) {
-          setAuthToken(autoData.token);
-          token = autoData.token;
-        }
-      }
-    } catch (e) {
-      console.warn('[Auth] Auto-login fallback error:', e.message);
-    }
-  }
-
   if (!token) {
     renderGuestUI();
     return null;
@@ -5193,6 +5173,13 @@ async function checkAuthState() {
 function renderGuestUI() {
   currentUser = null;
   window.currentUser = null;
+
+  // Show PolyLogin Fullscreen Auth Screen and Hide main workspace
+  const polyScreen = document.getElementById('polylogin-auth-screen');
+  const appContainer = document.querySelector('.app-container');
+  if (polyScreen) polyScreen.style.display = 'flex';
+  if (appContainer) appContainer.style.display = 'none';
+
   const guestBtn = document.getElementById('btn-header-login');
   const userPill = document.getElementById('poly-user-pill');
   const dropdown = document.getElementById('poly-dropdown-menu');
@@ -5228,6 +5215,13 @@ window.renderGuestUI = renderGuestUI;
 function renderPolyUserProfile(user) {
   currentUser = user;
   window.currentUser = user;
+
+  // Hide PolyLogin Fullscreen Auth Screen and Show main workspace
+  const polyScreen = document.getElementById('polylogin-auth-screen');
+  const appContainer = document.querySelector('.app-container');
+  if (polyScreen) polyScreen.style.display = 'none';
+  if (appContainer) appContainer.style.display = 'flex';
+
   const guestBtn = document.getElementById('btn-header-login');
   const userPill = document.getElementById('poly-user-pill');
   const navAdmin = document.getElementById('nav-item-admin');
@@ -5777,3 +5771,150 @@ if (document.readyState === 'loading') {
 }
 
 window.renderPolyUserProfile = renderPolyUserProfile;
+
+
+// =========================================================================
+// POLYLOGIN FULLSCREEN AUTH CONTROLLER
+// =========================================================================
+function initPolyLoginAuth() {
+  const viewLogin = document.getElementById('poly-view-login');
+  const viewReg = document.getElementById('poly-view-register');
+  const btnSwitchToReg = document.getElementById('poly-switch-to-reg');
+  const btnSwitchToLogin = document.getElementById('poly-switch-to-login');
+
+  if (btnSwitchToReg) {
+    btnSwitchToReg.onclick = (e) => {
+      e.preventDefault();
+      if (viewLogin) viewLogin.style.display = 'none';
+      if (viewReg) viewReg.style.display = 'block';
+    };
+  }
+  if (btnSwitchToLogin) {
+    btnSwitchToLogin.onclick = (e) => {
+      e.preventDefault();
+      if (viewReg) viewReg.style.display = 'none';
+      if (viewLogin) viewLogin.style.display = 'block';
+    };
+  }
+
+  // Toggle password eye icon in PolyLogin screen
+  const toggleLoginEye = document.getElementById('poly-toggle-login-eye');
+  const inputLoginPass = document.getElementById('poly-login-input-password');
+  if (toggleLoginEye && inputLoginPass) {
+    toggleLoginEye.onclick = () => {
+      const isPass = inputLoginPass.type === 'password';
+      inputLoginPass.type = isPass ? 'text' : 'password';
+      toggleLoginEye.style.color = isPass ? '#2563eb' : '#94a3b8';
+    };
+  }
+
+  const toggleRegEye = document.getElementById('poly-toggle-reg-eye');
+  const inputRegPass = document.getElementById('poly-reg-input-password');
+  if (toggleRegEye && inputRegPass) {
+    toggleRegEye.onclick = () => {
+      const isPass = inputRegPass.type === 'password';
+      inputRegPass.type = isPass ? 'text' : 'password';
+      toggleRegEye.style.color = isPass ? '#2563eb' : '#94a3b8';
+    };
+  }
+
+  // PolyLogin Form Submit - LOGIN
+  const formLogin = document.getElementById('poly-form-login');
+  if (formLogin) {
+    formLogin.onsubmit = async (e) => {
+      e.preventDefault();
+      const email = (document.getElementById('poly-login-input-email')?.value || '').trim();
+      const password = document.getElementById('poly-login-input-password')?.value || '';
+      const btnSubmit = document.getElementById('poly-btn-login-action');
+
+      if (!email) return showToast('Vui lòng nhập email đăng nhập', 'warning');
+      if (!password) return showToast('Vui lòng nhập mật khẩu', 'warning');
+
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span>Đang đăng nhập...</span>';
+      }
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.removeItem('cgt_manual_logout');
+          setAuthToken(data.token);
+          showToast(`🎉 Xin chào ${data.user.name || data.user.email}! Đăng nhập thành công.`, 'success');
+          await checkAuthState();
+          await fetchLicense();
+          await fetchProfiles();
+        } else {
+          showToast(data.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email hoặc mật khẩu.', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
+      } finally {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Đăng nhập</span>';
+        }
+      }
+    };
+  }
+
+  // PolyLogin Form Submit - REGISTER
+  const formReg = document.getElementById('poly-form-register');
+  if (formReg) {
+    formReg.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = (document.getElementById('poly-reg-input-name')?.value || '').trim();
+      const email = (document.getElementById('poly-reg-input-email')?.value || '').trim();
+      const password = document.getElementById('poly-reg-input-password')?.value || '';
+      const confirm = document.getElementById('poly-reg-input-confirm')?.value || '';
+      const btnSubmit = document.getElementById('poly-btn-reg-action');
+
+      if (!email) return showToast('Vui lòng nhập email đăng ký', 'warning');
+      if (!password || password.length < 6) return showToast('Mật khẩu tối thiểu 6 ký tự', 'warning');
+      if (password !== confirm) return showToast('Xác nhận mật khẩu không khớp', 'danger');
+
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<span>Đang tạo tài khoản...</span>';
+      }
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name })
+        });
+        const data = await res.json();
+        if (data.success && data.token) {
+          localStorage.removeItem('cgt_manual_logout');
+          setAuthToken(data.token);
+          showToast(`🎉 Chào mừng ${data.user.name || data.user.email}! Tài khoản đã được tạo thành công.`, 'success');
+          await checkAuthState();
+          await fetchLicense();
+          await fetchProfiles();
+        } else {
+          showToast(data.error || 'Đăng ký thất bại', 'danger');
+        }
+      } catch (err) {
+        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
+      } finally {
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = '<span>Tạo Tài Khoản</span>';
+        }
+      }
+    };
+  }
+}
+
+// Initialize PolyLogin Fullscreen Auth
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initPolyLoginAuth);
+} else {
+  initPolyLoginAuth();
+}

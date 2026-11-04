@@ -7357,3 +7357,454 @@ select:focus {
   border-color: #CBD5E1 !important;
   color: #0F172A !important;
 }
+
+
+/* ==========================================================================
+   POLYLOGIN-STYLE FULLSCREEN AUTH VIEW
+   ========================================================================== */
+.polylogin-auth-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #f8fafc;
+  overflow: hidden;
+  font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+}
+
+/* LEFT SIDE - SHOWCASE PANE */
+.polylogin-showcase-pane {
+  flex: 1.15;
+  background: linear-gradient(135deg, #f0f6ff 0%, #e5f0fe 50%, #d8e8fe 100%);
+  border-right: 1px solid rgba(203, 213, 225, 0.6);
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow-y: auto;
+  position: relative;
+}
+
+/* TOP PREVIEW - 4 TILED BROWSER WINDOWS */
+.polylogin-preview-container {
+  position: relative;
+  background: #0f172a;
+  border-radius: 14px;
+  padding: 12px;
+  box-shadow: 0 20px 40px -15px rgba(30, 58, 138, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  margin-bottom: 24px;
+}
+
+.polylogin-tiles-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.polylogin-tile {
+  background: #1e293b;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #334155;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.polylogin-tile-header {
+  height: 24px;
+  background: #090d16;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 6px;
+  border-bottom: 1px solid #27354a;
+}
+
+.polylogin-tile-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+}
+
+.polylogin-tile-title {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.polylogin-tile-body {
+  padding: 8px;
+  background: #162032;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.polylogin-tile-search {
+  background: #0f172a;
+  color: #64748b;
+  font-size: 9.5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #283548;
+}
+
+.polylogin-tile-content {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  align-items: center;
+}
+
+.polylogin-tile-box {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  border-radius: 6px;
+  opacity: 0.85;
+}
+
+.polylogin-tile-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.polylogin-tile-lines span:nth-child(1) {
+  height: 6px;
+  width: 85%;
+  background: #334155;
+  border-radius: 3px;
+}
+
+.polylogin-tile-lines span:nth-child(2) {
+  height: 6px;
+  width: 55%;
+  background: #27354a;
+  border-radius: 3px;
+}
+
+.polylogin-sync-floating-badge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(15, 23, 42, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+  padding: 8px 18px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  animation: pulse-sync-badge 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-sync-badge {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35); }
+  50% { transform: translate(-50%, -50%) scale(1.03); box-shadow: 0 12px 30px rgba(37, 99, 235, 0.4); }
+}
+
+/* BOTTOM 4 FEATURES GRID */
+.polylogin-features-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px 24px;
+}
+
+.polylogin-feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.polylogin-feature-num {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #2563eb;
+  letter-spacing: 0.5px;
+}
+
+.polylogin-feature-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.polylogin-feature-desc {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #64748b;
+}
+
+/* RIGHT SIDE - FORM PANE */
+.polylogin-form-pane {
+  flex: 0.95;
+  background: #ffffff;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow-y: auto;
+}
+
+.polylogin-form-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.polylogin-form-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.polylogin-lang-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+/* CENTER AUTH BOX */
+.polylogin-card-box {
+  max-width: 400px;
+  width: 100%;
+  margin: auto;
+}
+
+.polylogin-heading {
+  font-size: 26px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 6px;
+  font-family: 'Lexend', 'Be Vietnam Pro', sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.polylogin-subheading {
+  font-size: 13.5px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+
+.poly-form-group {
+  margin-bottom: 16px;
+}
+
+.poly-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.poly-link-sm {
+  font-size: 12.5px;
+  color: #2563eb;
+  font-weight: 500;
+  text-decoration: none;
+}
+.poly-link-sm:hover {
+  text-decoration: underline;
+}
+
+.poly-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.poly-input-icon {
+  position: absolute;
+  left: 14px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.poly-input {
+  width: 100%;
+  height: 44px;
+  padding: 10px 14px 10px 40px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 9px;
+  font-size: 13.5px;
+  color: #0f172a;
+  background: #ffffff;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.poly-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.poly-eye-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poly-eye-toggle:hover {
+  color: #334155;
+}
+
+.poly-form-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.poly-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #475569;
+  cursor: pointer;
+  user-select: none;
+}
+
+.poly-checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.poly-btn-primary {
+  width: 100%;
+  height: 44px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 9px;
+  font-size: 14.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  font-family: inherit;
+}
+
+.poly-btn-primary:hover {
+  background: #1d4ed8;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
+.poly-btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.poly-auto-reg-note {
+  text-align: center;
+  font-size: 12.5px;
+  color: #64748b;
+  margin: 16px 0 20px;
+  position: relative;
+}
+
+.poly-switch-card-footer {
+  text-align: center;
+  font-size: 13.5px;
+  color: #475569;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.poly-link-bold {
+  color: #2563eb;
+  font-weight: 700;
+  text-decoration: none;
+  margin-left: 5px;
+}
+.poly-link-bold:hover {
+  text-decoration: underline;
+}
+
+/* FLOATING SUPPORT BUTTONS (ZALO / TELEGRAM) */
+.polylogin-support-float {
+  position: absolute;
+  bottom: 24px;
+  right: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 10;
+}
+
+.polylogin-support-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.polylogin-support-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+}
+
+.polylogin-support-btn.btn-tele {
+  background: #229ED9;
+}
+
+.polylogin-support-btn.btn-zalo {
+  background: #0068FF;
+}
+
+@media (max-width: 900px) {
+  .polylogin-showcase-pane {
+    display: none;
+  }
+  .polylogin-form-pane {
+    flex: 1;
+    padding: 30px 24px;
+  }
+}

@@ -15,6 +15,242 @@
   <link rel="stylesheet" href="style.css?v=3.0.0">
 </head>
 <body>
+  <!-- ================= POLYLOGIN-STYLE FULLSCREEN AUTH VIEW ================= -->
+  <div id="polylogin-auth-screen" class="polylogin-auth-screen" style="display: none;">
+    <!-- LEFT SIDE: FEATURE SHOWCASE & SYNC MOCKUP -->
+    <div class="polylogin-showcase-pane">
+      <!-- 4 TILED BROWSER WINDOWS PREVIEW -->
+      <div class="polylogin-preview-container">
+        <div class="polylogin-tiles-grid">
+          <div class="polylogin-tile">
+            <div class="polylogin-tile-header">
+              <span class="polylogin-tile-dot"></span>
+              <span class="polylogin-tile-title">OmniBrowser #1 - Chromium 153</span>
+            </div>
+            <div class="polylogin-tile-body">
+              <div class="polylogin-tile-search">🔍 youtube.com</div>
+              <div class="polylogin-tile-content">
+                <div class="polylogin-tile-box"></div>
+                <div class="polylogin-tile-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="polylogin-tile">
+            <div class="polylogin-tile-header">
+              <span class="polylogin-tile-dot"></span>
+              <span class="polylogin-tile-title">OmniBrowser #2 - Chromium 153</span>
+            </div>
+            <div class="polylogin-tile-body">
+              <div class="polylogin-tile-search">🔍 youtube.com</div>
+              <div class="polylogin-tile-content">
+                <div class="polylogin-tile-box"></div>
+                <div class="polylogin-tile-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="polylogin-tile">
+            <div class="polylogin-tile-header">
+              <span class="polylogin-tile-dot"></span>
+              <span class="polylogin-tile-title">OmniBrowser #3 - Chromium 153</span>
+            </div>
+            <div class="polylogin-tile-body">
+              <div class="polylogin-tile-search">🔍 youtube.com</div>
+              <div class="polylogin-tile-content">
+                <div class="polylogin-tile-box"></div>
+                <div class="polylogin-tile-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="polylogin-tile">
+            <div class="polylogin-tile-header">
+              <span class="polylogin-tile-dot"></span>
+              <span class="polylogin-tile-title">OmniBrowser #4 - Chromium 153</span>
+            </div>
+            <div class="polylogin-tile-body">
+              <div class="polylogin-tile-search">🔍 youtube.com</div>
+              <div class="polylogin-tile-content">
+                <div class="polylogin-tile-box"></div>
+                <div class="polylogin-tile-lines">
+                  <span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Floating Sync Badge -->
+        <div class="polylogin-sync-floating-badge">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+          <span>Đang đồng bộ thao tác (4)</span>
+        </div>
+      </div>
+
+      <!-- 4 VALUE PROPOSITIONS -->
+      <div class="polylogin-features-grid">
+        <div class="polylogin-feature-card">
+          <div class="polylogin-feature-num">01</div>
+          <div class="polylogin-feature-title">Quản lý hồ sơ hàng loạt hiệu quả</div>
+          <div class="polylogin-feature-desc">Tạo, gắn thẻ, nhóm và mở song song hàng nghìn hồ sơ – mỗi hồ sơ là một môi trường độc lập với dấu vân tay trình duyệt riêng biệt, không trùng.</div>
+        </div>
+        <div class="polylogin-feature-card">
+          <div class="polylogin-feature-num">02</div>
+          <div class="polylogin-feature-title">No-coding Automation</div>
+          <div class="polylogin-feature-desc">Tự động hóa mọi thao tác một cách dễ dàng theo workflow kéo thả. Đơn giản, tốc độ, tối ưu hiệu suất công việc.</div>
+        </div>
+        <div class="polylogin-feature-card">
+          <div class="polylogin-feature-num">03</div>
+          <div class="polylogin-feature-title">Đồng bộ thao tác (Synchronizer)</div>
+          <div class="polylogin-feature-desc">Khả năng đồng bộ hóa các thao tác giữa các hồ sơ một cách liền mạch. Mọi hành động chuột, phím được thực hiện cùng lúc.</div>
+        </div>
+        <div class="polylogin-feature-card">
+          <div class="polylogin-feature-num">04</div>
+          <div class="polylogin-feature-title">Quản lý thành viên nhóm</div>
+          <div class="polylogin-feature-desc">Làm việc theo nhóm hiệu quả bằng cách sử dụng Quản lý Thành viên, dễ dàng phân quyền vai trò để bảo mật tuyệt đối.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE: LOGIN / REGISTER PANE -->
+    <div class="polylogin-form-pane">
+      <div class="polylogin-form-topbar">
+        <div class="polylogin-form-brand">
+          <div class="brand-icon" style="width:30px; height:30px; border-radius:8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 19.2727C22 20.779 20.779 22 19.2727 22H14.7273C13.221 22 12 20.779 12 19.2727V12H19.2727C20.779 12 22 13.221 22 14.7273V19.2727Z" fill="#68C4FF"/>
+              <path d="M20 2C21.1046 2 22 2.89543 22 4V7C22 8.10457 21.1046 9 20 9H17C15.8954 9 15 8.10457 15 7V4C15 2.89543 15.8954 2 17 2H20Z" fill="#0C79D8"/>
+              <path d="M7 15C8.10457 15 9 15.8954 9 17V20C9 21.1046 8.10457 22 7 22H4C2.89543 22 2 21.1046 2 20V17C2 15.8954 2.89543 15 4 15H7Z" fill="#0C79D8"/>
+              <path d="M12 12H4.72727C3.22104 12 2 10.779 2 9.27273V4.72727C2 3.22104 3.22104 2 4.72727 2H9.27273C10.779 2 12 3.22104 12 4.72727V12Z" fill="#2E9EFF"/>
+            </svg>
+          </div>
+          <span style="font-weight: 800; font-size: 19px; font-family: 'Lexend', 'Be Vietnam Pro', sans-serif; color: #0f172a;">OmniBrowser</span>
+          <span class="badge badge-subtle-blue" style="font-size: 10px; padding: 2px 6px;">v1.0.0</span>
+        </div>
+        <div class="polylogin-lang-pill" title="Ngôn ngữ hiển thị">
+          <span>🇻🇳 VN</span>
+        </div>
+      </div>
+
+      <div class="polylogin-card-box">
+        <!-- LOGIN SUBVIEW -->
+        <div id="poly-view-login" class="poly-auth-subview">
+          <h2 class="polylogin-heading">Đăng nhập</h2>
+          <p class="polylogin-subheading">Chào mừng bạn trở lại với hệ thống OmniBrowser</p>
+
+          <form id="poly-form-login" novalidate>
+            <div class="poly-form-group">
+              <label class="poly-label" for="poly-login-input-email">Email</label>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <input type="email" id="poly-login-input-email" class="poly-input" placeholder="Nhập email của bạn" required>
+              </div>
+            </div>
+
+            <div class="poly-form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 6px;">
+                <label class="poly-label" for="poly-login-input-password" style="margin-bottom:0;">Mật khẩu</label>
+                <a href="javascript:void(0)" id="poly-login-forgot-btn" class="poly-link-sm">Quên mật khẩu?</a>
+              </div>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" id="poly-login-input-password" class="poly-input" placeholder="Nhập mật khẩu" required>
+                <button type="button" class="poly-eye-toggle" id="poly-toggle-login-eye" title="Hiện/ẩn mật khẩu">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="poly-form-row">
+              <label class="poly-checkbox-label">
+                <input type="checkbox" id="poly-login-remember" checked>
+                <span>Ghi nhớ mật khẩu</span>
+              </label>
+            </div>
+
+            <button type="submit" class="poly-btn-primary" id="poly-btn-login-action">
+              <span>Đăng nhập</span>
+            </button>
+          </form>
+
+          <div class="poly-auto-reg-note">
+            <span>Người dùng mới có thể đăng ký tài khoản miễn phí</span>
+          </div>
+
+          <div class="poly-switch-card-footer">
+            <span>Không có tài khoản OmniBrowser?</span>
+            <a href="javascript:void(0)" id="poly-switch-to-reg" class="poly-link-bold">Đăng ký ngay</a>
+          </div>
+        </div>
+
+        <!-- REGISTER SUBVIEW (Hidden by default) -->
+        <div id="poly-view-register" class="poly-auth-subview" style="display: none;">
+          <h2 class="polylogin-heading">Đăng ký tài khoản</h2>
+          <p class="polylogin-subheading">Tạo tài khoản OmniBrowser trải nghiệm không giới hạn</p>
+
+          <form id="poly-form-register" novalidate>
+            <div class="poly-form-group">
+              <label class="poly-label" for="poly-reg-input-name">Họ và tên</label>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <input type="text" id="poly-reg-input-name" class="poly-input" placeholder="Nhập họ và tên của bạn" required>
+              </div>
+            </div>
+
+            <div class="poly-form-group">
+              <label class="poly-label" for="poly-reg-input-email">Email</label>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                <input type="email" id="poly-reg-input-email" class="poly-input" placeholder="name@example.com" required>
+              </div>
+            </div>
+
+            <div class="poly-form-group">
+              <label class="poly-label" for="poly-reg-input-password">Mật khẩu</label>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" id="poly-reg-input-password" class="poly-input" placeholder="Tối thiểu 6 ký tự" required minlength="6">
+                <button type="button" class="poly-eye-toggle" id="poly-toggle-reg-eye" title="Hiện/ẩn mật khẩu">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="poly-form-group">
+              <label class="poly-label" for="poly-reg-input-confirm">Xác nhận mật khẩu</label>
+              <div class="poly-input-container">
+                <svg class="poly-input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <input type="password" id="poly-reg-input-confirm" class="poly-input" placeholder="Nhập lại mật khẩu để xác nhận" required minlength="6">
+              </div>
+            </div>
+
+            <button type="submit" class="poly-btn-primary" id="poly-btn-reg-action">
+              <span>Tạo Tài Khoản</span>
+            </button>
+          </form>
+
+          <div class="poly-switch-card-footer">
+            <span>Đã có tài khoản OmniBrowser?</span>
+            <a href="javascript:void(0)" id="poly-switch-to-login" class="poly-link-bold">Đăng nhập ngay</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- FLOATING SUPPORT BUTTONS (ZALO / TELEGRAM) -->
+      <div class="polylogin-support-float">
+        <a href="https://t.me/omni_support" target="_blank" class="polylogin-support-btn btn-tele" title="Hỗ trợ qua Telegram">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+        </a>
+        <a href="https://zalo.me" target="_blank" class="polylogin-support-btn btn-zalo" title="Hỗ trợ qua Zalo">
+          <span style="font-weight:900; font-size:12px; letter-spacing:-0.5px;">Zalo</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
   <div class="app-container">
     <!-- Sidebar -->
     <aside class="sidebar">
@@ -2917,14 +3153,14 @@ async function automateProfile(profileId) {
           <div class="form-group" style="margin-bottom: 14px;">
             <label style="font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;">Chọn Gói Muốn Cấp</label>
             <select id="admin-grant-plan-select" class="form-control" style="font-size: 13.5px; height: 42px;">
-              <option value="PRO_MONTHLY">OmniBrowser Pro (30 ngày - 500 hồ sơ)</option>
-              <option value="VIP_LIFETIME" selected>OmniBrowser VIP Vĩnh Viễn (10 năm - 2000 hồ sơ)</option>
+              <option value="PRO_MONTHLY" selected>OmniBrowser Pro (30 ngày - 500 hồ sơ)</option>
+              <option value="VIP_LIFETIME">OmniBrowser VIP Vĩnh Viễn (10 năm - 2000 hồ sơ)</option>
               <option value="FREE_TRIAL">Gói Free Trial (50 hồ sơ)</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom: 14px;">
             <label style="font-weight: 600; font-size: 13px; margin-bottom: 6px; display: block;">Thời hạn (Ngày)</label>
-            <input type="number" id="admin-grant-days" class="form-control" value="3650" style="font-size: 13.5px;">
+            <input type="number" id="admin-grant-days" class="form-control" value="30" style="font-size: 13.5px;">
           </div>
           <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 16px;">
             Hệ thống sẽ tự động gọi API tới máy chủ <strong>lic.cgtdev.space</strong> để cấp key chính danh cho khách hàng này.
