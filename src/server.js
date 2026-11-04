@@ -180,6 +180,20 @@ function createServer() {
         }
       }
 
+      if ((pathname === '/api/v1/system/browse-folder' || pathname === '/api/v1/extensions/browse-folder') && (method === 'GET' || method === 'POST')) {
+        const { exec } = require('node:child_process');
+        if (process.platform === 'win32') {
+          const psCmd = 'powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description = \'Chon thu muc Tien ich Extension da giai nen\'; $f.ShowNewFolderButton = $false; if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::WriteLine($f.SelectedPath) }"';
+          exec(psCmd, { timeout: 60000 }, (err, stdout) => {
+            const selected = stdout ? stdout.trim() : '';
+            return sendJson(res, 200, { success: !!selected, path: selected });
+          });
+        } else {
+          return sendJson(res, 200, { success: false, error: 'Not supported on this OS' });
+        }
+        return;
+      }
+
       if (pathname === '/api/v1/kernel/open-folder' && method === 'POST') {
         const kernelDir = kernelDownloader.CHROMIUM_DIR || path.join(config.BASE_DIR, 'bin', 'chromium');
         if (!fs.existsSync(kernelDir)) {

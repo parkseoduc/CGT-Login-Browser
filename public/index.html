@@ -2262,6 +2262,7 @@ async function automateProfile(profileId) {
           <label>Đường Dẫn Thư Mục Tiện Ích (*)</label>
           <div style="display: flex; gap: 8px;">
             <input type="text" id="ext-form-path" class="form-control" placeholder="C:\path\to\extension-unpacked (chứa manifest.json)" required>
+            <input type="file" id="ext-folder-input" webkitdirectory directory style="display: none;">
             <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-browse-ext-folder" style="white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
               <span>Duyệt Thư Mục</span>
@@ -3385,10 +3386,15 @@ async function automateProfile(profileId) {
   <!-- Modal Trình Xây Dựng Kịch Bản No-code (Script Builder) -->
   <div class="modal-overlay modal" id="modal-automation-builder" style="display: none; z-index: 10040;">
     <div class="modal-card modal-container" style="max-width: 680px; width: 100%; border-radius: 16px; margin: auto; max-height: 90vh; display: flex; flex-direction: column;">
-      <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0;">
-        <div>
-          <h2 id="builder-modal-title" style="font-size: 17px; font-weight: 700; color: #0f172a;">✨ Trình Thiết Lập Kịch Bản No-code</h2>
-          <p style="font-size: 12px; color: #64748b; margin-top: 2px;">Kéo thả hoặc thêm các bước điều khiển tự động không cần lập trình</p>
+      <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 0;">
+          <div id="builder-modal-icon-badge" style="width: 36px; height: 36px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <h2 id="builder-modal-title" style="font-size: 16px; font-weight: 700; color: #0f172a; margin: 0; line-height: 1.4; word-break: break-word;">Trình Thiết Lập Kịch Bản No-code</h2>
+            <p id="builder-modal-subtitle" style="font-size: 12px; color: #64748b; margin: 3px 0 0 0;">Kéo thả hoặc thêm các bước điều khiển tự động không cần lập trình</p>
+          </div>
         </div>
         <button class="modal-close" id="btn-builder-close-modal" title="Đóng">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
@@ -3405,11 +3411,11 @@ async function automateProfile(profileId) {
           <div>
             <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Danh mục:</label>
             <select id="builder-script-category" class="poly-input" style="font-size: 13px;">
-              <option value="muse-ai">🤖 Muse AI</option>
-              <option value="warmup">🌾 Nuôi Cookie</option>
-              <option value="social">📱 Video Ngắn (Shorts)</option>
-              <option value="audit">🛡️ Kiểm Tra Vân Tay</option>
-              <option value="custom">⚙️ Tùy Biến</option>
+              <option value="muse-ai">Muse AI & Automation</option>
+              <option value="warmup">Nuôi Cookie & Lịch Sử</option>
+              <option value="social">Video Ngắn (Shorts / Reels)</option>
+              <option value="audit">Kiểm Tra Dấu Vân Tay (Audit)</option>
+              <option value="custom">Kịch Bản Tùy Biến</option>
             </select>
           </div>
         </div>
