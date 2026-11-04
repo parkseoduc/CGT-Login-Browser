@@ -42,14 +42,14 @@
   };
 
   const STEP_TYPE_LABELS = {
-    'navigate': 'Mở trang Web (Navigate)',
-    'sleep': 'Tạm dừng / Chờ đợi (Sleep)',
-    'scroll': 'Cuộn trang mượt mà (Scroll)',
-    'click': 'Nhấp chuột vào phần tử (Click)',
-    'type': 'Gõ văn bản mô phỏng người thật (Type)',
-    'press_key': 'Nhấn phím chức năng (Key)',
-    'screenshot': 'Chụp ảnh màn hình (Screenshot)',
-    'rotate_ip': 'Xoay IP 4G Webhook (Rotate IP)'
+    'navigate': '🌐 Mở trang Web (Navigate)',
+    'sleep': '⏱️ Tạm dừng / Chờ đợi (Sleep)',
+    'scroll': '📜 Cuộn trang mượt mà (Scroll)',
+    'click': '🖱️ Nhấp chuột (Click)',
+    'type': '⌨️ Gõ văn bản (Type)',
+    'press_key': '⌨️ Nhấn phím (Key)',
+    'screenshot': '📷 Chụp ảnh màn hình (Screenshot)',
+    'rotate_ip': '🔄 Xoay IP 4G Webhook (Rotate IP)'
   };
 
     // Toast helper
@@ -326,8 +326,8 @@
     const modal = document.getElementById('modal-automation-builder');
     if (!modal) return;
 
-    const titleEl = document.getElementById('builder-modal-title');
-    const iconBadge = document.getElementById('builder-modal-icon-badge');
+    const titleTextEl = document.getElementById('builder-modal-title-text') || document.getElementById('builder-modal-title');
+    const iconEl = document.getElementById('builder-modal-icon');
     const subtitleEl = document.getElementById('builder-modal-subtitle');
     const nameInput = document.getElementById('builder-script-name');
     const descInput = document.getElementById('builder-script-desc');
@@ -337,15 +337,19 @@
       const script = automationState.scripts.find(s => s.id === scriptId);
       if (script) {
         const cleaned = cleanTitle(script.name);
-        if (iconBadge) {
-          iconBadge.innerHTML = script.is_preset ? SVG_ICONS.eye : SVG_ICONS.edit;
-          iconBadge.style.background = script.is_preset ? '#e0f2fe' : '#fef3c7';
-          iconBadge.style.color = script.is_preset ? '#0284c7' : '#d97706';
-        }
-        if (titleEl) {
-          titleEl.innerHTML = script.is_preset
+        if (titleTextEl) {
+          titleTextEl.innerHTML = script.is_preset
             ? `Chi Tiết Kịch Bản Hệ Thống: <span style="color:#0284c7;">${escapeHtml(cleaned)}</span>`
             : `Chỉnh Sửa Kịch Bản: <span style="color:#0284c7;">${escapeHtml(cleaned)}</span>`;
+        }
+        if (iconEl) {
+          if (script.is_preset) {
+            iconEl.setAttribute('stroke', '#0284c7');
+            iconEl.innerHTML = '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>';
+          } else {
+            iconEl.setAttribute('stroke', '#d97706');
+            iconEl.innerHTML = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>';
+          }
         }
         if (subtitleEl) {
           subtitleEl.innerText = script.is_preset
@@ -358,13 +362,12 @@
         automationState.builderSteps = JSON.parse(JSON.stringify(script.steps || []));
       }
     } else {
-      if (iconBadge) {
-        iconBadge.innerHTML = SVG_ICONS.sparkle;
-        iconBadge.style.background = '#e0f2fe';
-        iconBadge.style.color = '#0284c7';
+      if (titleTextEl) {
+        titleTextEl.innerHTML = `Tạo Kịch Bản Mới <span style="color:#0284c7;">(No-code)</span>`;
       }
-      if (titleEl) {
-        titleEl.innerHTML = `Tạo Kịch Bản Mới <span style="color:#0284c7;">(No-code)</span>`;
+      if (iconEl) {
+        iconEl.setAttribute('stroke', '#0284c7');
+        iconEl.innerHTML = '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>';
       }
       if (subtitleEl) {
         subtitleEl.innerText = 'Kéo thả hoặc thêm các bước điều khiển tự động không cần lập trình';
@@ -522,7 +525,7 @@
           <div class="automation-step-header">
             <div style="display: flex; align-items: center; gap: 8px;">
               <span class="automation-step-badge">${idx + 1}</span>
-              <select class="poly-input step-type-select" data-idx="${idx}" style="font-size: 12.5px; font-weight: 600; padding: 5px 10px; width: 250px;">
+              <select class="poly-input step-type-select" data-idx="${idx}" style="font-size: 12.5px; font-weight: 600; padding: 5px 10px; width: 280px; min-width: 270px;">
                 ${Object.entries(STEP_TYPE_LABELS).map(([k, lbl]) => `
                   <option value="${k}" ${step.type === k ? 'selected' : ''}>${lbl}</option>
                 `).join('')}

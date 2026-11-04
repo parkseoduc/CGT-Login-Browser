@@ -310,6 +310,7 @@ function showToast(message, type = 'info') {
 
 // Global exports & native alert override
 window.showToast = showToast;
+window.prompt = function() { return null; };
 window.alert = function(msg) {
   showToast(msg, 'info');
 };
@@ -4364,42 +4365,74 @@ window.installPresetExtensions = async function() {
 
 if (btnBrowseExtFolder) {
   btnBrowseExtFolder.addEventListener('click', async () => {
+    // 1. Electron native dialog
     if (window.electronAPI && typeof window.electronAPI.openDirectory === 'function') {
-      const folderPath = await window.electronAPI.openDirectory();
-      if (folderPath) {
-        extFormPath.value = folderPath;
-        try {
-          const res = await fetch(`${API_BASE}/extensions/parse`, {
+      try {
+        const folderPath = await window.electronAPI.openDirectory();
+        if (folderPath) {
+          extFormPath.value = folderPath;
+          const parseRes = await fetch(`${API_BASE}/extensions/parse`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: folderPath })
           });
-          const data = await res.json();
-          if (data.success && data.manifest) {
-            extFormName.value = data.manifest.name || '';
-            showToast(`Đã nhận diện: ${data.manifest.name} v${data.manifest.version}`, 'success');
+          const parseData = await parseRes.json();
+          if (parseData.success && parseData.manifest) {
+            extFormName.value = parseData.manifest.name || '';
+            showToast(`Đã nhận diện: ${parseData.manifest.name} v${parseData.manifest.version}`, 'success');
+          } else {
+            showToast('Đã chọn thư mục tiện ích', 'info');
           }
-        } catch (e) {}
+        }
+      } catch (err) {
+        showToast('Không thể mở hộp thoại chọn thư mục', 'danger');
       }
-    } else {
-      const p = prompt('Nhập đường dẫn thư mục tiện ích đã giải nén trên máy tính của bạn:', extFormPath.value || '');
-      if (p && p.trim()) {
-        extFormPath.value = p.trim();
+      return;
+    }
+
+    // 2. Server-side Windows Native Folder Dialog (FolderBrowserDialog)
+    showToast('Đang mở hộp thoại chọn thư mục Windows...', 'info');
+    try {
+      const res = await fetch(`${API_BASE}/system/browse-folder`);
+      const data = await res.json();
+      if (data && data.success && data.path) {
+        extFormPath.value = data.path;
         try {
-          const res = await fetch(`${API_BASE}/extensions/parse`, {
+          const parseRes = await fetch(`${API_BASE}/extensions/parse`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ path: p.trim() })
+            body: JSON.stringify({ path: data.path })
           });
-          const data = await res.json();
-          if (data.success && data.manifest) {
-            extFormName.value = data.manifest.name || '';
-            showToast(`Đã nhận diện: ${data.manifest.name} v${data.manifest.version}`, 'success');
+          const parseData = await parseRes.json();
+          if (parseData.success && parseData.manifest) {
+            extFormName.value = parseData.manifest.name || '';
+            showToast(`Đã nhận diện: ${parseData.manifest.name} v${parseData.manifest.version}`, 'success');
           } else {
-            showToast('Đã lưu đường dẫn tiện ích', 'info');
+            showToast(`Đã chọn: ${data.path}`, 'success');
           }
-        } catch (e) {}
+        } catch (parseErr) {
+          showToast(`Đã chọn: ${data.path}`, 'success');
+        }
+        return;
       }
+    } catch (apiErr) {
+      console.warn('Backend browse-folder fallback to file input', apiErr);
+    }
+
+    // 3. Fallback to hidden browser folder input
+    const folderInput = document.getElementById('ext-folder-input');
+    if (folderInput) {
+      folderInput.onchange = async () => {
+        if (folderInput.files && folderInput.files.length > 0) {
+          const firstFile = folderInput.files[0];
+          const detectedPath = firstFile.path || (firstFile.webkitRelativePath ? firstFile.webkitRelativePath.split('/')[0] : '');
+          if (detectedPath) {
+            extFormPath.value = detectedPath;
+            showToast(`Đã nạp đường dẫn: ${detectedPath}`, 'info');
+          }
+        }
+      };
+      folderInput.click();
     }
   });
 }
