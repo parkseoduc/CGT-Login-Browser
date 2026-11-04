@@ -4144,6 +4144,7 @@ const views = {
   proxies: { el: document.getElementById('view-proxies'), title: 'Danh Sách Proxy & Kiểm Tra IP', sub: 'Quản lý kho proxy tĩnh HTTP/HTTPS/SOCKS5 với kiểm tra Live Ping' },
   extensions: { el: document.getElementById('view-extensions'), title: 'Kho Tiện Ích Mở Rộng', sub: 'Quản lý các tiện ích MMO, Facebook, TikTok và nạp tự động vào Profile' },
   sync: { el: document.getElementById('view-sync'), title: 'Đồng Bộ Thao Tác Chuột & Phím', sub: 'Truyền tín hiệu bàn phím và chuột thời gian thực từ Master sang Slave qua CDP' },
+  automation: { el: document.getElementById('view-automation'), title: 'Tự Động Hóa Không Cần Code (No-code Automation Studio)', sub: 'Kịch bản nuôi cookie tự nhiên, cày Muse AI an toàn chống Disconnected, lướt video ngắn và chạy hàng loạt đa luồng' },
   license: { el: document.getElementById('view-license'), title: 'Bản Quyền & Nâng Cấp Gói', sub: 'Tích hợp bảo mật bản quyền CGT-License Engine • lic.cgtdev.space' },
   api: { el: document.getElementById('view-api'), title: 'REST API & Automation Protocol', sub: 'Tự động hóa hoàn toàn với Puppeteer, Playwright, Python và MCP' },
   admin: { el: document.getElementById('view-admin'), title: 'Quản Trị Người Dùng & Bản Quyền', sub: 'Quản lý tài khoản, nâng gói Pro / VIP và kết nối lic.cgtdev.space' },
@@ -4175,6 +4176,13 @@ function switchTab(tabId) {
 
   if (tabId === 'extensions') {
     fetchExtensions();
+  }
+
+  if (tabId === 'automation') {
+    if (window.AutomationUI && typeof window.AutomationUI.fetchScripts === 'function') {
+      window.AutomationUI.fetchScripts();
+      window.AutomationUI.checkStatus();
+    }
   }
 }
 

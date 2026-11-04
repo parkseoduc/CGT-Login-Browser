@@ -13,6 +13,14 @@ const proxy = require('./proxy');
 const synchronizer = require('./synchronizer');
 const extensions = require('./extensions');
 const automation = require('./automation');
+const automationEngine = require('./automation-engine');
+
+let automationState = {
+  isRunning: false,
+  scriptName: '',
+  progress: { total: 0, completed: 0, percent: 0, successCount: 0, failCount: 0 },
+  logs: []
+};
 const cookiesModule = require('./cookies');
 const kernelDownloader = require('./kernel-downloader');
 const profileBackup = require('./profile-backup');
@@ -710,7 +718,159 @@ function createServer() {
         return sendJson(res, 200, { success: true, count: ids.length });
       }
 
-      // Automation Endpoints
+      // Automation No-code & Script Management Endpoints
+      if (method === 'GET' && pathname === '/api/v1/automation/scripts') {
+        const scripts = db.listAutomationScripts().map(s => ({
+          ...s,
+          steps: typeof s.steps === 'string' ? JSON.parse(s.steps || '[]') : s.steps
+        }));
+        return sendJson(res, 200, { success: true, scripts });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/automation/scripts') {
+        try {
+          const body = await parseJsonBody(req);
+          const script = db.createAutomationScript(body);
+          return sendJson(res, 201, { success: true, script });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'PUT' && pathname.startsWith('/api/v1/automation/scripts/')) {
+        try {
+          const scriptId = pathname.split('/')[5];
+          const body = await parseJsonBody(req);
+          const updated = db.updateAutomationScript(scriptId, body);
+          return sendJson(res, 200, { success: true, script: updated });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'DELETE' && pathname.startsWith('/api/v1/automation/scripts/')) {
+        try {
+          const scriptId = pathname.split('/')[5];
+          db.deleteAutomationScript(scriptId);
+          return sendJson(res, 200, { success: true });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/automation/status') {
+        return sendJson(res, 200, {
+          success: true,
+          status: {
+            is_running: !!automationState.isRunning,
+            script_name: automationState.scriptName,
+            total: (automationState.progress && automationState.progress.total) || 0,
+            completed: (automationState.progress && automationState.progress.completed) || 0,
+            running: automationState.isRunning ? Math.max(0, (automationState.progress.total || 0) - (automationState.progress.completed || 0)) : 0,
+            failed: (automationState.progress && automationState.progress.failCount) || 0,
+            concurrency: automationState.concurrency || 2,
+            recent_logs: (automationState.logs || []).slice(-50).map(l => typeof l === 'string' ? l : `[${l.time || ''}] ${l.message || ''}`)
+          },
+          ...automationState,
+          logs: automationState.logs.slice(-60)
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/automation/run') {
+        try {
+          const body = await parseJsonBody(req);
+          const rawIds = body.profileIds || body.profile_ids || (body.profileId ? [body.profileId] : (body.profile_id ? [body.profile_id] : []));
+          const profileIds = Array.isArray(rawIds) ? rawIds : [];
+          if (profileIds.length === 0) {
+            return sendJson(res, 400, { success: false, error: 'Vui lòng chọn ít nhất 1 hồ sơ để chạy kịch bản' });
+          }
+
+          let steps = body.steps;
+          let scriptName = body.scriptName || body.script_name || 'Kịch bản tùy chỉnh';
+          const scriptId = body.scriptId || body.script_id;
+
+          if (!steps && scriptId) {
+            const sc = db.getAutomationScript(scriptId);
+            if (sc) {
+              scriptName = sc.name;
+              steps = typeof sc.steps === 'string' ? JSON.parse(sc.steps) : sc.steps;
+            }
+          }
+
+          if (!steps || !Array.isArray(steps) || steps.length === 0) {
+            return sendJson(res, 400, { success: false, error: 'Kịch bản không có bước thực thi nào' });
+          }
+
+          if (automationState.isRunning) {
+            return sendJson(res, 409, { success: false, error: 'Đang có một tiến trình tự động hóa khác đang chạy' });
+          }
+
+          // Reset state & start async
+          automationState.isRunning = true;
+          automationState.scriptName = scriptName;
+          automationState.concurrency = body.concurrency || 2;
+          automationState.progress = { total: profileIds.length, completed: 0, percent: 0, successCount: 0, failCount: 0 };
+          automationState.logs = [{
+            time: new Date().toLocaleTimeString('vi-VN'),
+            message: `🚀 Bắt đầu chạy kịch bản "${scriptName}" trên ${profileIds.length} hồ sơ...`,
+            level: 'info'
+          }];
+
+          const options = {
+            concurrency: body.concurrency || 2,
+            autoClose: body.autoClose !== undefined ? body.autoClose : (body.auto_close !== undefined ? body.auto_close : true),
+            bypassProxyGuard: body.bypassProxyGuard !== undefined ? body.bypassProxyGuard : (body.bypass_proxy_guard !== undefined ? body.bypass_proxy_guard : false)
+          };
+
+          // Chạy nền
+          automationEngine.executeBatch(
+            profileIds,
+            steps,
+            options,
+            (prog) => {
+              automationState.progress = prog;
+            },
+            (logItem) => {
+              automationState.logs.push(logItem);
+              if (automationState.logs.length > 300) automationState.logs.shift();
+            }
+          ).then(batchResult => {
+            automationState.isRunning = false;
+            automationState.logs.push({
+              time: new Date().toLocaleTimeString('vi-VN'),
+              message: `🎉 HOÀN THÀNH TẤT CẢ! Thành công: ${batchResult.successCount}/${batchResult.total}, Thất bại: ${batchResult.failCount}`,
+              level: 'success'
+            });
+          }).catch(batchErr => {
+            automationState.isRunning = false;
+            automationState.logs.push({
+              time: new Date().toLocaleTimeString('vi-VN'),
+              message: `❌ Lỗi hàng loạt: ${batchErr.message}`,
+              level: 'error'
+            });
+          });
+
+          return sendJson(res, 200, {
+            success: true,
+            message: `Đã kích hoạt chạy kịch bản trên ${profileIds.length} hồ sơ`,
+            totalProfiles: profileIds.length
+          });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/automation/stop') {
+        automationState.isRunning = false;
+        automationState.logs.push({
+          time: new Date().toLocaleTimeString('vi-VN'),
+          message: '⏹️ Đã dừng tiến trình tự động hóa bởi người dùng',
+          level: 'warning'
+        });
+        return sendJson(res, 200, { success: true });
+      }
+
+      // Legacy Automation Endpoints
       if (method === 'POST' && pathname === '/api/v1/automation/warmup') {
         const body = await parseJsonBody(req);
         const { profileId } = body;

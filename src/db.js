@@ -123,6 +123,18 @@ function initSchema() {
       enabled INTEGER DEFAULT 1,
       created_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS automation_scripts (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT DEFAULT '',
+      category TEXT DEFAULT 'general',
+      icon TEXT DEFAULT '⚡',
+      steps TEXT NOT NULL,
+      is_preset INTEGER DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   // Migrate schema
@@ -898,7 +910,77 @@ function getAdminStats() {
   };
 }
 
+
+// ---------------- Automation Scripts API ---------------- //
+
+function listAutomationScripts() {
+  const db = getDb();
+  return db.prepare('SELECT * FROM automation_scripts ORDER BY is_preset DESC, created_at DESC').all();
+}
+
+function getAutomationScript(id) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM automation_scripts WHERE id = ?').get(id);
+}
+
+function createAutomationScript(data) {
+  const db = getDb();
+  const id = data.id || crypto.randomUUID();
+  const now = new Date().toISOString();
+  const stepsJson = Array.isArray(data.steps) ? JSON.stringify(data.steps) : (data.steps || '[]');
+
+  db.prepare(`
+    INSERT INTO automation_scripts (id, name, description, category, icon, steps, is_preset, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    data.name || 'Kịch bản mới',
+    data.description || '',
+    data.category || 'custom',
+    data.icon || '⚡',
+    stepsJson,
+    data.is_preset ? 1 : 0,
+    now,
+    now
+  );
+  return getAutomationScript(id);
+}
+
+function updateAutomationScript(id, data) {
+  const db = getDb();
+  const now = new Date().toISOString();
+  const stepsJson = data.steps !== undefined ? (Array.isArray(data.steps) ? JSON.stringify(data.steps) : String(data.steps)) : null;
+
+  const current = getAutomationScript(id);
+  if (!current) return null;
+
+  db.prepare(`
+    UPDATE automation_scripts SET
+      name = ?, description = ?, category = ?, icon = ?, steps = ?, updated_at = ?
+    WHERE id = ?
+  `).run(
+    data.name ?? current.name,
+    data.description ?? current.description,
+    data.category ?? current.category,
+    data.icon ?? current.icon,
+    stepsJson ?? current.steps,
+    now,
+    id
+  );
+  return getAutomationScript(id);
+}
+
+function deleteAutomationScript(id) {
+  const db = getDb();
+  return db.prepare('DELETE FROM automation_scripts WHERE id = ? AND is_preset = 0').run(id);
+}
+
 module.exports = {
+  listAutomationScripts,
+  getAutomationScript,
+  createAutomationScript,
+  updateAutomationScript,
+  deleteAutomationScript,
   getDb,
   listProfiles,
   getProfile,
