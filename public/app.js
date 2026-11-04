@@ -795,6 +795,7 @@ async function fetchProfiles() {
 
 // Selection Set for Batch Actions
 const selectedProfileIds = new Set();
+window.selectedProfileIds = selectedProfileIds;
 const launchingProfileIds = new Set();
 const stoppingProfileIds = new Set();
 const failedProfileIds = new Map();
@@ -3213,13 +3214,11 @@ const btnRunFb = document.getElementById('btn-run-fb');
 
 if (batchBtnAuto) {
   batchBtnAuto.addEventListener('click', () => {
-    if (selectedProfileIds.size === 0) {
-      showToast('Vui lòng chọn ít nhất 1 hồ sơ để chạy kịch bản', 'warning');
-      return;
+    if (window.AutomationUI && typeof window.AutomationUI.openBatchModal === 'function') {
+      window.AutomationUI.openBatchModal();
+    } else if (typeof switchTab === 'function') {
+      switchTab('automation');
     }
-    automationModalCount.innerText = selectedProfileIds.size;
-    automationModal.classList.add('open');
-    automationModal.style.display = 'flex';
   });
 }
 

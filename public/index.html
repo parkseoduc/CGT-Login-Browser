@@ -264,6 +264,13 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="9" height="13" rx="2"/><rect x="13" y="7" width="9" height="13" rx="2"/><path d="M6 17v2a1 1 0 0 0 1 1h8"/></svg>
           <span>Đồng bộ thao tác</span>
         </div>
+        <div class="nav-item" data-tab="automation">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+          </svg>
+          <span style="flex:1;">Tự động hoá (No-code)</span>
+          <span class="badge" style="background:#e0f2fe; color:#0284c7; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px;">Hot</span>
+        </div>
         <div class="nav-item" data-tab="license">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
           <span>Bản quyền & Gói</span>
@@ -1251,6 +1258,106 @@
                   <button class="uiv-btn uiv-btn-secondary sync-tile-btn" data-layout="4x2" style="justify-content:center; grid-column: span 2;">8 Ô (4x2)</button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- View 7: No-Code Automation Studio (Lượt 2) -->
+        <div id="view-automation" class="view-section" style="display: none;">
+          <div class="automation-container">
+            <!-- Header Banner -->
+            <div class="automation-header-banner">
+              <div>
+                <div class="automation-banner-title">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                  <span>Trung Tâm Tự Động Hóa Không Cần Code (No-code Studio)</span>
+                </div>
+                <div class="automation-banner-desc">
+                  Thiết lập chuỗi thao tác tự nhiên không cần lập trình: Nuôi Cookie đọc báo, cày Muse AI an toàn chống ngắt kết nối (Disconnected), lướt TikTok/Shorts và chạy hàng loạt đa luồng độc lập qua CDP.
+                </div>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <button class="uiv-cta-emerald" id="btn-create-automation-script" style="padding: 10px 18px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span>+ Tạo Kịch Bản Mới</span>
+                </button>
+                <button class="uiv-btn uiv-btn-secondary" id="btn-open-batch-modal" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); padding: 10px 18px; font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <span>Chạy Hàng Loạt</span>
+                </button>
+                <button class="uiv-btn uiv-btn-secondary" id="btn-refresh-automation" title="Làm mới danh sách" style="background: rgba(255,255,255,0.15); color: #ffffff; border-color: rgba(255,255,255,0.3); padding: 10px 12px;">
+                  🔄
+                </button>
+              </div>
+            </div>
+
+            <!-- Live Execution Monitor & Console (Shown when running or finished) -->
+            <div id="automation-monitor-card" class="table-card" style="display: none; padding: 22px; border: 1px solid #bae6fd; background: #f0f9ff;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <span id="automation-status-badge" class="badge" style="font-size: 12px; padding: 4px 10px; font-weight: 700; border-radius: 6px;">Đang Chạy</span>
+                  <span style="font-size: 13.5px; font-weight: 700; color: #0f172a;">Tiến Trình Thực Thi Kịch Bản</span>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                  <button class="uiv-btn uiv-btn-secondary" id="btn-automation-clear-logs" style="font-size: 11.5px; padding: 4px 10px;">Xóa Log</button>
+                  <button class="uiv-btn uiv-btn-danger" id="btn-automation-stop-run" style="font-size: 11.5px; padding: 4px 12px; font-weight: 700;">⏹️ Dừng Tiến Trình</button>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div style="background: #e2e8f0; border-radius: 999px; height: 12px; overflow: hidden; margin-bottom: 12px; position: relative;">
+                <div id="automation-progress-fill" style="background: linear-gradient(90deg, #0284c7, #10b981); height: 100%; width: 0%; transition: width 0.3s ease; border-radius: 999px;"></div>
+              </div>
+
+              <!-- Quick Metrics -->
+              <div style="display: flex; gap: 20px; align-items: center; font-size: 12.5px; color: #334155; margin-bottom: 16px; flex-wrap: wrap;">
+                <div>Tiến độ: <strong id="automation-progress-percent" style="color: #0284c7;">0%</strong></div>
+                <div>Đã hoàn tất: <strong id="stat-completed-count" style="color: #10b981;">0/0</strong> hồ sơ</div>
+                <div>Đang chạy: <strong id="stat-running-count" style="color: #0284c7;">0</strong> luồng</div>
+                <div>Thất bại / Bị chặn: <strong id="stat-failed-count" style="color: #ef4444;">0</strong></div>
+              </div>
+
+              <!-- Dark Console Window -->
+              <div class="automation-console-box">
+                <div class="automation-console-top">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                    <span style="font-size: 11.5px; font-weight: 600; color: #94a3b8; font-family: 'JetBrains Mono', monospace; margin-left: 6px;">Live CDP Execution Terminal</span>
+                  </div>
+                  <span style="font-size: 11px; color: #64748b;">Thời gian thực (Realtime)</span>
+                </div>
+                <div id="automation-live-logs" class="automation-console-logs">
+                  <span style="color:#64748b;">// Đang kết nối kênh CDP...</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Stats Bar & Category Filter Bar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+              <div class="automation-filter-bar">
+                <button class="automation-filter-btn active" data-category="all">Tất Cả</button>
+                <button class="automation-filter-btn" data-category="muse-ai">🤖 Muse AI</button>
+                <button class="automation-filter-btn" data-category="warmup">🌾 Nuôi Cookie</button>
+                <button class="automation-filter-btn" data-category="social">📱 Video Ngắn</button>
+                <button class="automation-filter-btn" data-category="audit">🛡️ Vân Tay / Audit</button>
+                <button class="automation-filter-btn" data-category="custom">⚙️ Tùy Biến</button>
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 14px; font-size: 12.5px; color: #64748b;">
+                <div>Tổng kịch bản: <strong id="stat-total-scripts" style="color: #0f172a;">4</strong></div>
+                <div>Mẫu hệ thống: <strong id="stat-preset-scripts" style="color: #0284c7;">4</strong></div>
+                <div style="display: flex; align-items: center; gap: 4px; color: #10b981; font-weight: 600;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span>Proxy Guard: Bật</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Grid of Automation Scripts -->
+            <div id="automation-scripts-grid" class="automation-grid">
+              <!-- Dynamically populated by automation-ui.js -->
             </div>
           </div>
         </div>
@@ -3250,6 +3357,136 @@ async function automateProfile(profileId) {
         </div>
       </div>
     </div>
+
+  <!-- Modal Trình Xây Dựng Kịch Bản No-code (Script Builder) -->
+  <div class="modal-overlay modal" id="modal-automation-builder" style="display: none; z-index: 10040;">
+    <div class="modal-card modal-container" style="max-width: 680px; width: 100%; border-radius: 16px; margin: auto; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0;">
+        <div>
+          <h2 id="builder-modal-title" style="font-size: 17px; font-weight: 700; color: #0f172a;">✨ Trình Thiết Lập Kịch Bản No-code</h2>
+          <p style="font-size: 12px; color: #64748b; margin-top: 2px;">Kéo thả hoặc thêm các bước điều khiển tự động không cần lập trình</p>
+        </div>
+        <button class="modal-close" id="btn-builder-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1;">
+        <!-- Basic Info Row -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Tên kịch bản:</label>
+            <input type="text" id="builder-script-name" class="poly-input" placeholder="Ví dụ: Giữ kết nối Muse AI & Tạo ảnh tự động" style="font-size: 13px;">
+          </div>
+          <div>
+            <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Danh mục:</label>
+            <select id="builder-script-category" class="poly-input" style="font-size: 13px;">
+              <option value="muse-ai">🤖 Muse AI</option>
+              <option value="warmup">🌾 Nuôi Cookie</option>
+              <option value="social">📱 Video Ngắn (Shorts)</option>
+              <option value="audit">🛡️ Kiểm Tra Vân Tay</option>
+              <option value="custom">⚙️ Tùy Biến</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 18px;">
+          <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Mô tả kịch bản:</label>
+          <input type="text" id="builder-script-desc" class="poly-input" placeholder="Ghi chú mục đích, lưu ý proxy..." style="font-size: 13px;">
+        </div>
+
+        <!-- Steps Section -->
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="font-size: 13px; font-weight: 700; color: #0f172a;">Các Bước Thao Tác (Tuần Tự Từ Trên Xuống Dưới):</div>
+            <button type="button" class="uiv-cta-emerald" id="btn-builder-add-step" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+              <span>+ Thêm Bước Mới</span>
+            </button>
+          </div>
+
+          <div id="builder-steps-list">
+            <!-- Dynamically populated by automation-ui.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+        <button class="uiv-btn uiv-btn-secondary" id="btn-builder-cancel" style="padding: 8px 16px;">Hủy Bỏ</button>
+        <button class="uiv-cta-primary" id="btn-builder-save-script" style="padding: 8px 20px; font-weight: 700;">💾 Lưu Kịch Bản</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cấu Hình Chạy Hàng Loạt (Batch Runner) -->
+  <div class="modal-overlay modal" id="modal-automation-batch" style="display: none; z-index: 10040;">
+    <div class="modal-card modal-container" style="max-width: 600px; width: 100%; border-radius: 16px; margin: auto; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="padding: 18px 24px; border-bottom: 1px solid #e2e8f0;">
+        <div>
+          <h2 style="font-size: 17px; font-weight: 700; color: #0f172a;">🚀 Khởi Chạy Kịch Bản Hàng Loạt (Batch Runner)</h2>
+          <p style="font-size: 12px; color: #64748b; margin-top: 2px;">Tự động phân bổ luồng chạy độc lập cho từng hồ sơ qua CDP</p>
+        </div>
+        <button class="modal-close" id="btn-batch-close-modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 20px 24px; overflow-y: auto; flex: 1;">
+        <!-- Script Selection -->
+        <div style="margin-bottom: 16px;">
+          <label style="font-size: 12px; font-weight: 700; color: #334155; margin-bottom: 4px; display: block;">Chọn kịch bản thực thi:</label>
+          <select id="batch-select-script" class="poly-input" style="font-size: 13px; font-weight: 600;">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <!-- Concurrency & Safety -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-size: 12.5px; font-weight: 700; color: #0f172a;">Số luồng song song (Concurrency):</label>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="number" id="batch-concurrency" value="2" min="1" max="10" style="width: 60px; padding: 4px 8px; font-size: 13px; font-weight: 700; text-align: center; border: 1px solid #cbd5e1; border-radius: 6px;">
+              <span style="font-size: 12px; color: #64748b;">luồng đồng thời</span>
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: #334155;">
+              <input type="checkbox" id="batch-proxy-guard" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+              <span><strong>🛡️ Bật Proxy Guard:</strong> Tự động kiểm tra độ sống Proxy trước khi mở hồ sơ (Bảo vệ an toàn cho Muse AI)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; cursor: pointer; color: #334155;">
+              <input type="checkbox" id="batch-auto-close" checked style="accent-color: #0284c7; width: 16px; height: 16px;">
+              <span>Tự động đóng Profile sau khi hoàn thành xong các bước kịch bản</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Profile Selection List -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+            <div style="font-size: 12.5px; font-weight: 700; color: #0f172a;">
+              Chọn hồ sơ thực thi (<span id="batch-selected-count" style="color: #0284c7;">0</span> đã chọn):
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <select id="batch-filter-group" class="poly-input" style="font-size: 11.5px; padding: 3px 8px; width: 160px;">
+                <option value="all">Tất cả các nhóm</option>
+              </select>
+              <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-batch-select-all" style="font-size: 11px; padding: 4px 8px;">Tất cả</button>
+              <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-batch-deselect-all" style="font-size: 11px; padding: 4px 8px;">Bỏ chọn</button>
+            </div>
+          </div>
+
+          <div id="batch-profiles-checklist" style="max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff;">
+            <!-- Dynamically populated by automation-ui.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; background: #f8fafc; border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+        <button class="uiv-btn uiv-btn-secondary" id="btn-batch-cancel" style="padding: 8px 16px;">Hủy Bỏ</button>
+        <button class="uiv-cta-emerald" id="btn-batch-start-run" style="padding: 8px 22px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span>Khởi Động Tiến Trình</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <script src="js/automation-ui.js?v=2.4.0"></script>
   <script src="js/admin-checkout.js?v=3.0.0"></script>

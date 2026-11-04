@@ -672,10 +672,13 @@
           ? `<span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-size: 11px;">🛡️ Proxy ISP/USA</span>`
           : `<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Mạng gốc</span>`;
 
+        const hasSelection = (window.selectedProfileIds && window.selectedProfileIds.size > 0);
+        const isChecked = hasSelection ? window.selectedProfileIds.has(p.id) : true;
+
         return `
           <label class="batch-profile-row" data-group="${escapeHtml(p.group_name || 'Mặc định')}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <input type="checkbox" class="batch-profile-checkbox" value="${p.id}" checked style="width: 16px; height: 16px; accent-color: #0284c7;">
+              <input type="checkbox" class="batch-profile-checkbox" value="${p.id}" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: #0284c7;">
               <span style="font-size: 13px; font-weight: 600; color: #0f172a;">${escapeHtml(p.name)}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
