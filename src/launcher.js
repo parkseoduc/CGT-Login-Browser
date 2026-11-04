@@ -287,6 +287,37 @@ async function startProfile(profileId, overrides = {}) {
     }
   }
 
+  // -------------------------------------------------------------
+  // PRE-LAUNCH PROXY GUARD (Chống ngắt kết nối Disconnected Muse AI)
+  // -------------------------------------------------------------
+  const isGuardEnabled = (profile.proxy_guard !== 0) && !overrides.bypass_proxy_guard;
+  if (isGuardEnabled && profile.proxy_host && profile.proxy_port) {
+    console.log(`[ProxyGuard] Đang kiểm tra an toàn Proxy (${profile.proxy_host}:${profile.proxy_port}) cho profile "${profile.name}"...`);
+    const guardCheck = await proxy.checkProxy({
+      type: profile.proxy_type || 'http',
+      host: profile.proxy_host,
+      port: profile.proxy_port,
+      username: profile.proxy_user,
+      password: profile.proxy_pass,
+    }, 4000);
+
+    if (!guardCheck.live) {
+      const errMsg = `Proxy (${profile.proxy_host}:${profile.proxy_port}) mất kết nối hoặc phản hồi quá chậm (${guardCheck.error || 'Connection Timeout'}). Hệ thống đã tạm chặn mở trình duyệt để bảo vệ tài khoản Muse AI không bị ngắt kết nối (Disconnected).`;
+      console.warn(`[ProxyGuard] ⚠️ CHẶN MỞ PROFILE: ${errMsg}`);
+      const err = new Error(errMsg);
+      err.code = 'PROXY_GUARD_FAILED';
+      err.proxyHost = profile.proxy_host;
+      err.proxyPort = profile.proxy_port;
+      err.proxyError = guardCheck.error || 'Connection Timeout';
+      err.proxyId = profile.proxy_id;
+      err.profileId = profile.id;
+      err.profileName = profile.name;
+      err.rotationApiUrl = profile.proxy_rotation_api_url;
+      throw err;
+    }
+    console.log(`[ProxyGuard] PASS: Proxy ${profile.proxy_host}:${profile.proxy_port} LIVE! Ping: ${guardCheck.ping}ms, IP: ${guardCheck.ip}, ISP: ${guardCheck.isp || 'N/A'}`);
+  }
+
   // Cấu hình Proxy nếu có
   let proxyForwarder = null;
   let proxyUrl = overrides.proxy_url;

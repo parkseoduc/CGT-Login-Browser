@@ -1865,6 +1865,39 @@ async function automateProfile(profileId) {
                 <input type="text" id="custom-proxy-rotation-url" class="form-control proxy-input" placeholder="https://api.tinproxy.com/proxy/get-new-ip?api_key=...">
               </div>
 
+              <!-- Anti-Disconnect Proxy Guard & Auto-Rotate Toggles -->
+              <div style="margin-top: 14px; background: rgba(56, 103, 244, 0.06); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(56, 103, 244, 0.18); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(56, 103, 244, 0.12); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">Lá Chắn An Toàn Proxy (Pre-launch Proxy Guard)</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Tự động test độ sống của Proxy trước khi mở trình duyệt, chặn ngắt kết nối Disconnected Muse AI</div>
+                  </div>
+                </div>
+                <label class="switch-ui" style="margin: 0; cursor: pointer;">
+                  <input type="checkbox" id="form-proxy-guard" checked>
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
+              <div style="margin-top: 10px; background: rgba(16, 185, 129, 0.06); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(16, 185, 129, 0.18); display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 185, 129, 0.12); display: flex; align-items: center; justify-content: center; color: #10B981;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  </div>
+                  <div>
+                    <div style="font-size: 13px; font-weight: 700; color: var(--text-main);">Tự Động Xoay IP 4G Khi Khởi Chạy</div>
+                    <div style="font-size: 11.5px; color: var(--text-muted);">Tự động kích hoạt đổi IP mới qua Link Webhook/API trước khi mở profile</div>
+                  </div>
+                </div>
+                <label class="switch-ui" style="margin: 0; cursor: pointer;">
+                  <input type="checkbox" id="form-auto-rotate-proxy">
+                  <span class="slider round"></span>
+                </label>
+              </div>
+
               <!-- Test Custom Proxy Button & Result Box -->
               <div style="margin-top: 18px;">
                 <button type="button" class="btn-test-proxy-live" id="btn-test-custom-proxy" style="width: 100%; height: 42px; justify-content: center; font-size: 13.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 8px;">
@@ -3145,6 +3178,74 @@ async function automateProfile(profileId) {
           <div style="display: flex; gap: 10px; justify-content: flex-end;">
             <button class="uiv-btn uiv-btn-secondary" id="btn-admin-reset-cancel">Hủy</button>
             <button class="uiv-cta-primary" id="btn-admin-reset-submit">Lưu Mật Khẩu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  
+    <!-- Anti-Disconnect Proxy Guard Warning Modal -->
+    <div class="modal-overlay modal" id="proxy-guard-modal" style="display: none; z-index: 10050;">
+      <div class="modal-card modal-container" style="max-width: 520px; width: 100%; border-radius: 18px; margin: auto; border: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 20px 50px rgba(0,0,0,0.35);">
+        <div class="modal-header" style="background: rgba(239, 68, 68, 0.08); border-bottom: 1px solid rgba(239, 68, 68, 0.15); padding: 18px 22px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(239, 68, 68, 0.15); display: flex; align-items: center; justify-content: center; color: #EF4444;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+              <h2 style="font-size: 16.5px; font-weight: 800; color: #EF4444; margin: 0;">LÁ CHẮN PROXY CHẶN KHỞI HÀNH</h2>
+              <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 0;">Phát hiện Proxy mất kết nối — Chống Disconnected Muse AI & Checkpoint</p>
+            </div>
+          </div>
+          <button class="modal-close" id="proxy-guard-close">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 22px;">
+          <input type="hidden" id="pg-profile-id" value="">
+          <input type="hidden" id="pg-proxy-id" value="">
+
+          <!-- Warning Card -->
+          <div style="background: rgba(239, 68, 68, 0.04); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 16px; margin-bottom: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">HỒ SƠ: <span id="pg-profile-name" style="color: var(--text-main); font-weight: 700;">Profile 01</span></div>
+              <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #EF4444; font-weight: 700; font-size: 11px; padding: 3px 8px; border-radius: 6px;">● MẤT KẾT NỐI</span>
+            </div>
+            <div style="font-family: monospace; font-size: 14px; font-weight: 700; color: #EF4444; margin-bottom: 8px;" id="pg-proxy-hostport">
+              128.199.202.12:3128
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.5;" id="pg-error-detail">
+              Nguyên nhân: Proxy không phản hồi (Connection Timeout quá 4500ms).
+            </div>
+          </div>
+
+          <!-- Advisory Note -->
+          <div style="display: flex; gap: 10px; align-items: flex-start; background: rgba(56, 103, 244, 0.05); padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(56, 103, 244, 0.15); margin-bottom: 20px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" style="flex-shrink: 0; margin-top: 1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <div style="font-size: 12px; color: var(--text-main); line-height: 1.5;">
+              <strong>Khuyến nghị an toàn:</strong> Nếu mở trình duyệt khi proxy chết, nền tảng <strong>Muse AI</strong> hoặc mạng xã hội sẽ ngắt phiên làm việc (Disconnected) hoặc kích hoạt cờ xác minh checkpoint. Hãy xoay IP 4G mới hoặc đổi Proxy trước khi mở!
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <!-- Action 1: Rotate 4G IP & Auto Launch -->
+            <button type="button" class="uiv-cta-primary" id="btn-pg-rotate-relaunch" style="height: 42px; justify-content: center; font-size: 13px; font-weight: 700; background: #10B981; border-color: #10B981;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              <span id="btn-pg-rotate-relaunch-text">🔄 Xoay Đổi IP 4G & Tự Động Mở Lại</span>
+            </button>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+              <!-- Action 2: Change Proxy in Edit Modal -->
+              <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-pg-change-proxy" style="height: 38px; justify-content: center; font-size: 12.5px; font-weight: 600;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span>Đổi Proxy Khác</span>
+              </button>
+
+              <!-- Action 3: Bypass Guard & Force Launch -->
+              <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-pg-force-launch" style="height: 38px; justify-content: center; font-size: 12.5px; font-weight: 600; color: #EF4444;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Vẫn Cố Mở (Bỏ Qua)</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

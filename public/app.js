@@ -1189,23 +1189,32 @@ function escapeHtml(str) {
 }
 
 // Actions
-window.startProfile = async function(id) {
+window.startProfile = async function(id, options = {}) {
   try {
     launchingProfileIds.add(id);
     failedProfileIds.delete(id);
     renderProfiles();
-    showToast(`Đang khởi chạy hồ sơ ${id.slice(0, 8)}...`, 'info');
-    const res = await fetch(`${API_BASE}/profiles/${id}/start`, { method: 'POST' });
+    showToast(`Đang kiểm tra an toàn & khởi chạy hồ sơ ${id.slice(0, 8)}...`, 'info');
+    const res = await fetch(`${API_BASE}/profiles/${id}/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(options)
+    });
     const data = await res.json();
+    launchingProfileIds.delete(id);
+
     if (data.success) {
-      launchingProfileIds.delete(id);
       showToast(`Profile đã mở thành công! PID: ${data.pid} | Cổng CDP: ${data.port}`, 'success');
       await fetchProfiles();
     } else {
-      launchingProfileIds.delete(id);
       failedProfileIds.set(id, data.error || 'Khởi động thất bại');
       renderProfiles();
-      showToast(`Không mở được: ${data.error}`, 'danger');
+
+      if (data.proxyGuardFailed) {
+        showProxyGuardAlertModal(id, data);
+      } else {
+        showToast(`Không mở được: ${data.error}`, 'danger');
+      }
     }
   } catch (err) {
     launchingProfileIds.delete(id);
@@ -2488,6 +2497,11 @@ window.editProfile = async function(id) {
     resetCustomProxyForm();
   }
 
+  const guardInput = document.getElementById('form-proxy-guard');
+  if (guardInput) guardInput.checked = (p.proxy_guard !== 0);
+  const autoRotInput = document.getElementById('form-auto-rotate-proxy');
+  if (autoRotInput) autoRotInput.checked = Boolean(p.auto_rotate_proxy);
+
   if (formStartUrl) formStartUrl.value = p.start_url || '';
   if (formResolution) {
     formResolution.value = `${p.screen_width || 1920}x${p.screen_height || 1080}`;
@@ -2725,6 +2739,8 @@ btnModalSave.addEventListener('click', async () => {
     canvas_noise: canvasNoise ? 1 : 0,
     audio_noise: audioNoise ? 1 : 0,
     extension_ids: extension_ids,
+    proxy_guard: document.getElementById('form-proxy-guard') ? (document.getElementById('form-proxy-guard').checked ? 1 : 0) : 1,
+    auto_rotate_proxy: document.getElementById('form-auto-rotate-proxy') ? (document.getElementById('form-auto-rotate-proxy').checked ? 1 : 0) : 0,
   };
 
   try {
@@ -6009,4 +6025,118 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", initPolyLoginAuth);
 } else {
   initPolyLoginAuth();
+}
+
+
+// =============================================================
+// PRE-LAUNCH PROXY GUARD & ROTATING PROXY MODAL HANDLERS
+// =============================================================
+function showProxyGuardAlertModal(profileId, data) {
+  const modal = document.getElementById('proxy-guard-modal');
+  if (!modal) {
+    showToast(`⚠️ [LÁ CHẮN PROXY]: ${data.error}`, 'danger');
+    return;
+  }
+
+  const p = (Array.isArray(allProfiles) ? allProfiles.find(x => x.id === profileId) : null) || {};
+  const pgProfileId = document.getElementById('pg-profile-id');
+  const pgProxyId = document.getElementById('pg-proxy-id');
+  const pgProfileName = document.getElementById('pg-profile-name');
+  const pgProxyHostPort = document.getElementById('pg-proxy-hostport');
+  const pgErrorDetail = document.getElementById('pg-error-detail');
+
+  if (pgProfileId) pgProfileId.value = profileId;
+  if (pgProxyId) pgProxyId.value = data.proxyId || p.proxy_id || '';
+  if (pgProfileName) pgProfileName.innerText = p.name || data.profileName || `Profile ${profileId.slice(0, 8)}`;
+  if (pgProxyHostPort) pgProxyHostPort.innerText = `${data.proxyHost || p.proxy_host || 'Chưa rõ'}:${data.proxyPort || p.proxy_port || ''}`;
+  if (pgErrorDetail) pgErrorDetail.innerText = `Chi tiết lỗi: ${data.proxyError || 'Proxy không phản hồi (Connection Timeout quá 4500ms)'}`;
+
+  const rotateBtn = document.getElementById('btn-pg-rotate-relaunch');
+  const hasRotation = Boolean(data.rotationApiUrl || p.proxy_rotation_api_url);
+  if (rotateBtn) {
+    rotateBtn.style.display = hasRotation ? 'inline-flex' : 'none';
+  }
+
+  modal.style.display = 'flex';
+  modal.classList.add('open');
+}
+window.showProxyGuardAlertModal = showProxyGuardAlertModal;
+
+function initProxyGuardModal() {
+  const modal = document.getElementById('proxy-guard-modal');
+  const btnClose = document.getElementById('proxy-guard-close');
+  const btnRotate = document.getElementById('btn-pg-rotate-relaunch');
+  const btnChange = document.getElementById('btn-pg-change-proxy');
+  const btnForce = document.getElementById('btn-pg-force-launch');
+
+  function closeModal() {
+    if (modal) {
+      modal.style.display = 'none';
+      modal.classList.remove('open');
+    }
+  }
+
+  if (btnClose) btnClose.onclick = closeModal;
+
+  if (btnForce) {
+    btnForce.onclick = async () => {
+      const pid = document.getElementById('pg-profile-id')?.value;
+      closeModal();
+      if (pid) {
+        showToast('⚠️ Cảnh báo: Đang bỏ qua lá chắn an toàn và cố mở profile...', 'warning');
+        await startProfile(pid, { bypass_proxy_guard: true });
+      }
+    };
+  }
+
+  if (btnChange) {
+    btnChange.onclick = () => {
+      const pid = document.getElementById('pg-profile-id')?.value;
+      closeModal();
+      if (pid) {
+        editProfile(pid);
+        setTimeout(() => {
+          const proxyTabBtn = document.getElementById('modal-tab-proxy');
+          if (proxyTabBtn) proxyTabBtn.click();
+        }, 300);
+      }
+    };
+  }
+
+  if (btnRotate) {
+    btnRotate.onclick = async () => {
+      const pid = document.getElementById('pg-profile-id')?.value;
+      if (!pid) return;
+
+      const btnText = document.getElementById('btn-pg-rotate-relaunch-text');
+      if (btnText) btnText.innerText = 'Đang xoay IP 4G & kiểm tra lại...';
+      btnRotate.disabled = true;
+
+      try {
+        const res = await fetch(`${API_BASE}/profiles/${pid}/rotate-proxy`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          const newIp = data.result?.newProxyInfo?.ip || data.proxy?.ip || 'Mới';
+          showToast(`🎉 Xoay IP thành công: ${newIp}! Đang mở lại Profile...`, 'success');
+          closeModal();
+          await fetchProxies();
+          await fetchProfiles();
+          await startProfile(pid);
+        } else {
+          showToast(`Xoay IP thất bại: ${data.error}`, 'danger');
+        }
+      } catch (err) {
+        showToast(`Lỗi gọi API xoay IP: ${err.message}`, 'danger');
+      } finally {
+        btnRotate.disabled = false;
+        if (btnText) btnText.innerText = '🔄 Xoay Đổi IP 4G & Tự Động Mở Lại';
+      }
+    };
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initProxyGuardModal);
+} else {
+  initProxyGuardModal();
 }

@@ -134,6 +134,7 @@ function initSchema() {
   try { _db.exec("ALTER TABLE proxies ADD COLUMN city TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN isp TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN rotation_api_url TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE profiles ADD COLUMN proxy_guard INTEGER DEFAULT 1;"); } catch {}
 
   seedDefaultUserIfEmpty();
 }
@@ -349,12 +350,12 @@ function createProfile(data) {
       id, name, group_id, kernel_path, proxy_id, user_agent,
       canvas_noise, webgl_noise, audio_noise, webrtc_mode,
       cpu_cores, ram_gb, screen_width, screen_height,
-      custom_flags, start_url, notes, fingerprint, extension_ids, auto_rotate_proxy, created_at, updated_at
+      custom_flags, start_url, notes, fingerprint, extension_ids, auto_rotate_proxy, proxy_guard, created_at, updated_at
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?,
       ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -379,6 +380,7 @@ function createProfile(data) {
     fpJson,
     extensionIds,
     data.auto_rotate_proxy ? 1 : 0,
+    data.proxy_guard !== undefined ? (data.proxy_guard ? 1 : 0) : 1,
     now,
     now
   );
@@ -407,7 +409,7 @@ function updateProfile(id, data) {
       name = ?, group_id = ?, kernel_path = ?, proxy_id = ?, user_agent = ?,
       canvas_noise = ?, webgl_noise = ?, audio_noise = ?, webrtc_mode = ?,
       cpu_cores = ?, ram_gb = ?, screen_width = ?, screen_height = ?,
-      custom_flags = ?, start_url = ?, notes = ?, fingerprint = ?, extension_ids = ?, auto_rotate_proxy = ?, updated_at = ?
+      custom_flags = ?, start_url = ?, notes = ?, fingerprint = ?, extension_ids = ?, auto_rotate_proxy = ?, proxy_guard = ?, updated_at = ?
     WHERE id = ?
   `);
 
@@ -455,6 +457,7 @@ function updateProfile(id, data) {
     fpJson,
     extensionIds,
     data.auto_rotate_proxy !== undefined ? (data.auto_rotate_proxy ? 1 : 0) : (current.auto_rotate_proxy || 0),
+    data.proxy_guard !== undefined ? (data.proxy_guard ? 1 : 0) : (current.proxy_guard ?? 1),
     now,
     id
   );

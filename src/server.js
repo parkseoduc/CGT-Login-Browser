@@ -816,11 +816,48 @@ function createServer() {
           }
         }
 
-        // Start profile
+        // Start profile with Pre-launch Proxy Guard
         if (method === 'POST' && action === 'start') {
-          const body = await parseJsonBody(req);
-          const result = await launcher.startProfile(profileId, body);
-          return sendJson(res, 200, { success: true, ...result });
+          try {
+            const body = await parseJsonBody(req);
+            const result = await launcher.startProfile(profileId, body);
+            return sendJson(res, 200, { success: true, ...result });
+          } catch (err) {
+            const isGuardFailed = err.code === 'PROXY_GUARD_FAILED' || (err.message && err.message.includes('PROXY_GUARD_FAILED'));
+            return sendJson(res, isGuardFailed ? 400 : 500, {
+              success: false,
+              proxyGuardFailed: isGuardFailed,
+              error: err.message,
+              proxyHost: err.proxyHost,
+              proxyPort: err.proxyPort,
+              proxyError: err.proxyError,
+              proxyId: err.proxyId,
+              profileId: err.profileId || profileId,
+              profileName: err.profileName,
+              rotationApiUrl: err.rotationApiUrl
+            });
+          }
+        }
+
+        // Check proxy safety for profile
+        if (method === 'POST' && action === 'check-proxy') {
+          try {
+            const profile = db.getProfile(profileId);
+            if (!profile) return sendJson(res, 404, { success: false, error: 'Không tìm thấy profile' });
+            if (!profile.proxy_host || !profile.proxy_port) {
+              return sendJson(res, 200, { success: true, hasProxy: false, live: true, message: 'Profile không dùng proxy (Direct)' });
+            }
+            const checkRes = await proxy.checkProxy({
+              type: profile.proxy_type || 'http',
+              host: profile.proxy_host,
+              port: profile.proxy_port,
+              username: profile.proxy_user,
+              password: profile.proxy_pass
+            }, 5000);
+            return sendJson(res, 200, { success: true, hasProxy: true, ...checkRes });
+          } catch (err) {
+            return sendJson(res, 500, { success: false, error: err.message });
+          }
         }
 
         // Stop profile
