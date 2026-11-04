@@ -4126,7 +4126,7 @@ const views = {
   profiles: { el: document.getElementById('view-profiles'), title: 'Quản lý Hồ sơ Trình duyệt', sub: 'Hệ thống Antidetect & Profile độc lập chuyên sâu với nhân Chromium tùy biến' },
   groups: { el: document.getElementById('view-groups'), title: 'Nhóm Hồ Sơ (Profile Groups)', sub: 'Phân loại hồ sơ theo chiến dịch, dự án và nền tảng MMO' },
   proxies: { el: document.getElementById('view-proxies'), title: 'Danh Sách Proxy & Kiểm Tra IP', sub: 'Quản lý kho proxy tĩnh HTTP/HTTPS/SOCKS5 với kiểm tra Live Ping' },
-  extensions: { el: document.getElementById('view-extensions'), title: 'Kho Tiện Ích Mở Rộng (Chrome Extensions)', sub: 'Quản lý các tiện ích MMO, Facebook, TikTok và nạp tự động vào Profile' },
+  extensions: { el: document.getElementById('view-extensions'), title: 'Kho Tiện Ích Mở Rộng', sub: 'Quản lý các tiện ích MMO, Facebook, TikTok và nạp tự động vào Profile' },
   sync: { el: document.getElementById('view-sync'), title: 'Đồng Bộ Thao Tác Chuột & Phím', sub: 'Truyền tín hiệu bàn phím và chuột thời gian thực từ Master sang Slave qua CDP' },
   license: { el: document.getElementById('view-license'), title: 'Bản Quyền & Nâng Cấp Gói', sub: 'Tích hợp bảo mật bản quyền CGT-License Engine • lic.cgtdev.space' },
   api: { el: document.getElementById('view-api'), title: 'REST API & Automation Protocol', sub: 'Tự động hóa hoàn toàn với Puppeteer, Playwright, Python và MCP' },
