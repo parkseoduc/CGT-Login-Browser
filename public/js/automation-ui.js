@@ -52,6 +52,15 @@
     'rotate_ip': 'Xoay IP 4G Webhook (Rotate IP)'
   };
 
+    // Toast helper
+  function notify(msg, type = 'info') {
+    if (typeof window.showToast === 'function') {
+      window.showToast(msg, type);
+    } else {
+      console.log(`[Toast ${type}]:`, msg);
+    }
+  }
+
   function cleanTitle(str) {
     if (!str) return '';
     return str.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '').replace(/\s+/g, ' ').trim();
@@ -424,11 +433,11 @@
               <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Khoảng cách cuộn (px):</label>
               <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="distance" value="${step.distance || 600}" style="font-size: 12.5px; padding: 8px 12px;">
             </div>
-            <div style="width: 140px;">
+            <div style="min-width: 160px; flex: 0.8;">
               <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Hướng cuộn:</label>
-              <select class="poly-input step-field" data-idx="${idx}" data-field="direction" style="font-size: 12.5px; padding: 8px 10px;">
-                <option value="down" ${step.direction === 'down' ? 'selected' : ''}>Cuộn xuống (Down)</option>
-                <option value="up" ${step.direction === 'up' ? 'selected' : ''}>Cuộn lên (Up)</option>
+              <select class="poly-input step-field" data-idx="${idx}" data-field="direction" style="font-size: 12.5px; padding: 8px 10px; width: 100%;">
+                <option value="down" ${step.direction === 'down' ? 'selected' : ''}>Cuộn xuống</option>
+                <option value="up" ${step.direction === 'up' ? 'selected' : ''}>Cuộn lên</option>
               </select>
             </div>
           </div>
@@ -587,12 +596,12 @@
     const category = catSelect ? catSelect.value : 'custom';
 
     if (!name) {
-      alert('Vui lòng nhập tên kịch bản!');
+      notify('Vui lòng nhập tên kịch bản!', 'warning');
       return;
     }
 
     if (automationState.builderSteps.length === 0) {
-      alert('Kịch bản phải có ít nhất 1 bước thao tác!');
+      notify('Kịch bản phải có ít nhất 1 bước thao tác!', 'warning');
       return;
     }
 
@@ -634,13 +643,13 @@
       if (data.success) {
         closeBuilderModal();
         await fetchAutomationScripts();
-        alert('Đã lưu kịch bản thành công!');
+        notify('Đã lưu kịch bản thành công!', 'success');
       } else {
-        alert('Lỗi lưu kịch bản: ' + (data.error || 'Không rõ nguyên nhân'));
+        notify('Lỗi lưu kịch bản: ' + (data.error || 'Không rõ nguyên nhân'), 'danger');
       }
     } catch (err) {
       console.error('[AutomationUI] Lỗi lưu kịch bản:', err);
-      alert('Có lỗi xảy ra trong quá trình lưu kịch bản!');
+      notify('Có lỗi xảy ra trong quá trình lưu kịch bản!', 'danger');
     }
   }
 
@@ -662,7 +671,7 @@
       const data = await res.json();
       if (data.success) {
         await fetchAutomationScripts();
-        alert(`Đã nhân bản kịch bản "${cleanTitle(script.name)}" thành công!`);
+        notify(`Đã nhân bản kịch bản "${cleanTitle(script.name)}" thành công!`, 'success');
       }
     } catch (err) {
       console.error('[AutomationUI] Lỗi nhân bản:', err);
@@ -670,7 +679,16 @@
   }
 
   async function deleteScript(scriptId) {
-    if (!confirm('Bạn có chắc chắn muốn xóa kịch bản này không?')) return;
+    const confirmed = typeof window.showConfirmDialog === 'function'
+      ? await window.showConfirmDialog({
+          title: 'Xóa Kịch Bản',
+          message: 'Bạn có chắc chắn muốn xóa kịch bản này không? Thao tác này không thể hoàn tác.',
+          type: 'danger',
+          confirmText: 'Xóa Kịch Bản',
+          cancelText: 'Hủy'
+        })
+      : confirm('Bạn có chắc chắn muốn xóa kịch bản này không?');
+    if (!confirmed) return;
     try {
       const res = await fetch(`/api/v1/automation/scripts/${scriptId}`, {
         method: 'DELETE'
@@ -679,7 +697,7 @@
       if (data.success) {
         await fetchAutomationScripts();
       } else {
-        alert(data.error || 'Không thể xóa kịch bản này');
+        notify(data.error || 'Không thể xóa kịch bản này', 'danger');
       }
     } catch (err) {
       console.error('[AutomationUI] Lỗi xóa kịch bản:', err);
@@ -816,12 +834,12 @@
     const profile_ids = Array.from(checkedBoxes).map(cb => cb.value);
 
     if (!script_id) {
-      alert('Vui lòng chọn kịch bản cần thực thi!');
+      notify('Vui lòng chọn kịch bản cần thực thi!', 'warning');
       return;
     }
 
     if (profile_ids.length === 0) {
-      alert('Vui lòng chọn ít nhất 1 hồ sơ để chạy!');
+      notify('Vui lòng chọn ít nhất 1 hồ sơ để chạy!', 'warning');
       return;
     }
 
@@ -844,11 +862,11 @@
         scrollToMonitor();
         checkAutomationStatus();
       } else {
-        alert(data.error || 'Không thể khởi động batch runner');
+        notify(data.error || 'Không thể khởi động batch runner', 'danger');
       }
     } catch (err) {
       console.error('[AutomationUI] Lỗi chạy batch:', err);
-      alert('Lỗi kết nối máy chủ khi khởi chạy tự động hóa');
+      notify('Lỗi kết nối máy chủ khi khởi chạy tự động hóa', 'danger');
     }
   }
 
@@ -949,12 +967,21 @@
   }
 
   async function stopAutomationRun() {
-    if (!confirm('Bạn có chắc chắn muốn dừng toàn bộ tiến trình tự động hóa đang chạy không?')) return;
+    const confirmed = typeof window.showConfirmDialog === 'function'
+      ? await window.showConfirmDialog({
+          title: 'Dừng Tiến Trình',
+          message: 'Bạn có chắc chắn muốn dừng toàn bộ tiến trình tự động hóa đang chạy không?',
+          type: 'warning',
+          confirmText: 'Dừng Ngay',
+          cancelText: 'Tiếp tục'
+        })
+      : confirm('Bạn có chắc chắn muốn dừng toàn bộ tiến trình tự động hóa đang chạy không?');
+    if (!confirmed) return;
     try {
       const res = await fetch('/api/v1/automation/stop', { method: 'POST' });
       const data = await res.json();
       if (data.success) {
-        alert('Đã gửi yêu cầu dừng tiến trình.');
+        notify('Đã gửi yêu cầu dừng tiến trình.', 'info');
         checkAutomationStatus();
       }
     } catch (err) {

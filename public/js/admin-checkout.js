@@ -21,7 +21,7 @@
     if (typeof showToast === 'function') {
       showToast(msg, type);
     } else {
-      alert(msg);
+      if (typeof window.showToast === "function") window.showToast(msg, "warning"); else alert(msg);
     }
   }
 
@@ -493,7 +493,8 @@
 
   window.adminToggleUserStatus = async function (userId, targetStatus) {
     const actionName = targetStatus === 'BANNED' ? 'khóa' : 'mở khóa';
-    if (!confirm(`Bạn có chắc chắn muốn ${actionName} tài khoản này không?`)) return;
+    const confirmed = typeof window.showConfirmDialog === 'function' ? await window.showConfirmDialog({ title: 'Xác nhận thao tác', message: `Bạn có chắc chắn muốn ${actionName} tài khoản này không?`, type: 'danger' }) : confirm(`Bạn có chắc chắn muốn ${actionName} tài khoản này không?`);
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/v1/admin/users/${userId}/status`, {
@@ -515,7 +516,8 @@
   };
 
   window.adminApproveOrder = async function (orderId) {
-    if (!confirm(`Xác nhận duyệt và cấp Key tự động từ lic.cgtdev.space cho đơn hàng ${orderId}?`)) return;
+    const confirmed = typeof window.showConfirmDialog === 'function' ? await window.showConfirmDialog({ title: 'Cấp Key Tự Động', message: `Xác nhận duyệt và cấp Key tự động từ lic.cgtdev.space cho đơn hàng ${orderId}?`, type: 'warning', confirmText: 'Duyệt & Cấp Key' }) : confirm(`Xác nhận duyệt và cấp Key tự động từ lic.cgtdev.space cho đơn hàng ${orderId}?`);
+    if (!confirmed) return;
 
     try {
       const res = await fetch('/api/v1/admin/orders/approve', {
