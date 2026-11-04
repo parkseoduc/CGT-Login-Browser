@@ -5159,6 +5159,7 @@ async function checkAuthState() {
       plan: 'Pro 30 Ngày',
       plan_code: 'PRO_MONTHLY',
       max_profiles: 500,
+      days_remaining: 30,
       expires_at: '2026-12-03T08:52:38.404Z'
     };
     renderPolyUserProfile(currentUser);
@@ -5301,16 +5302,21 @@ function renderPolyUserProfile(user) {
   const emailEl = document.getElementById('poly-email');
   if (emailEl) emailEl.textContent = user.maskedEmail || user.email;
 
+  let days = user.days_remaining;
+  if (days == null && user.expires_at) {
+    const diff = new Date(user.expires_at).getTime() - Date.now();
+    days = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }
   const daysEl = document.getElementById('poly-plan-days');
   if (daysEl) {
-    if (user.is_lifetime) {
+    if (user.is_lifetime || String(user.plan_code).includes('VIP')) {
       daysEl.textContent = 'VIP';
       daysEl.style.color = '#10b981';
       daysEl.style.background = 'rgba(16, 185, 129, 0.12)';
-    } else if (user.days_remaining !== null) {
-      daysEl.textContent = `${user.days_remaining}d`;
-      daysEl.style.color = user.days_remaining <= 3 ? '#ef4444' : '#10b981';
-      daysEl.style.background = user.days_remaining <= 3 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)';
+    } else if (typeof days === 'number' && !isNaN(days)) {
+      daysEl.textContent = `${days}d`;
+      daysEl.style.color = days <= 3 ? '#ef4444' : '#10b981';
+      daysEl.style.background = days <= 3 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)';
     } else {
       daysEl.textContent = 'Free';
       daysEl.style.color = 'var(--text-muted)';
