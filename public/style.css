@@ -7808,3 +7808,115 @@ select:focus {
     padding: 30px 24px;
   }
 }
+
+
+/* ==========================================================================
+   POLYLOGIN CAROUSEL & PROGRESS BAR ENHANCEMENTS
+   ========================================================================== */
+.polylogin-carousel-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9.8;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f172a;
+  box-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+}
+
+.polylogin-carousel-slides {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.polylogin-slide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transform: scale(0.985);
+  transition: opacity 0.5s ease-in-out, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.polylogin-slide.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+  z-index: 2;
+}
+
+.polylogin-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+  display: block;
+}
+
+/* Feature card active states and progress indicators */
+.polylogin-feature-card {
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+  position: relative;
+  opacity: 0.65;
+}
+
+.polylogin-feature-card:hover {
+  background: rgba(37, 99, 235, 0.05);
+  opacity: 0.9;
+}
+
+.polylogin-feature-card.active {
+  opacity: 1;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.polylogin-feature-card.active .polylogin-feature-num {
+  color: #2563eb;
+  transform: translateX(2px);
+}
+
+.polylogin-feature-card.active .polylogin-feature-title {
+  color: #0f172a;
+}
+
+.polylogin-progress-track {
+  width: 100%;
+  height: 3px;
+  background: #cbd5e1;
+  border-radius: 3px;
+  margin-top: 8px;
+  overflow: hidden;
+  position: relative;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+}
+
+.polylogin-feature-card.active .polylogin-progress-track {
+  opacity: 1;
+  background: #e2e8f0;
+}
+
+.polylogin-progress-bar {
+  height: 100%;
+  width: 0%;
+  background: #2563eb;
+  border-radius: 3px;
+}
+
+.polylogin-feature-card.active .polylogin-progress-bar {
+  animation: poly-progress-fill 4.5s linear forwards;
+}
+
+@keyframes poly-progress-fill {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}

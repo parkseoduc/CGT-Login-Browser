@@ -17,100 +17,67 @@
 <body>
   <!-- ================= POLYLOGIN-STYLE FULLSCREEN AUTH VIEW ================= -->
   <div id="polylogin-auth-screen" class="polylogin-auth-screen" style="display: none;">
-    <!-- LEFT SIDE: FEATURE SHOWCASE & SYNC MOCKUP -->
+    <!-- LEFT SIDE: FEATURE SHOWCASE & REAL OMNIBROWSER CAROUSEL -->
     <div class="polylogin-showcase-pane">
-      <!-- 4 TILED BROWSER WINDOWS PREVIEW -->
-      <div class="polylogin-preview-container">
-        <div class="polylogin-tiles-grid">
-          <div class="polylogin-tile">
-            <div class="polylogin-tile-header">
-              <span class="polylogin-tile-dot"></span>
-              <span class="polylogin-tile-title">OmniBrowser #1 - Chromium 153</span>
-            </div>
-            <div class="polylogin-tile-body">
-              <div class="polylogin-tile-search">🔍 youtube.com</div>
-              <div class="polylogin-tile-content">
-                <div class="polylogin-tile-box"></div>
-                <div class="polylogin-tile-lines">
-                  <span></span><span></span>
-                </div>
-              </div>
+      <!-- CAROUSEL PREVIEW FRAME (REAL OMNIBROWSER SCREENSHOTS) -->
+      <div class="polylogin-carousel-frame">
+        <div class="polylogin-carousel-slides">
+          <!-- Slide 0: Quản lý hồ sơ -->
+          <div class="polylogin-slide active" data-slide="0">
+            <img src="images/slide-01-profiles.png" alt="Quản lý hồ sơ OmniBrowser" class="polylogin-slide-img">
+          </div>
+          <!-- Slide 1: No-code Automation -->
+          <div class="polylogin-slide" data-slide="1">
+            <img src="images/slide-02-automation.png" alt="Tự động hóa No-code OmniBrowser" class="polylogin-slide-img">
+          </div>
+          <!-- Slide 2: Đồng bộ thao tác -->
+          <div class="polylogin-slide" data-slide="2">
+            <img src="images/slide-03-sync.png" alt="Đồng bộ thao tác Synchronizer OmniBrowser" class="polylogin-slide-img">
+            <div class="polylogin-sync-floating-badge">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
+              <span>Đang đồng bộ thao tác (4)</span>
             </div>
           </div>
-          <div class="polylogin-tile">
-            <div class="polylogin-tile-header">
-              <span class="polylogin-tile-dot"></span>
-              <span class="polylogin-tile-title">OmniBrowser #2 - Chromium 153</span>
-            </div>
-            <div class="polylogin-tile-body">
-              <div class="polylogin-tile-search">🔍 youtube.com</div>
-              <div class="polylogin-tile-content">
-                <div class="polylogin-tile-box"></div>
-                <div class="polylogin-tile-lines">
-                  <span></span><span></span>
-                </div>
-              </div>
-            </div>
+          <!-- Slide 3: Quản lý thành viên & Admin -->
+          <div class="polylogin-slide" data-slide="3">
+            <img src="images/slide-04-admin.png" alt="Quản trị thành viên & bản quyền OmniBrowser" class="polylogin-slide-img">
           </div>
-          <div class="polylogin-tile">
-            <div class="polylogin-tile-header">
-              <span class="polylogin-tile-dot"></span>
-              <span class="polylogin-tile-title">OmniBrowser #3 - Chromium 153</span>
-            </div>
-            <div class="polylogin-tile-body">
-              <div class="polylogin-tile-search">🔍 youtube.com</div>
-              <div class="polylogin-tile-content">
-                <div class="polylogin-tile-box"></div>
-                <div class="polylogin-tile-lines">
-                  <span></span><span></span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="polylogin-tile">
-            <div class="polylogin-tile-header">
-              <span class="polylogin-tile-dot"></span>
-              <span class="polylogin-tile-title">OmniBrowser #4 - Chromium 153</span>
-            </div>
-            <div class="polylogin-tile-body">
-              <div class="polylogin-tile-search">🔍 youtube.com</div>
-              <div class="polylogin-tile-content">
-                <div class="polylogin-tile-box"></div>
-                <div class="polylogin-tile-lines">
-                  <span></span><span></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Floating Sync Badge -->
-        <div class="polylogin-sync-floating-badge">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/></svg>
-          <span>Đang đồng bộ thao tác (4)</span>
         </div>
       </div>
 
-      <!-- 4 VALUE PROPOSITIONS -->
+      <!-- 4 INTERACTIVE VALUE PROPOSITIONS WITH ANIMATED PROGRESS BARS -->
       <div class="polylogin-features-grid">
-        <div class="polylogin-feature-card">
+        <div class="polylogin-feature-card active" data-target="0">
           <div class="polylogin-feature-num">01</div>
           <div class="polylogin-feature-title">Quản lý hồ sơ hàng loạt hiệu quả</div>
           <div class="polylogin-feature-desc">Tạo, gắn thẻ, nhóm và mở song song hàng nghìn hồ sơ – mỗi hồ sơ là một môi trường độc lập với dấu vân tay trình duyệt riêng biệt, không trùng.</div>
+          <div class="polylogin-progress-track">
+            <div class="polylogin-progress-bar"></div>
+          </div>
         </div>
-        <div class="polylogin-feature-card">
-          <div class="polylogin-feature-num">02</div>
-          <div class="polylogin-feature-title">No-coding Automation</div>
-          <div class="polylogin-feature-desc">Tự động hóa mọi thao tác một cách dễ dàng theo workflow kéo thả. Đơn giản, tốc độ, tối ưu hiệu suất công việc.</div>
-        </div>
-        <div class="polylogin-feature-card">
+        <div class="polylogin-feature-card" data-target="2">
           <div class="polylogin-feature-num">03</div>
-          <div class="polylogin-feature-title">Đồng bộ thao tác (Synchronizer)</div>
-          <div class="polylogin-feature-desc">Khả năng đồng bộ hóa các thao tác giữa các hồ sơ một cách liền mạch. Mọi hành động chuột, phím được thực hiện cùng lúc.</div>
+          <div class="polylogin-feature-title">Đồng bộ thao tác</div>
+          <div class="polylogin-feature-desc">Khả năng đồng bộ hóa các thao tác giữa các hồ sơ một cách liền mạch. Mọi hành động sẽ được thực hiện cùng lúc giống nhau dựa vào cửa sổ trình duyệt chính thao tác.</div>
+          <div class="polylogin-progress-track">
+            <div class="polylogin-progress-bar"></div>
+          </div>
         </div>
-        <div class="polylogin-feature-card">
+        <div class="polylogin-feature-card" data-target="1">
+          <div class="polylogin-feature-num">02</div>
+          <div class="polylogin-feature-title">No coding Automation</div>
+          <div class="polylogin-feature-desc">Tự động hóa mọi thao tác một cách dễ dàng theo workflow. Đơn giản, dễ sử dụng.</div>
+          <div class="polylogin-progress-track">
+            <div class="polylogin-progress-bar"></div>
+          </div>
+        </div>
+        <div class="polylogin-feature-card" data-target="3">
           <div class="polylogin-feature-num">04</div>
           <div class="polylogin-feature-title">Quản lý thành viên nhóm</div>
-          <div class="polylogin-feature-desc">Làm việc theo nhóm hiệu quả bằng cách sử dụng Quản lý Thành viên, dễ dàng phân quyền vai trò để bảo mật tuyệt đối.</div>
+          <div class="polylogin-feature-desc">Làm việc theo nhóm hiệu quả bằng cách sử dụng Quản lý Thành viên nhóm của OmniBrowser, dễ dàng quản lý vai trò và quyền truy cập để phối hợp nhóm nhằm nâng cao hiệu suất làm việc.</div>
+          <div class="polylogin-progress-track">
+            <div class="polylogin-progress-bar"></div>
+          </div>
         </div>
       </div>
     </div>

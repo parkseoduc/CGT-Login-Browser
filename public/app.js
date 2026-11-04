@@ -5138,6 +5138,32 @@ function closeModalEl(el) {
 }
 
 async function checkAuthState() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('preview_mode') === '1') {
+    const pTab = urlParams.get('tab') || 'profiles';
+    const theme = urlParams.get('theme') || 'dark';
+    if (theme === 'dark') {
+      document.body.classList.add('dark-theme');
+      document.body.classList.remove('light-theme');
+    }
+    const polyScreen = document.getElementById('polylogin-auth-screen');
+    const appContainer = document.querySelector('.app-container');
+    if (polyScreen) polyScreen.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'flex';
+    currentUser = {
+      id: 'f833aa6e-673a-4956-b5bc-8b683064db67',
+      email: 'admin@omni.vn',
+      name: 'Quản Trị Viên OmniBrowser',
+      role: 'admin',
+      plan: 'OmniBrowser VIP Vĩnh Viễn',
+      plan_code: 'VIP_LIFETIME',
+      max_profiles: 2000
+    };
+    renderPolyUserProfile(currentUser);
+    if (typeof switchTab === 'function') switchTab(pTab);
+    return currentUser;
+  }
+
   let token = getAuthToken();
   const guestBtn = document.getElementById('btn-header-login');
   const userPill = document.getElementById('poly-user-pill');
@@ -5777,6 +5803,64 @@ window.renderPolyUserProfile = renderPolyUserProfile;
 // POLYLOGIN FULLSCREEN AUTH CONTROLLER
 // =========================================================================
 function initPolyLoginAuth() {
+  // PolyLogin Screenshot Carousel Controller
+  const slides = document.querySelectorAll('.polylogin-slide');
+  const featureCards = document.querySelectorAll('.polylogin-feature-card');
+  let currentSlideIdx = 0;
+  let carouselTimer = null;
+  const SLIDE_DURATION = 4500; // 4.5s per slide
+
+  function setSlide(idx) {
+    if (!slides.length) return;
+    currentSlideIdx = (idx + slides.length) % slides.length;
+
+    // Update slides
+    slides.forEach((s) => {
+      const sIdx = parseInt(s.getAttribute('data-slide'), 10);
+      s.classList.toggle('active', sIdx === currentSlideIdx);
+    });
+
+    // Update feature cards
+    featureCards.forEach((c) => {
+      const targetIdx = parseInt(c.getAttribute('data-target'), 10);
+      const isActive = targetIdx === currentSlideIdx;
+      c.classList.toggle('active', isActive);
+
+      // Trigger progress bar animation reset
+      const bar = c.querySelector('.polylogin-progress-bar');
+      if (bar) {
+        bar.style.animation = 'none';
+        void bar.offsetWidth; // trigger reflow
+        if (isActive) {
+          bar.style.animation = `poly-progress-fill ${SLIDE_DURATION}ms linear forwards`;
+        }
+      }
+    });
+
+    // Clear and schedule next slide advance
+    clearTimeout(carouselTimer);
+    carouselTimer = setTimeout(() => {
+      // In 2x2 grid, cycle: 0 -> 2 -> 1 -> 3 -> 0
+      const order = [0, 2, 1, 3];
+      const curPos = order.indexOf(currentSlideIdx);
+      const nextPos = (curPos + 1) % order.length;
+      setSlide(order[nextPos]);
+    }, SLIDE_DURATION);
+  }
+
+  // Interactive card click jumps to slide
+  featureCards.forEach((c) => {
+    c.onclick = () => {
+      const targetIdx = parseInt(c.getAttribute('data-target'), 10);
+      setSlide(targetIdx);
+    };
+  });
+
+  // Start carousel
+  if (slides.length > 0) {
+    setSlide(0);
+  }
+
   const viewLogin = document.getElementById('poly-view-login');
   const viewReg = document.getElementById('poly-view-register');
   const btnSwitchToReg = document.getElementById('poly-switch-to-reg');
