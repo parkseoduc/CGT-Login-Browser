@@ -1,6 +1,6 @@
 /**
  * OmniBrowser No-code Automation Studio (Lượt 2)
- * Giữ kết nối an toàn cho Muse AI, Nuôi Cookie tự nhiên & Chạy đa luồng
+ * Giao diện hiện đại, icon SVG sắc nét chuẩn SaaS / UIverse
  */
 
 (function () {
@@ -13,25 +13,49 @@
     builderSteps: []
   };
 
-  const CATEGORY_NAMES = {
-    'all': 'Tất cả',
-    'muse-ai': '🤖 Muse AI & Tools',
-    'warmup': '🌾 Nuôi Cookie & Lịch Sử',
-    'social': '📱 Video Ngắn (TikTok/Shorts)',
-    'audit': '🛡️ Kiểm Tra Dấu Vân Tay',
-    'custom': '⚙️ Kịch Bản Tùy Biến'
+  const SVG_ICONS = {
+    navigate: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`,
+    sleep: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`,
+    scroll: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg>`,
+    click: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>`,
+    type: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M7 16h10"/></svg>`,
+    press_key: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="9" y1="12" x2="15" y2="12"/></svg>`,
+    screenshot: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`,
+    rotate_ip: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+    arrowUp: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>`,
+    arrowDown: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>`,
+    trash: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>`,
+    copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+    eye: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    edit: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`,
+    play: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+    sparkle: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>`
+  };
+
+  const CATEGORY_META = {
+    'all': { label: 'Tất cả' },
+    'muse-ai': { label: 'Muse AI & Tools', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="10" r="1.5" fill="currentColor"/><path d="M9 15h6"/></svg>` },
+    'warmup': { label: 'Nuôi Cookie & Lịch Sử', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>` },
+    'social': { label: 'Video Ngắn (TikTok/Shorts)', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>` },
+    'audit': { label: 'Kiểm Tra Dấu Vân Tay', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>` },
+    'custom': { label: 'Kịch Bản Tùy Biến', icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>` }
   };
 
   const STEP_TYPE_LABELS = {
-    'navigate': '🌐 Mở trang Web (Navigate)',
-    'sleep': '⏳ Chờ thời gian (Sleep)',
-    'scroll': '📜 Cuộn trang tự nhiên (Scroll)',
-    'click': '🖱️ Nhấp chuột (Click)',
-    'type': '⌨️ Gõ văn bản mô phỏng người thật (Type)',
-    'press_key': '🔘 Nhấn phím đặc biệt (Key)',
-    'screenshot': '📸 Chụp ảnh màn hình (Screenshot)',
-    'rotate_ip': '🔄 Xoay IP 4G Webhook (Rotate IP)'
+    'navigate': 'Mở trang Web (Navigate)',
+    'sleep': 'Tạm dừng / Chờ đợi (Sleep)',
+    'scroll': 'Cuộn trang mượt mà (Scroll)',
+    'click': 'Nhấp chuột vào phần tử (Click)',
+    'type': 'Gõ văn bản mô phỏng người thật (Type)',
+    'press_key': 'Nhấn phím chức năng (Key)',
+    'screenshot': 'Chụp ảnh màn hình (Screenshot)',
+    'rotate_ip': 'Xoay IP 4G Webhook (Rotate IP)'
   };
+
+  function cleanTitle(str) {
+    if (!str) return '';
+    return str.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F000}-\u{1F02F}\u{1F0A0}-\u{1F0FF}\u{1F100}-\u{1F64F}\u{1F680}-\u{1F6FF}]/gu, '').replace(/\s+/g, ' ').trim();
+  }
 
   // Initialize Automation UI
   function initAutomationUI() {
@@ -165,7 +189,7 @@
     if (filtered.length === 0) {
       grid.innerHTML = `
         <div style="grid-column: 1 / -1; padding: 40px; text-align: center; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 14px;">
-          <div style="font-size: 32px; margin-bottom: 10px;">📋</div>
+          <div style="margin-bottom: 12px; color: #94a3b8;">${SVG_ICONS.sparkle}</div>
           <h3 style="font-size: 16px; font-weight: 700; color: #0f172a;">Chưa có kịch bản nào trong danh mục này</h3>
           <p style="font-size: 13px; color: #64748b; margin-top: 4px;">Hãy nhấn nút "+ Tạo Kịch Bản Mới" phía trên để thiết lập kịch bản thao tác tự động.</p>
         </div>
@@ -178,34 +202,60 @@
       const steps = script.steps || [];
       const badgeHtml = isPreset
         ? `<span class="automation-badge-preset"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Mẫu Hệ Thống</span>`
-        : `<span class="automation-badge-custom">⚙️ Tự Thiết Lập</span>`;
+        : `<span class="automation-badge-custom">Tự Thiết Lập</span>`;
+
+      // Filter meaningful actionable steps (exclude log)
+      const actionSteps = steps.filter(s => s.type !== 'log');
+      const displaySteps = actionSteps.length > 0 ? actionSteps : steps;
 
       // Render step pills preview (max 3 pills + more)
-      let stepPills = steps.slice(0, 3).map((st, idx) => {
+      let stepPills = displaySteps.slice(0, 3).map((st, idx) => {
         let label = st.type;
-        if (st.type === 'navigate') label = `🌐 Mở: ${(st.url || '').replace(/^https?:\/\//, '').split('/')[0]}`;
-        else if (st.type === 'sleep') label = `⏳ Chờ ${st.seconds || (st.min + '-' + st.max)}s`;
-        else if (st.type === 'scroll') label = `📜 Cuộn ${st.distance || 500}px`;
-        else if (st.type === 'click') label = `🖱️ Click ${st.selector || 'button'}`;
-        else if (st.type === 'type') label = `⌨️ Nhập chữ`;
-        else if (st.type === 'screenshot') label = `📸 Chụp ảnh`;
-        else if (st.type === 'rotate_ip') label = `🔄 Xoay IP 4G`;
-        return `<span style="background: #ffffff; border: 1px solid #e2e8f0; padding: 2px 8px; border-radius: 6px; font-size: 11px; white-space: nowrap;">${idx + 1}. ${label}</span>`;
-      }).join('<span style="color:#94a3b8; font-size:11px;">➔</span>');
+        let icon = SVG_ICONS[st.type] || SVG_ICONS.navigate;
 
-      if (steps.length > 3) {
-        stepPills += `<span style="color:#64748b; font-size:11px; margin-left: 4px;">+${steps.length - 3} bước nữa</span>`;
+        if (st.type === 'navigate') {
+          const dom = (st.url || '').replace(/^https?:\/\//, '').split('/')[0];
+          label = `Mở: ${dom}`;
+        } else if (st.type === 'sleep') {
+          label = `Chờ ${st.seconds || (st.min + '-' + st.max)}s`;
+        } else if (st.type === 'scroll') {
+          label = `Cuộn ${st.distance || 500}px`;
+        } else if (st.type === 'click') {
+          label = `Click`;
+        } else if (st.type === 'type') {
+          label = `Gõ chữ`;
+        } else if (st.type === 'press_key') {
+          label = `Phím: ${st.key || 'Enter'}`;
+        } else if (st.type === 'screenshot') {
+          label = `Chụp ảnh`;
+        } else if (st.type === 'rotate_ip') {
+          label = `Xoay IP 4G`;
+        } else if (st.type === 'log') {
+          label = `Khởi tạo`;
+        }
+
+        return `<span class="automation-step-pill">${icon} ${idx + 1}. ${escapeHtml(label)}</span>`;
+      }).join('<span style="color:#cbd5e1; font-size:10px;">➔</span>');
+
+      if (displaySteps.length > 3) {
+        stepPills += `<span style="color:#64748b; font-size:11px; margin-left: 4px; font-weight: 500;">+${displaySteps.length - 3} bước</span>`;
       }
+
+      const meta = CATEGORY_META[script.category] || { label: script.category, icon: SVG_ICONS.sparkle };
+      const cleanedName = cleanTitle(script.name);
 
       return `
         <div class="automation-card" data-script-id="${script.id}">
           <div>
             <div class="automation-card-header">
-              <span style="font-size: 12px; font-weight: 600; color: #0284c7;">${CATEGORY_NAMES[script.category] || script.category}</span>
+              <span style="font-size: 12px; font-weight: 700; color: #0284c7; display: inline-flex; align-items: center; gap: 5px;">
+                ${meta.icon || ''}
+                <span>${meta.label}</span>
+              </span>
               ${badgeHtml}
             </div>
-            <div class="automation-card-title">${escapeHtml(script.name)}</div>
-            <div class="automation-card-desc">${escapeHtml(script.description || 'Không có mô tả')}</div>
+            <div class="automation-card-title">${escapeHtml(cleanedName)}</div>
+            <div class="automation-card-desc">${escapeHtml(cleanTitle(script.description) || 'Không có mô tả')}</div>
             
             <div class="automation-steps-summary" title="${steps.length} bước thực thi">
               ${stepPills || '<span style="color:#94a3b8;">Chưa có bước thực thi</span>'}
@@ -213,19 +263,19 @@
           </div>
 
           <div class="automation-card-actions">
-            <button class="uiv-cta-emerald btn-run-single-script" data-id="${script.id}" style="padding: 7px 14px; font-size: 12.5px; display: flex; align-items: center; gap: 5px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <button class="uiv-cta-emerald btn-run-single-script" data-id="${script.id}" style="padding: 7px 14px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+              ${SVG_ICONS.play}
               <span>Chạy Ngay</span>
             </button>
-            <button class="uiv-btn uiv-btn-secondary btn-edit-script" data-id="${script.id}" style="padding: 7px 12px; font-size: 12.5px;">
-              ${isPreset ? '👁️ Xem Chi Tiết' : '✏️ Chỉnh Sửa'}
+            <button class="uiv-btn uiv-btn-secondary btn-edit-script" data-id="${script.id}" style="padding: 7px 12px; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px;">
+              ${isPreset ? `${SVG_ICONS.eye} <span>Xem Chi Tiết</span>` : `${SVG_ICONS.edit} <span>Chỉnh Sửa</span>`}
             </button>
-            <button class="uiv-btn uiv-btn-secondary btn-clone-script" data-id="${script.id}" title="Nhân bản kịch bản này" style="padding: 7px 10px; font-size: 12.5px;">
-              📋
+            <button class="uiv-icon-btn btn-clone-script" data-id="${script.id}" title="Nhân bản kịch bản này">
+              ${SVG_ICONS.copy}
             </button>
             ${!isPreset ? `
-              <button class="uiv-btn uiv-btn-danger btn-delete-script" data-id="${script.id}" title="Xóa kịch bản" style="padding: 7px 10px; font-size: 12.5px;">
-                🗑️
+              <button class="uiv-icon-btn uiv-icon-btn-danger btn-delete-script" data-id="${script.id}" title="Xóa kịch bản">
+                ${SVG_ICONS.trash}
               </button>
             ` : ''}
           </div>
@@ -275,14 +325,21 @@
     if (scriptId) {
       const script = automationState.scripts.find(s => s.id === scriptId);
       if (script) {
-        if (titleEl) titleEl.innerText = script.is_preset ? `👁️ Chi Tiết Kịch Bản Hệ Thống: ${script.name}` : `✏️ Chỉnh Sửa Kịch Bản: ${script.name}`;
-        if (nameInput) nameInput.value = script.name || '';
-        if (descInput) descInput.value = script.description || '';
+        const cleaned = cleanTitle(script.name);
+        if (titleEl) {
+          titleEl.innerHTML = script.is_preset
+            ? `<span style="display: inline-flex; align-items: center; gap: 7px;">${SVG_ICONS.eye} Chi Tiết Kịch Bản Hệ Thống: <strong>${escapeHtml(cleaned)}</strong></span>`
+            : `<span style="display: inline-flex; align-items: center; gap: 7px;">${SVG_ICONS.edit} Chỉnh Sửa Kịch Bản: <strong>${escapeHtml(cleaned)}</strong></span>`;
+        }
+        if (nameInput) nameInput.value = cleaned || '';
+        if (descInput) descInput.value = cleanTitle(script.description) || '';
         if (catSelect) catSelect.value = script.category || 'warmup';
         automationState.builderSteps = JSON.parse(JSON.stringify(script.steps || []));
       }
     } else {
-      if (titleEl) titleEl.innerText = '✨ Tạo Kịch Bản Tự Động Hóa Mới (No-code)';
+      if (titleEl) {
+        titleEl.innerHTML = `<span style="display: inline-flex; align-items: center; gap: 7px;">${SVG_ICONS.sparkle} Tạo Kịch Bản Tự Động Hóa Mới (No-code)</span>`;
+      }
       if (nameInput) nameInput.value = '';
       if (descInput) descInput.value = '';
       if (catSelect) catSelect.value = 'muse-ai';
@@ -327,7 +384,7 @@
     if (automationState.builderSteps.length === 0) {
       list.innerHTML = `
         <div style="text-align: center; padding: 24px; color: #94a3b8; background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
-          Chưa có bước thực thi nào. Nhấn "+ Thêm Bước" bên dưới để bắt đầu.
+          Chưa có bước thực thi nào. Nhấn "+ Thêm Bước Mới" bên trên để bắt đầu.
         </div>
       `;
       return;
@@ -370,8 +427,8 @@
             <div style="width: 140px;">
               <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Hướng cuộn:</label>
               <select class="poly-input step-field" data-idx="${idx}" data-field="direction" style="font-size: 12.5px; padding: 8px 10px;">
-                <option value="down" ${step.direction === 'down' ? 'selected' : ''}>Cuộn xuống ⬇️</option>
-                <option value="up" ${step.direction === 'up' ? 'selected' : ''}>Cuộn lên ⬆️</option>
+                <option value="down" ${step.direction === 'down' ? 'selected' : ''}>Cuộn xuống (Down)</option>
+                <option value="up" ${step.direction === 'up' ? 'selected' : ''}>Cuộn lên (Up)</option>
               </select>
             </div>
           </div>
@@ -405,8 +462,8 @@
               <option value="Tab" ${step.key === 'Tab' ? 'selected' : ''}>Tab ⇥</option>
               <option value="Escape" ${step.key === 'Escape' ? 'selected' : ''}>Escape (ESC)</option>
               <option value="Space" ${step.key === 'Space' ? 'selected' : ''}>Space (Khoảng trắng)</option>
-              <option value="ArrowDown" ${step.key === 'ArrowDown' ? 'selected' : ''}>Arrow Down ⬇️</option>
-              <option value="ArrowUp" ${step.key === 'ArrowUp' ? 'selected' : ''}>Arrow Up ⬆️</option>
+              <option value="ArrowDown" ${step.key === 'ArrowDown' ? 'selected' : ''}>Mũi tên xuống (Down)</option>
+              <option value="ArrowUp" ${step.key === 'ArrowUp' ? 'selected' : ''}>Mũi tên lên (Up)</option>
             </select>
           </div>
         `;
@@ -420,7 +477,14 @@
       } else if (step.type === 'rotate_ip') {
         inputsHtml = `
           <div style="flex: 1; font-size: 12px; color: #0284c7; background: #e0f2fe; padding: 8px 12px; border-radius: 8px;">
-            ℹ️ Kích hoạt xoay IP 4G Webhook đã cấu hình trong Hồ sơ/Proxy trước khi thực hiện bước tiếp theo.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Kích hoạt xoay IP 4G Webhook đã cấu hình trong Hồ sơ/Proxy trước khi thực hiện bước tiếp theo.
+          </div>
+        `;
+      } else if (step.type === 'log') {
+        inputsHtml = `
+          <div style="flex: 1;">
+            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Ghi chú thông báo (Log):</label>
+            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="message" value="${escapeHtml(step.message || '')}" placeholder="Ghi chú bước..." style="font-size: 12.5px; padding: 8px 12px;">
           </div>
         `;
       }
@@ -437,10 +501,16 @@
               </select>
             </div>
             
-            <div style="display: flex; gap: 4px;">
-              <button type="button" class="uiv-btn uiv-btn-secondary btn-step-move-up" data-idx="${idx}" title="Di chuyển lên" ${idx === 0 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 11px;">⬆️</button>
-              <button type="button" class="uiv-btn uiv-btn-secondary btn-step-move-down" data-idx="${idx}" title="Di chuyển xuống" ${idx === automationState.builderSteps.length - 1 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 11px;">⬇️</button>
-              <button type="button" class="uiv-btn uiv-btn-danger btn-step-delete" data-idx="${idx}" title="Xóa bước này" style="padding: 4px 8px; font-size: 11px;">🗑️</button>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" class="uiv-icon-btn btn-step-move-up" data-idx="${idx}" title="Di chuyển lên" ${idx === 0 ? 'disabled' : ''}>
+                ${SVG_ICONS.arrowUp}
+              </button>
+              <button type="button" class="uiv-icon-btn btn-step-move-down" data-idx="${idx}" title="Di chuyển xuống" ${idx === automationState.builderSteps.length - 1 ? 'disabled' : ''}>
+                ${SVG_ICONS.arrowDown}
+              </button>
+              <button type="button" class="uiv-icon-btn uiv-icon-btn-danger btn-step-delete" data-idx="${idx}" title="Xóa bước này">
+                ${SVG_ICONS.trash}
+              </button>
             </div>
           </div>
 
@@ -564,7 +634,7 @@
       if (data.success) {
         closeBuilderModal();
         await fetchAutomationScripts();
-        alert('✅ Đã lưu kịch bản thành công!');
+        alert('Đã lưu kịch bản thành công!');
       } else {
         alert('Lỗi lưu kịch bản: ' + (data.error || 'Không rõ nguyên nhân'));
       }
@@ -583,7 +653,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: `${script.name} (Bản sao)`,
+          name: `${cleanTitle(script.name)} (Bản sao)`,
           description: script.description,
           category: script.category,
           steps: script.steps
@@ -592,7 +662,7 @@
       const data = await res.json();
       if (data.success) {
         await fetchAutomationScripts();
-        alert(`✅ Đã nhân bản kịch bản "${script.name}" thành công!`);
+        alert(`Đã nhân bản kịch bản "${cleanTitle(script.name)}" thành công!`);
       }
     } catch (err) {
       console.error('[AutomationUI] Lỗi nhân bản:', err);
@@ -628,7 +698,7 @@
     if (scriptSelect) {
       scriptSelect.innerHTML = automationState.scripts.map(s => `
         <option value="${s.id}" ${s.id === defaultScriptId ? 'selected' : ''}>
-          ${escapeHtml(s.name)} (${s.steps ? s.steps.length : 0} bước)
+          ${escapeHtml(cleanTitle(s.name))} (${s.steps ? s.steps.length : 0} bước)
         </option>
       `).join('');
     }
@@ -666,19 +736,21 @@
         return;
       }
 
+      const hasSelection = (window.selectedProfileIds && window.selectedProfileIds.size > 0);
+
       container.innerHTML = profiles.map(p => {
+        const isChecked = hasSelection ? window.selectedProfileIds.has(p.id) : true;
         const hasProxy = !!(p.proxy_host || p.proxy);
         const proxyBadge = hasProxy
-          ? `<span style="background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-size: 11px;">🛡️ Proxy ISP/USA</span>`
-          : `<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 11px;">Mạng gốc</span>`;
-
-        const hasSelection = (window.selectedProfileIds && window.selectedProfileIds.size > 0);
-        const isChecked = hasSelection ? window.selectedProfileIds.has(p.id) : true;
+          ? `<span style="background: #e0f2fe; color: #0284c7; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Proxy ISP/USA
+            </span>`
+          : `<span style="background: #f1f5f9; color: #64748b; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500;">Mạng gốc</span>`;
 
         return `
-          <label class="batch-profile-row" data-group="${escapeHtml(p.group_name || 'Mặc định')}" style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer;">
+          <label class="batch-profile-row" data-group="${escapeHtml(p.group_name || 'Mặc định')}" style="display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.15s ease;">
             <div style="display: flex; align-items: center; gap: 10px;">
-              <input type="checkbox" class="batch-profile-checkbox" value="${p.id}" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: #0284c7;">
+              <input type="checkbox" class="batch-profile-checkbox" value="${p.id}" ${isChecked ? 'checked' : ''} style="width: 16px; height: 16px; accent-color: #0284c7; cursor: pointer;">
               <span style="font-size: 13px; font-weight: 600; color: #0f172a;">${escapeHtml(p.name)}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -769,7 +841,6 @@
       const data = await res.json();
       if (data.success) {
         closeBatchModal();
-        // Switch to monitor section and start polling
         scrollToMonitor();
         checkAutomationStatus();
       } else {
@@ -852,7 +923,7 @@
         statusBadge.style.background = '#dcfce7';
         statusBadge.style.color = '#15803d';
       } else {
-        statusBadge.innerHTML = `✅ Hoàn Tất Tác Vụ`;
+        statusBadge.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Hoàn Tất Tác Vụ</span>`;
         statusBadge.style.background = '#e0f2fe';
         statusBadge.style.color = '#0369a1';
       }
@@ -863,7 +934,7 @@
     if (logBox && Array.isArray(status.recent_logs)) {
       const logsHtml = status.recent_logs.map(line => {
         let color = '#94a3b8';
-        if (line.includes('[SUCCESS]') || line.includes('✅')) color = '#34d399';
+        if (line.includes('[SUCCESS]') || line.includes('✅') || line.includes('HOÀN THÀNH')) color = '#34d399';
         else if (line.includes('[ERROR]') || line.includes('❌') || line.includes('CHẶN AN TOÀN')) color = '#f87171';
         else if (line.includes('[STEP]')) color = '#38bdf8';
         else if (line.includes('[WARN]') || line.includes('⚠️')) color = '#fbbf24';
