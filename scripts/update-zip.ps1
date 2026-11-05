@@ -12,6 +12,9 @@ if (Test-Path $zipPath) {
         "public/style.css",
         "public/app.js",
         "public/js/admin-checkout.js",
+        "public/js/google-sso.js",
+        "public/js/team-ui.js",
+        "public/js/automation-ui.js",
         "public/images/slide-01-profiles.png",
         "public/images/slide-02-fingerprint.png",
         "public/images/slide-03-sync.png",
@@ -21,7 +24,8 @@ if (Test-Path $zipPath) {
         "src/auth.js",
         "src/db.js",
         "src/license-admin.js",
-        "src/mailer.js"
+        "src/mailer.js",
+        "data/.google_sso_config.json"
     )
 
     foreach ($rel in $filesToUpdate) {

@@ -45,3 +45,4 @@ data/.license_session.json
 data/*.db*
 data/sent_emails.json
 data/smtp_config.json
+data/.google_sso_config.json

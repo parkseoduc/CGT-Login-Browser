@@ -1,4 +1,6 @@
 const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
+app.commandLine.appendSwitch('disable-features', 'PasswordCheck,PasswordBreachDetection,AutofillServerCommunication');
+app.commandLine.appendSwitch('disable-save-password-bubble');
 const path = require('node:path');
 const http = require('node:http');
 

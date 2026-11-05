@@ -11,6 +11,9 @@
   let currentCheckoutPlan = 'PRO_MONTHLY';
   let adminUsersList = [];
   let adminOrdersList = [];
+  let cachedPlans = [];
+  let isSyncingPackages = false;
+  let orderPollingTimer = null;
 
   function getAuthHeader() {
     const token = localStorage.getItem('cgt_auth_token') || (typeof getAuthToken === 'function' ? getAuthToken() : '');
@@ -21,7 +24,7 @@
     if (typeof showToast === 'function') {
       showToast(msg, type);
     } else {
-      if (typeof window.showToast === "function") window.showToast(msg, "warning"); else alert(msg);
+      if (typeof window.showToast === "function") window.showToast(msg, "warning"); else console.warn(msg);
     }
   }
 
@@ -56,6 +59,7 @@
     const user = window.currentUser;
     const emailInput = document.getElementById('chk-customer-email');
     const nameInput = document.getElementById('chk-customer-name');
+    const phoneInput = document.getElementById('chk-customer-phone');
 
     if (user) {
       if (emailInput && (!emailInput.value || emailInput.value === 'guest@cgt.vn')) {
@@ -64,6 +68,9 @@
       if (nameInput && !nameInput.value) {
         nameInput.value = user.name || (user.email ? user.email.split('@')[0] : '');
       }
+      if (phoneInput && !phoneInput.value && user.phone) {
+        phoneInput.value = user.phone;
+      }
     }
 
     modal.style.display = 'flex';
@@ -71,10 +78,15 @@
   }
 
   function updatePlanPillUI(planCode) {
-    const pillPro = document.getElementById('chk-pill-pro');
-    const pillVip = document.getElementById('chk-pill-vip');
-    if (pillPro) pillPro.classList.toggle('active', planCode === 'PRO_MONTHLY');
-    if (pillVip) pillVip.classList.toggle('active', planCode === 'VIP_LIFETIME');
+    const pills = document.querySelectorAll('.checkout-plan-pill');
+    pills.forEach(p => {
+      const pCode = p.dataset.plan;
+      const isMatch = pCode === planCode || 
+        (planCode === 'PRO_MONTHLY' && (pCode === 'PRO_MONTHLY' || pCode === 'PLUS')) ||
+        (planCode === 'VIP_LIFETIME' && (pCode === 'PRO' || pCode === 'VIP_LIFETIME')) ||
+        (planCode === 'PRO' && (pCode === 'PRO' || pCode === 'VIP_LIFETIME'));
+      p.classList.toggle('active', isMatch);
+    });
 
     const tag = document.getElementById('chk-plan-tag');
     const name = document.getElementById('chk-plan-name');
@@ -82,33 +94,43 @@
     const period = document.getElementById('chk-plan-period');
     const featList = document.getElementById('chk-features-list');
 
-    if (planCode === 'VIP_LIFETIME') {
-      if (tag) { tag.textContent = 'VIP Trọn Đời'; tag.style.background = 'rgba(16, 185, 129, 0.2)'; tag.style.color = '#10B981'; }
-      if (name) name.textContent = 'OmniBrowser VIP Vĩnh Viễn';
-      if (price) { price.textContent = '1.990.000 đ'; price.style.color = '#10B981'; }
-      if (period) period.textContent = 'Thời hạn: 10 năm (Trọn đời) • 2.000 Hồ sơ';
-      if (featList) {
-        featList.innerHTML = `
-          <div class="chk-feat-item">✓ 2.000 Hồ sơ Antidetect không giới hạn thời gian</div>
-          <div class="chk-feat-item">✓ Chạy đồng thời tối đa 50 luồng hiệu suất cao</div>
-          <div class="chk-feat-item">✓ Đồng bộ dữ liệu đám mây Cloud Sync không giới hạn</div>
-          <div class="chk-feat-item">✓ Toàn quyền kho Tiện ích Chrome & Proxy Manager</div>
-          <div class="chk-feat-item">✓ Hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev</div>
-        `;
+    // Find in cachedPlans
+    const plan = cachedPlans.find(p => 
+      p.code === planCode || 
+      p.id === planCode ||
+      (planCode === 'VIP_LIFETIME' && (p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.duration_days && p.duration_days >= 365))) ||
+      (planCode === 'PRO' && (p.code === 'PRO' || (p.duration_days && p.duration_days >= 365))) ||
+      ((planCode === 'PRO_MONTHLY' || planCode === 'PLUS') && (p.code === 'PRO_MONTHLY' || (p.duration_days && p.duration_days <= 31)))
+    ) || cachedPlans[0];
+
+    if (plan) {
+      const isVip = (plan.duration_days && plan.duration_days >= 365) || (plan.code && plan.code.includes('PRO') && !plan.code.includes('MONTHLY'));
+      if (tag) {
+        tag.textContent = plan.tag || (isVip ? 'VIP Trọn Đời' : 'Phổ Biến');
+        tag.style.background = isVip ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.2)';
+        tag.style.color = isVip ? '#10B981' : '#60A5FA';
       }
-    } else {
-      if (tag) { tag.textContent = 'Phổ Biến'; tag.style.background = 'rgba(37, 99, 235, 0.2)'; tag.style.color = '#60A5FA'; }
-      if (name) name.textContent = 'OmniBrowser Pro';
-      if (price) { price.textContent = '199.000 đ'; price.style.color = '#60A5FA'; }
-      if (period) period.textContent = 'Thời hạn: 30 ngày (Gia hạn hàng tháng) • 500 Hồ sơ';
+      if (name) name.textContent = plan.name;
+      if (price) {
+        price.textContent = plan.price.toLocaleString('vi-VN') + ' đ';
+        price.style.color = isVip ? '#10B981' : '#60A5FA';
+      }
+      if (period) {
+        const durText = isVip ? '10 năm (Trọn đời)' : (plan.duration_days + ' ngày');
+        period.textContent = `Thời hạn: ${durText} • ${plan.badge || (plan.max_profiles + ' Hồ sơ')}`;
+      }
       if (featList) {
-        featList.innerHTML = `
-          <div class="chk-feat-item">✓ 500 Hồ sơ Antidetect cao cấp độc lập</div>
-          <div class="chk-feat-item">✓ Chạy đồng thời tối đa 20 luồng</div>
-          <div class="chk-feat-item">✓ Đồng bộ hóa thao tác chuột & phím</div>
-          <div class="chk-feat-item">✓ Nhân MyBrowser 153 Core (Pass 100% Iphey)</div>
-          <div class="chk-feat-item">✓ Tự động xoay Proxy 4G / IPv6</div>
-        `;
+        if (Array.isArray(plan.features) && plan.features.length > 0) {
+          featList.innerHTML = plan.features.map(f => `<div class="chk-feat-item">✓ ${escapeHtml(f)}</div>`).join('');
+        } else {
+          featList.innerHTML = `
+            <div class="chk-feat-item">✓ ${plan.max_profiles || 500} Hồ sơ Antidetect cao cấp độc lập</div>
+            <div class="chk-feat-item">✓ Chạy đồng thời tối đa ${plan.max_threads || 20} luồng</div>
+            <div class="chk-feat-item">✓ Tối đa ${plan.team_members || (isVip ? 50 : 5)} thành viên Đội Ngũ (Workspace Team)</div>
+            <div class="chk-feat-item">✓ Đồng bộ hóa thao tác chuột & bàn phím</div>
+            <div class="chk-feat-item">✓ Nhân Chromium 153 Core (Pass 100% Iphey)</div>
+          `;
+        }
       }
     }
   }
@@ -127,8 +149,10 @@
 
     const emailInput = document.getElementById('chk-customer-email');
     const nameInput = document.getElementById('chk-customer-name');
+    const phoneInput = document.getElementById('chk-customer-phone');
     const email = (emailInput && emailInput.value.trim()) || (window.currentUser ? window.currentUser.email : 'guest@cgt.vn');
     const name = (nameInput && nameInput.value.trim()) || (window.currentUser ? window.currentUser.name : 'Khách Hàng');
+    const phone = (phoneInput && phoneInput.value.trim()) || (window.currentUser ? window.currentUser.phone : '') || '';
 
     try {
       const res = await fetch('/api/v1/checkout/create-order', {
@@ -137,6 +161,7 @@
         body: JSON.stringify({
           email,
           name,
+          phone,
           planCode: currentCheckoutPlan
         })
       });
@@ -144,6 +169,7 @@
       const data = await res.json();
       if (data.success && data.order) {
         currentOrder = data.order;
+        startOrderPolling(currentOrder.id);
         const b = data.bankInfo;
 
         if (bankName) bankName.textContent = b.bankName;
@@ -169,6 +195,55 @@
     }
   }
 
+
+  function stopOrderPolling() {
+    if (orderPollingTimer) {
+      clearInterval(orderPollingTimer);
+      orderPollingTimer = null;
+    }
+  }
+
+  function startOrderPolling(orderId) {
+    stopOrderPolling();
+    if (!orderId) return;
+
+    orderPollingTimer = setInterval(async () => {
+      try {
+        const modal = document.getElementById('checkout-modal');
+        if (!modal || modal.style.display === 'none') {
+          stopOrderPolling();
+          return;
+        }
+
+        const res = await fetch(`/api/v1/checkout/order-status?orderId=${encodeURIComponent(orderId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.success && data.is_paid) {
+          stopOrderPolling();
+          showNotification('🎉 Chúc mừng! Giao dịch đã được hệ thống tự động xác nhận và cấp key thành công.', 'success');
+
+          const stepPayment = document.getElementById('checkout-step-payment');
+          const stepSuccess = document.getElementById('checkout-step-success');
+          const keyDisplay = document.getElementById('chk-success-key-val');
+
+          if (stepPayment) stepPayment.style.display = 'none';
+          if (stepSuccess) stepSuccess.style.display = 'block';
+          if (keyDisplay) keyDisplay.textContent = data.license_key || 'OMNI-ACTIVE';
+
+          const successMsg = document.getElementById('chk-success-msg');
+          const buyerName = document.getElementById('chk-customer-name')?.value || currentOrder?.customer_name || 'Quý khách';
+          const buyerEmail = document.getElementById('chk-customer-email')?.value || currentOrder?.customer_email || '';
+          if (successMsg) {
+            successMsg.innerHTML = '🎉 Bản quyền đã được kích hoạt thành công cho <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong>! Mã License Key đã gửi về email: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
+          }
+
+          if (typeof checkAuthState === 'function') checkAuthState();
+          if (typeof fetchLicense === 'function') fetchLicense();
+        }
+      } catch (err) {}
+    }, 2000);
+  }
+
   async function confirmPayment() {
     if (!currentOrder || !currentOrder.id) {
       showNotification('Vui lòng đợi đơn hàng được khởi tạo', 'warning');
@@ -190,6 +265,7 @@
 
       const data = await res.json();
       if (data.success) {
+        stopOrderPolling();
         showNotification('🎉 Chúc mừng! Gói bản quyền đã được kích hoạt thành công.', 'success');
 
         // Switch to success step in modal
@@ -573,6 +649,248 @@
      DOM INITIALIZATION
      ========================================================================== */
 
+  
+  /**
+   * Đồng bộ danh mục gói từ máy chủ lic.cgtdev.space
+   */
+  async function loadLicensePackages(forceRefresh = false) {
+    if (isSyncingPackages) return;
+    isSyncingPackages = true;
+
+    const spinner = document.getElementById('sync-packages-spinner');
+    const syncTimeEl = document.getElementById('license-sync-timestamp');
+    const btnSync = document.getElementById('btn-sync-packages');
+
+    if (spinner) spinner.classList.add('spin');
+    if (btnSync) btnSync.disabled = true;
+    if (syncTimeEl) syncTimeEl.textContent = forceRefresh ? 'Đang cập nhật từ máy chủ...' : 'Đang tải gói...';
+
+    try {
+      const url = forceRefresh ? '/api/v1/checkout/plans?refresh=1' : '/api/v1/checkout/plans';
+      const res = await fetch(url, { headers: getAuthHeader() });
+      const data = await res.json();
+
+      if (data.success && Array.isArray(data.plans) && data.plans.length > 0) {
+        cachedPlans = data.plans;
+        window._omniCatalogPlans = data.plans;
+
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (syncTimeEl) {
+          syncTimeEl.innerHTML = `<span style="color: #10B981; font-weight: 600;">✓ Đã đồng bộ:</span> ${timeStr}`;
+        }
+
+        renderPackagesGridUI();
+        renderCheckoutModalPills();
+
+        if (forceRefresh) {
+          showNotification('🎉 Đã đồng bộ thành công danh mục gói và tài khoản ngân hàng từ lic.cgtdev.space! Mọi tài khoản khác đã nhận dữ liệu mới nhất.', 'success');
+        }
+      } else {
+        if (syncTimeEl) syncTimeEl.textContent = 'Gói mặc định hệ thống';
+        renderPackagesGridUI();
+      }
+    } catch (err) {
+      console.warn('[Checkout] Lỗi khi đồng bộ gói:', err.message);
+      if (syncTimeEl) syncTimeEl.textContent = 'Ngoại tuyến (Offline)';
+      renderPackagesGridUI();
+    } finally {
+      isSyncingPackages = false;
+      if (spinner) spinner.classList.remove('spin');
+      if (btnSync) btnSync.disabled = false;
+    }
+  }
+
+  function getActivePlanKey() {
+    const user = window.currentUser || null;
+    if (user) {
+      const code = String(user.plan_code || '').toUpperCase();
+      const name = String(user.plan || '').toUpperCase();
+      if (code === 'FREE' || code === 'FREE_TRIAL' || name.includes('FREE')) return 'FREE_TRIAL';
+      if (code === 'PRO_MONTHLY' || code === 'PLUS' || name.includes('PLUS')) return 'PRO_MONTHLY';
+      if (code === 'PRO' || code === 'VIP_LIFETIME' || code === 'VIP' || name.includes('PRO') || name.includes('VIP')) return 'PRO';
+    }
+    return 'FREE_TRIAL';
+  }
+
+  function renderPackagesGridUI() {
+    const container = document.getElementById('packages-plan-grid');
+    if (!container) return;
+
+    const activeKey = getActivePlanKey();
+
+    // 1. Thẻ Gói Free Thử Nghiệm
+    const isFreeActive = activeKey === 'FREE_TRIAL';
+    let html = `
+      <div class="plan-card ${isFreeActive ? 'active' : ''}" data-plan="Free Trial" style="position: relative;">
+        <div class="plan-header-row">
+          <span class="plan-tag">Dùng Thử</span>
+          ${isFreeActive ? '<span class="badge badge-active-green">ĐANG SỬ DỤNG</span>' : '<span class="badge badge-subtle-gray">Cơ Bản</span>'}
+        </div>
+        <div class="plan-name" style="margin-top: 6px;">Gói Free Thử Nghiệm</div>
+        <p class="plan-desc">Tối đa 50 hồ sơ, đầy đủ vân tay & Chromium 153 Core</p>
+        <div class="plan-price" style="margin-bottom: 12px;">0đ / vĩnh viễn</div>
+        <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+          <div>✓ 50 Hồ sơ Antidetect cơ bản</div>
+          <div>✓ Nhân Chromium 153 Core (Pass 100% Iphey)</div>
+          <div>✓ Quản lý Proxy & Tiện ích mở rộng</div>
+          <div style="color: #94A3B8;">✕ Tính năng Đội Ngũ (Team) bị khóa</div>
+        </div>
+        ${isFreeActive ? `
+          <button class="uiv-btn uiv-btn-secondary" style="width: 100%; margin-top: auto; padding: 10px; font-size: 13px; justify-content: center; background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3); color: #10B981; cursor: default;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Gói Hiện Tại (Free)</span>
+          </button>
+        ` : `
+          <button class="uiv-btn uiv-btn-secondary" style="width: 100%; margin-top: auto; padding: 10px; font-size: 13px; justify-content: center;" disabled>
+            <span>Gói Mặc Định</span>
+          </button>
+        `}
+      </div>
+    `;
+
+    // 2. Render các gói dịch vụ động từ lic.cgtdev.space
+    const plansToRender = cachedPlans.length > 0 ? cachedPlans : [
+      {
+        code: 'PRO_MONTHLY',
+        name: 'OmniBrowser Plus',
+        tag: 'Phổ Biến',
+        badge: '500 Hồ Sơ',
+        duration_days: 30,
+        price: 199000,
+        price_formatted: '199.000 đ / 30 ngày',
+        max_profiles: 500,
+        max_threads: 20,
+        team_members: 5,
+        features: [
+          '500 Hồ sơ Antidetect cao cấp độc lập',
+          'Chạy đồng thời tối đa 20 luồng độc lập',
+          'Tối đa 5 thành viên Đội Ngũ (Workspace Team)',
+          'Đồng bộ hóa thao tác chuột & bàn phím',
+          'Tự động tích hợp Proxy xoay 4G / IPv6',
+          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+          'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+        ]
+      },
+      {
+        code: 'PRO',
+        name: 'OmniBrowser Pro',
+        tag: 'VIP Trọn Đời',
+        badge: '2.000 Hồ Sơ',
+        duration_days: 3650,
+        price: 1990000,
+        price_formatted: '1.990.000 đ / trọn đời (10 năm)',
+        max_profiles: 2000,
+        max_threads: 50,
+        team_members: 50,
+        features: [
+          '2.000 Hồ sơ Antidetect cao cấp độc lập',
+          'Chạy đồng thời tối đa 50 luồng độc lập',
+          'Tối đa 50 thành viên Đội Ngũ (Workspace Team)',
+          'Đồng bộ hóa thao tác chuột & bàn phím',
+          'Tự động tích hợp Proxy xoay 4G / IPv6',
+          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+          'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev'
+        ]
+      }
+    ];
+
+    plansToRender.forEach(p => {
+      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY'));
+      const isMatch = (activeKey === 'PRO_MONTHLY' && !isVip) || (activeKey === 'PRO' && isVip);
+      const tagText = p.tag || (isVip ? 'VIP Trọn Đời' : 'Phổ Biến');
+      const badgeText = p.badge || `${p.max_profiles} Hồ Sơ`;
+      const priceText = p.price_formatted || `${p.price.toLocaleString('vi-VN')}đ / ${isVip ? 'trọn đời' : 'tháng'}`;
+      const ctaClass = isVip ? 'uiv-cta-emerald' : 'uiv-cta-primary';
+      const kPrice = Math.round(p.price / 1000);
+
+      const featuresHtml = (p.features || []).slice(0, 5).map(f => `<div>✓ ${escapeHtml(f)}</div>`).join('');
+
+      html += `
+        <div class="plan-card ${isMatch ? 'active' : ''}" data-plan="${escapeHtml(p.code)}" style="position: relative;">
+          <div class="plan-header-row">
+            <span class="plan-tag ${isVip ? 'vip' : 'popular'}">
+              ${isVip ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>' : ''}
+              <span>${escapeHtml(tagText)}</span>
+            </span>
+            ${isMatch ? '<span class="badge badge-active-green">ĐANG SỬ DỤNG</span>' : `<span class="badge ${isVip ? 'badge-subtle-blue' : 'badge-subtle-blue'}">${escapeHtml(badgeText)}</span>`}
+          </div>
+          <div class="plan-name" style="margin-top: 6px;">${escapeHtml(p.name)}</div>
+          <p class="plan-desc">${escapeHtml(p.description || '')}</p>
+          <div class="plan-price ${isVip ? 'green' : 'highlight'}" style="margin-bottom: 12px;">${priceText}</div>
+          <div style="font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;">
+            ${featuresHtml}
+          </div>
+          ${isMatch ? `
+            <button class="uiv-btn uiv-btn-secondary" style="width: 100%; margin-top: auto; padding: 10px; font-size: 13px; justify-content: center; background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.3); color: #10B981; cursor: default;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              <span>Gói Đang Hoạt Động</span>
+            </button>
+          ` : `
+            <button class="${ctaClass} btn-buy-plan" data-plan="${escapeHtml(p.code)}" style="width: 100%; margin-top: auto; padding: 10px; font-size: 13.5px; justify-content: center; cursor: pointer;">
+              ${isVip ? `
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+                <span>Mua ${escapeHtml(p.name)} (${kPrice}K)</span>
+              ` : `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Mua ${escapeHtml(p.name)} (${kPrice}K)</span>
+              `}
+            </button>
+          `}
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+
+    // Attach click handlers to buy buttons
+    container.querySelectorAll('.btn-buy-plan').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const pCode = btn.dataset.plan || 'PRO_MONTHLY';
+        openCheckoutModal(pCode);
+      };
+    });
+  }
+
+  function renderCheckoutModalPills() {
+    const switcher = document.getElementById('chk-modal-plan-switcher') || document.querySelector('.checkout-plan-switcher');
+    if (!switcher) return;
+
+    const plansToRender = cachedPlans.length > 0 ? cachedPlans : [
+      { code: 'PRO_MONTHLY', name: 'OmniBrowser Plus', price: 199000, duration_days: 30 },
+      { code: 'PRO', name: 'OmniBrowser Pro', price: 1990000, duration_days: 3650 }
+    ];
+
+    switcher.innerHTML = plansToRender.map(p => {
+      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY'));
+      const isMatch = p.code === currentCheckoutPlan || 
+        (currentCheckoutPlan === 'PRO_MONTHLY' && !isVip) ||
+        ((currentCheckoutPlan === 'PRO' || currentCheckoutPlan === 'VIP_LIFETIME') && isVip);
+      const color = isVip ? '#10B981' : '#2563EB';
+      const periodStr = isVip ? '10 năm (Trọn đời)' : '30 ngày';
+
+      return `
+        <div class="checkout-plan-pill ${isMatch ? 'active' : ''}" data-plan="${escapeHtml(p.code)}" style="cursor: pointer;">
+          <div style="font-weight: 700; font-size: 13.5px;">${escapeHtml(p.name)}</div>
+          <div style="font-size: 12px; color: ${color}; font-weight: 600;">${p.price.toLocaleString('vi-VN')} đ / ${periodStr}</div>
+        </div>
+      `;
+    }).join('');
+
+    switcher.querySelectorAll('.checkout-plan-pill').forEach(pill => {
+      pill.onclick = () => {
+        const pCode = pill.dataset.plan;
+        currentCheckoutPlan = pCode;
+        updatePlanPillUI(pCode);
+        generateCheckoutOrder();
+      };
+    });
+  }
+
+  window.loadLicensePackages = loadLicensePackages;
+  window.renderPackagesGridUI = renderPackagesGridUI;
+
   function initAdminAndCheckoutDOM() {
     // Topbar upgrade button: Link directly to "Bản quyền & Gói" tab
     const btnHeaderUpgrade = document.getElementById('btn-header-upgrade');
@@ -606,6 +924,28 @@
     }
 
     // Sidebar admin nav item
+        // Sync packages button in view-license
+    const btnSyncPackages = document.getElementById('btn-sync-packages');
+    if (btnSyncPackages) {
+      btnSyncPackages.onclick = () => loadLicensePackages(true);
+    }
+
+    const btnAdminSync = document.getElementById('btn-admin-sync-server');
+    const adminSyncSpinner = document.getElementById('admin-sync-spinner');
+    if (btnAdminSync) {
+      btnAdminSync.onclick = async () => {
+        if (adminSyncSpinner) adminSyncSpinner.classList.add('spin');
+        btnAdminSync.disabled = true;
+        try {
+          await loadLicensePackages(true);
+        } finally {
+          if (adminSyncSpinner) adminSyncSpinner.classList.remove('spin');
+          btnAdminSync.disabled = false;
+        }
+      };
+    }
+    loadLicensePackages(false);
+
     const navAdmin = document.getElementById('nav-item-admin');
     if (navAdmin) {
       navAdmin.onclick = () => {
@@ -635,8 +975,8 @@
     const chkModal = document.getElementById('checkout-modal');
     const chkClose = document.getElementById('checkout-modal-close');
     const btnFinish = document.getElementById('btn-chk-finish');
-    if (chkClose) chkClose.onclick = () => { if (chkModal) chkModal.style.display = 'none'; };
-    if (btnFinish) btnFinish.onclick = () => { if (chkModal) chkModal.style.display = 'none'; };
+    if (chkClose) chkClose.onclick = () => { stopOrderPolling(); if (chkModal) chkModal.style.display = 'none'; };
+    if (btnFinish) btnFinish.onclick = () => { stopOrderPolling(); if (chkModal) chkModal.style.display = 'none'; };
 
     const btnSwitchLogin = document.getElementById('chk-btn-switch-login');
     if (btnSwitchLogin) {
@@ -841,9 +1181,11 @@
     if (typeof originalRenderProfile === 'function') originalRenderProfile(user);
     const navAdmin = document.getElementById('nav-item-admin');
     const menuAdmin = document.getElementById('poly-menu-admin');
+    const planTabAdmin = document.getElementById('plan-tab-admin');
     const isAdmin = user && user.role === 'admin';
     if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
     if (menuAdmin) menuAdmin.style.display = isAdmin ? 'flex' : 'none';
+    if (planTabAdmin) planTabAdmin.style.display = isAdmin ? 'flex' : 'none';
   };
 
   // Hook into switchTab to trigger loadAdminData when switching to admin tab

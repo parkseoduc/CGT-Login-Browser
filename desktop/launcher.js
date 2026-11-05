@@ -124,7 +124,10 @@ async function main() {
       '--disable-background-mode',
       '--disable-breakpad',
       '--disable-crash-reporter',
-      '--noerrdialogs'
+      '--noerrdialogs',
+      '--disable-save-password-bubble',
+      '--disable-features=PasswordCheck,PasswordBreachDetection,AutofillServerCommunication,AutofillEnableSupportForMoreStructureInAddresses',
+      '--password-store=basic'
     ];
 
     const child = spawn(browserExe, appArgs, {

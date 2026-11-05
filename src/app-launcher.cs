@@ -136,7 +136,7 @@ namespace OmniBrowser
                             "OmniBrowserDesktop", "app-session");
 
                         string appArgs = string.Format(
-                            "--app=http://127.0.0.1:{0} --window-size=1360,860 --window-position=center --user-data-dir=\"{1}\" --app-id=OmniBrowserHub --disable-extensions --no-first-run --no-default-browser-check",
+                            "--app=http://127.0.0.1:{0} --window-size=1360,860 --window-position=center --user-data-dir=\"{1}\" --app-id=OmniBrowserHub --disable-extensions --no-first-run --no-default-browser-check --disable-save-password-bubble --disable-features=PasswordCheck,PasswordBreachDetection,AutofillServerCommunication,AutofillEnableSupportForMoreStructureInAddresses --password-store=basic --noerrdialogs",
                             PORT, userDataDir);
 
                         ProcessStartInfo psiBrowser = new ProcessStartInfo

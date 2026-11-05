@@ -1,0 +1,57 @@
+{
+  "timestamp": 1793873919562,
+  "packages": [
+    {
+      "id": "51f31667-7c8c-46d7-82e8-95f2bf3fc64c",
+      "code": "PRO_MONTHLY",
+      "name": "OmniBrowser Plus",
+      "tag": "Phổ Biến",
+      "badge": "500 Hồ Sơ",
+      "description": "Gói Plus 30 ngày cho cá nhân và đội ngũ (Tối đa 500 hồ sơ)",
+      "duration_days": 30,
+      "price": 199000,
+      "original_price": 399000,
+      "price_formatted": "199.000 đ / 30 ngày",
+      "max_profiles": 500,
+      "max_threads": 20,
+      "team_members": 5,
+      "sync_actions": true,
+      "chromium_153": true,
+      "features": [
+        "500 Hồ sơ Antidetect cao cấp độc lập",
+        "Chạy đồng thời tối đa 20 luồng độc lập",
+        "Tối đa 5 thành viên Đội Ngũ (Workspace Team)",
+        "Đồng bộ hóa thao tác chuột & bàn phím",
+        "Tự động tích hợp Proxy xoay 4G / IPv6",
+        "Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)",
+        "Hỗ trợ kỹ thuật qua Telegram / Zalo"
+      ]
+    },
+    {
+      "id": "1f23582e-e1eb-4db5-b40e-7781b61021af",
+      "code": "PRO",
+      "name": "OmniBrowser Pro",
+      "tag": "VIP Trọn Đời",
+      "badge": "2.000 Hồ Sơ",
+      "description": "Gói Pro không giới hạn  (Tối đa 2000 hồ sơ)",
+      "duration_days": 30,
+      "price": 1990000,
+      "original_price": 4990000,
+      "price_formatted": "1.990.000 đ / trọn đời (10 năm)",
+      "max_profiles": 2000,
+      "max_threads": 50,
+      "team_members": 50,
+      "sync_actions": true,
+      "chromium_153": true,
+      "features": [
+        "2.000 Hồ sơ Antidetect cao cấp độc lập",
+        "Chạy đồng thời tối đa 50 luồng độc lập",
+        "Tối đa 50 thành viên Đội Ngũ (Workspace Team)",
+        "Đồng bộ hóa thao tác chuột & bàn phím",
+        "Tự động tích hợp Proxy xoay 4G / IPv6",
+        "Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)",
+        "Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev"
+      ]
+    }
+  ]
+}

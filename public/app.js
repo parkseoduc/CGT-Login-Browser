@@ -382,7 +382,7 @@ function showCustomAlert({ title = 'Thông báo', message = '', type = 'info', c
     const btnConfirm = document.getElementById('confirm-modal-btn-confirm');
 
     if (!modalEl) {
-      window.alert(message.replace(/<[^>]*>?/gm, ''));
+      if (typeof showToast === "function") showToast(message.replace(/<[^>]*>?/gm, ""), type === "danger" ? "danger" : "info"); else console.warn(message);
       resolve(true);
       return;
     }
@@ -589,38 +589,97 @@ async function fetchLicense() {
 }
 
 function updateLicenseUI(info) {
-  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${info.plan}`;
+  if (!info) return;
+  const user = window.currentUser || null;
+  const planName = info.plan || (user ? user.plan : 'Free Trial');
+  const planCode = info.plan_code || (user ? user.plan_code : 'FREE_TRIAL');
+  const isFree = planCode === 'FREE_TRIAL' || String(planName).toUpperCase().includes('FREE') || info.mode === 'free';
+  const isPlus = planCode === 'PRO_MONTHLY' || String(planName).toUpperCase().includes('PLUS');
+  const isVip = Boolean(info.is_lifetime || String(planName).toUpperCase().includes('VIP') || planCode === 'PRO' || planCode === 'VIP_LIFETIME');
+
+  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${planName}`;
   if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
   if (sidebarPlanExpires) {
-    if (info.is_lifetime || String(info.plan).toUpperCase().includes('VIP')) {
-      sidebarPlanExpires.innerText = 'Vĩnh viễn';
+    if (isVip) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn (10 năm)';
     } else if (info.expires_at) {
       sidebarPlanExpires.innerText = formatVnDate(info.expires_at);
     } else {
-      sidebarPlanExpires.innerText = 'Vô hạn';
+      sidebarPlanExpires.innerText = isFree ? 'Vô hạn' : '30 ngày';
     }
   }
   const sidebarBadge = document.getElementById('sidebar-plan-badge');
   if (sidebarBadge) {
-    const isVip = Boolean(info.is_lifetime || String(info.plan).toUpperCase().includes('VIP'));
-    const isPro = String(info.plan).toUpperCase().includes('PRO');
-    sidebarBadge.textContent = isVip ? 'VIP' : (isPro ? 'PRO' : 'FREE');
-    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+    sidebarBadge.textContent = isVip ? 'VIP' : (isPlus ? 'PLUS' : 'FREE');
+    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPlus ? 'badge-subtle-blue' : 'badge-subtle-gray'));
   }
-  updateBrandBadge(info.plan);
-  statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
+  updateBrandBadge(planName);
+  if (statQuota) statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
 
   const hwidEl = document.getElementById('license-hwid-text');
   if (hwidEl) hwidEl.innerText = info.device_id || 'HWID-LOCAL';
 
   const devicePlan = document.getElementById('device-plan-name');
-  if (devicePlan) devicePlan.innerText = info.plan;
+  if (devicePlan) devicePlan.innerText = planName;
 
   const deviceMax = document.getElementById('device-max-profiles');
   if (deviceMax) deviceMax.innerText = `${info.max_profiles} Profiles`;
 
   const deviceExp = document.getElementById('device-expires');
-  if (deviceExp) deviceExp.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString() : 'Vô hạn';
+  if (deviceExp) deviceExp.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString('vi-VN') : (isVip ? 'Vĩnh viễn (10 năm)' : 'Vô hạn');
+
+  // Update License Summary Card in Bản Quyền & Gói
+  const priceTotal = document.getElementById('price-total');
+  const licenseStatusBadge = document.getElementById('license-status-badge');
+  const licenseStatusDetails = document.getElementById('license-status-details');
+  const licenseStatusLabel = document.getElementById('license-status-label');
+
+  if (priceTotal) {
+    if (isFree) {
+      priceTotal.innerText = 'Gói Free Thử Nghiệm (Miễn Phí)';
+    } else if (isPlus) {
+      priceTotal.innerText = `OmniBrowser Plus (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
+    } else {
+      priceTotal.innerText = `OmniBrowser Pro (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
+    }
+  }
+
+  if (licenseStatusBadge) {
+    if (isFree) {
+      licenseStatusBadge.textContent = 'FREE TRIAL';
+      licenseStatusBadge.className = 'badge badge-subtle-gray';
+    } else if (isPlus) {
+      licenseStatusBadge.textContent = 'PLUS ACTIVE';
+      licenseStatusBadge.className = 'badge badge-subtle-blue';
+    } else {
+      licenseStatusBadge.textContent = 'PRO ACTIVE';
+      licenseStatusBadge.className = 'badge badge-active-green';
+    }
+  }
+
+  if (licenseStatusDetails) {
+    if (isFree) {
+      licenseStatusDetails.innerHTML = `Hạn mức: <strong>${info.current_profiles}/${info.max_profiles}</strong> hồ sơ • Kích hoạt gói <strong>Plus</strong> hoặc <strong>Pro</strong> để mở khóa tính năng Đội Ngũ (Team).`;
+    } else if (isPlus) {
+      const expStr = info.expires_at ? formatVnDate(info.expires_at) : '30 ngày';
+      licenseStatusDetails.innerHTML = `Thời hạn đến: <strong>${expStr}</strong> • Tối đa <strong>20 luồng</strong> độc lập • Hỗ trợ <strong>5 thành viên Team</strong>.`;
+    } else {
+      licenseStatusDetails.innerHTML = `Thời hạn: <strong>10 năm (Trọn đời)</strong> • Tối đa <strong>50 luồng</strong> độc lập • Hỗ trợ <strong>50 thành viên Team</strong>.`;
+    }
+  }
+
+  if (licenseStatusLabel) {
+    if (user && user.email) {
+      licenseStatusLabel.textContent = `Bản quyền tài khoản (${user.maskedEmail || user.email}):`;
+    } else {
+      licenseStatusLabel.textContent = 'Trạng thái bản quyền hiện tại:';
+    }
+  }
+
+  // Refresh package cards highlight
+  if (typeof renderPackagesGridUI === 'function') {
+    renderPackagesGridUI();
+  }
 }
 
 async function fetchGroups() {
@@ -4169,6 +4228,7 @@ const views = {
   extensions: { el: document.getElementById('view-extensions'), title: 'Kho Tiện Ích Mở Rộng', sub: 'Quản lý các tiện ích MMO, Facebook, TikTok và nạp tự động vào Profile' },
   sync: { el: document.getElementById('view-sync'), title: 'Đồng Bộ Thao Tác Chuột & Phím', sub: 'Truyền tín hiệu bàn phím và chuột thời gian thực từ Master sang Slave qua CDP' },
   automation: { el: document.getElementById('view-automation'), title: 'Tự Động Hóa Không Cần Code (No-code Automation Studio)', sub: 'Kịch bản nuôi cookie tự nhiên, cày Muse AI an toàn chống Disconnected, lướt video ngắn và chạy hàng loạt đa luồng' },
+  team: { el: document.getElementById('view-team'), title: 'Quản Lý Đội Ngũ & Phân Quyền Workspace (Team)', sub: 'Phân bổ nhóm Workspace, chế độ Staff Safe Launch Mode chống tuồn cookie và bảo vệ mật khẩu Proxy MMO' },
   license: { el: document.getElementById('view-license'), title: 'Bản Quyền & Nâng Cấp Gói', sub: 'Tích hợp bảo mật bản quyền CGT-License Engine • lic.cgtdev.space' },
   api: { el: document.getElementById('view-api'), title: 'REST API & Automation Protocol', sub: 'Tự động hóa hoàn toàn với Puppeteer, Playwright, Python và MCP' },
   admin: { el: document.getElementById('view-admin'), title: 'Quản Trị Người Dùng & Bản Quyền', sub: 'Quản lý tài khoản, nâng gói Pro / VIP và kết nối lic.cgtdev.space' },
@@ -4206,6 +4266,18 @@ function switchTab(tabId) {
     if (window.AutomationUI && typeof window.AutomationUI.fetchScripts === 'function') {
       window.AutomationUI.fetchScripts();
       window.AutomationUI.checkStatus();
+    }
+  }
+
+  if (tabId === 'team') {
+    if (window.TeamUI && typeof window.TeamUI.init === 'function') {
+      window.TeamUI.init();
+    }
+  }
+
+  if (tabId === 'license') {
+    if (typeof loadLicensePackages === 'function') {
+      loadLicensePackages(false);
     }
   }
 }
@@ -4363,8 +4435,15 @@ window.installPresetExtensions = async function() {
   }
 };
 
+let isBrowsingExtFolder = false;
+
 if (btnBrowseExtFolder) {
   btnBrowseExtFolder.addEventListener('click', async () => {
+    if (isBrowsingExtFolder) return;
+    isBrowsingExtFolder = true;
+    btnBrowseExtFolder.style.opacity = '0.65';
+    btnBrowseExtFolder.style.pointerEvents = 'none';
+
     // 1. Electron native dialog
     if (window.electronAPI && typeof window.electronAPI.openDirectory === 'function') {
       try {
@@ -4386,11 +4465,15 @@ if (btnBrowseExtFolder) {
         }
       } catch (err) {
         showToast('Không thể mở hộp thoại chọn thư mục', 'danger');
+      } finally {
+        isBrowsingExtFolder = false;
+        btnBrowseExtFolder.style.opacity = '1';
+        btnBrowseExtFolder.style.pointerEvents = 'auto';
       }
       return;
     }
 
-    // 2. Server-side Windows Native Folder Dialog (FolderBrowserDialog)
+    // 2. Server-side Windows Native Folder Dialog (via spawn-desktop WinSta0\Default)
     showToast('Đang mở hộp thoại chọn thư mục Windows...', 'info');
     try {
       const res = await fetch(`${API_BASE}/system/browse-folder`);
@@ -4414,25 +4497,50 @@ if (btnBrowseExtFolder) {
           showToast(`Đã chọn: ${data.path}`, 'success');
         }
         return;
+      } else {
+        showToast('Đã đóng hộp thoại chọn thư mục', 'info');
+        return;
       }
     } catch (apiErr) {
       console.warn('Backend browse-folder fallback to file input', apiErr);
+      showToast('Đang mở bộ chọn file trình duyệt...', 'info');
+      const folderInput = document.getElementById('ext-folder-input');
+      if (folderInput) folderInput.click();
+    } finally {
+      isBrowsingExtFolder = false;
+      btnBrowseExtFolder.style.opacity = '1';
+      btnBrowseExtFolder.style.pointerEvents = 'auto';
     }
+  });
+}
 
-    // 3. Fallback to hidden browser folder input
-    const folderInput = document.getElementById('ext-folder-input');
-    if (folderInput) {
-      folderInput.onchange = async () => {
-        if (folderInput.files && folderInput.files.length > 0) {
-          const firstFile = folderInput.files[0];
-          const detectedPath = firstFile.path || (firstFile.webkitRelativePath ? firstFile.webkitRelativePath.split('/')[0] : '');
-          if (detectedPath) {
-            extFormPath.value = detectedPath;
-            showToast(`Đã nạp đường dẫn: ${detectedPath}`, 'info');
-          }
+// Hỗ trợ chọn trực tiếp file manifest.json
+const btnPickManifestFile = document.getElementById('btn-pick-manifest-file');
+const extManifestInput = document.getElementById('ext-manifest-input');
+if (btnPickManifestFile && extManifestInput) {
+  btnPickManifestFile.addEventListener('click', () => {
+    extManifestInput.click();
+  });
+
+  extManifestInput.addEventListener('change', async () => {
+    if (extManifestInput.files && extManifestInput.files.length > 0) {
+      const file = extManifestInput.files[0];
+      try {
+        const text = await file.text();
+        const manifest = JSON.parse(text);
+        if (manifest.name) {
+          extFormName.value = manifest.name;
+          showToast(`Đã đọc manifest: ${manifest.name} v${manifest.version || '1.0'}`, 'success');
         }
-      };
-      folderInput.click();
+      } catch (err) {
+        console.warn('Cannot parse manifest file:', err);
+      }
+
+      // If full path available (Electron / local)
+      if (file.path) {
+        const dir = file.path.replace(/\\manifest\.json$/i, '').replace(/\/manifest\.json$/i, '');
+        extFormPath.value = dir;
+      }
     }
   });
 }
@@ -5235,7 +5343,7 @@ async function checkAuthState() {
       id: '2a918683-0c2c-4f0a-90ce-99e4df3bb0b1',
       email: 'pduc42620@gmail.com',
       name: 'Phạm Chí Đức',
-      role: 'user',
+      role: 'admin',
       plan: 'Pro 30 Ngày',
       plan_code: 'PRO_MONTHLY',
       max_profiles: 500,
@@ -5623,7 +5731,16 @@ function initAuthControls() {
       return showToast('Vui lòng nhập Mật khẩu', 'warning');
     }
     if (password.length < 6) {
-      return showToast('Mật khẩu phải có tối thiểu 6 ký tự', 'warning');
+      return showToast('⚠️ Mật khẩu phải có tối thiểu 6 ký tự', 'warning');
+    }
+    const WEAK_OR_BREACHED_PASSWORDS = new Set([
+      '123456', '12345678', '123456789', '1234567890',
+      'password', 'password123', 'pass1234', 'qwerty', '111111', '000000',
+      '123123', 'admin123', 'admin1234', '654321', '666666', '888888',
+      'abcdef', 'iloveyou', 'secret', 'admin'
+    ]);
+    if (WEAK_OR_BREACHED_PASSWORDS.has(password.trim().toLowerCase()) || /^(.)\1+$/.test(password)) {
+      return showToast('⚠️ Mật khẩu "' + password + '" quá đơn giản và không an toàn. Vui lòng đặt mật khẩu mạnh hơn (kết hợp chữ và số)!', 'warning');
     }
     if (!confirm) {
       return showToast('Vui lòng nhập lại mật khẩu để xác nhận', 'warning');
@@ -5969,14 +6086,20 @@ function initPolyLoginAuth() {
     };
   }
 
-  // Toggle password eye icon in PolyLogin screen
+  // Toggle password eye icon in PolyLogin screen (Supports both masked class & input type)
   const toggleLoginEye = document.getElementById('poly-toggle-login-eye');
   const inputLoginPass = document.getElementById('poly-login-input-password');
   if (toggleLoginEye && inputLoginPass) {
     toggleLoginEye.onclick = () => {
-      const isPass = inputLoginPass.type === 'password';
-      inputLoginPass.type = isPass ? 'text' : 'password';
-      toggleLoginEye.style.color = isPass ? '#2563eb' : '#94a3b8';
+      const isPlain = inputLoginPass.classList.contains('show-plain') || inputLoginPass.type === 'text';
+      if (inputLoginPass.classList.contains('poly-password-masked')) {
+        inputLoginPass.classList.toggle('show-plain');
+        const nowPlain = inputLoginPass.classList.contains('show-plain');
+        toggleLoginEye.style.color = nowPlain ? '#2563eb' : '#94a3b8';
+      } else {
+        inputLoginPass.type = isPlain ? 'password' : 'text';
+        toggleLoginEye.style.color = !isPlain ? '#2563eb' : '#94a3b8';
+      }
     };
   }
 
@@ -5984,104 +6107,349 @@ function initPolyLoginAuth() {
   const inputRegPass = document.getElementById('poly-reg-input-password');
   if (toggleRegEye && inputRegPass) {
     toggleRegEye.onclick = () => {
-      const isPass = inputRegPass.type === 'password';
-      inputRegPass.type = isPass ? 'text' : 'password';
-      toggleRegEye.style.color = isPass ? '#2563eb' : '#94a3b8';
+      const isPlain = inputRegPass.classList.contains('show-plain') || inputRegPass.type === 'text';
+      if (inputRegPass.classList.contains('poly-password-masked')) {
+        inputRegPass.classList.toggle('show-plain');
+        const nowPlain = inputRegPass.classList.contains('show-plain');
+        toggleRegEye.style.color = nowPlain ? '#2563eb' : '#94a3b8';
+      } else {
+        inputRegPass.type = isPlain ? 'password' : 'text';
+        toggleRegEye.style.color = !isPlain ? '#2563eb' : '#94a3b8';
+      }
     };
   }
+
+  // Common Breached / Weak Password Shield
+  const WEAK_OR_BREACHED_PASSWORDS = new Set([
+    '123456', '12345678', '123456789', '1234567890',
+    'password', 'password123', 'pass1234', 'qwerty', '111111', '000000',
+    '123123', 'admin123', 'admin1234', '654321', '666666', '888888',
+    'abcdef', 'iloveyou', 'secret', 'admin'
+  ]);
 
   // PolyLogin Form Submit - LOGIN
   const formLogin = document.getElementById('poly-form-login');
-  if (formLogin) {
-    formLogin.onsubmit = async (e) => {
-      e.preventDefault();
-      const email = (document.getElementById('poly-login-input-email')?.value || '').trim();
-      const password = document.getElementById('poly-login-input-password')?.value || '';
-      const btnSubmit = document.getElementById('poly-btn-login-action');
+  const btnLoginAction = document.getElementById('poly-btn-login-action');
 
-      if (!email) return showToast('Vui lòng nhập email đăng nhập', 'warning');
-      if (!password) return showToast('Vui lòng nhập mật khẩu', 'warning');
+  const executePolyLogin = async () => {
+    const email = (document.getElementById('poly-login-input-email')?.value || '').trim();
+    const password = document.getElementById('poly-login-input-password')?.value || '';
+    const btnSubmit = document.getElementById('poly-btn-login-action');
 
+    if (!email) return showToast('⚠️ Vui lòng nhập email đăng nhập', 'warning');
+    if (!password) return showToast('⚠️ Vui lòng nhập mật khẩu', 'warning');
+
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<span>Đang đăng nhập...</span>';
+    }
+
+    try {
+      const res = await originalFetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        localStorage.removeItem('cgt_manual_logout');
+        setAuthToken(data.token);
+        showToast(`🎉 Xin chào ${data.user.name || data.user.email}! Đăng nhập thành công.`, 'success');
+        await checkAuthState();
+        await fetchLicense();
+        await fetchProfiles();
+      } else {
+        showToast('⚠️ ' + (data.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email hoặc mật khẩu.'), 'danger');
+      }
+    } catch (err) {
+      showToast('⚠️ Lỗi kết nối máy chủ: ' + err.message, 'danger');
+    } finally {
       if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<span>Đang đăng nhập...</span>';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Đăng nhập</span>';
       }
+    }
+  };
 
-      try {
-        const res = await originalFetch(`${API_BASE}/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
-        });
-        const data = await res.json();
-        if (data.success && data.token) {
-          localStorage.removeItem('cgt_manual_logout');
-          setAuthToken(data.token);
-          showToast(`🎉 Xin chào ${data.user.name || data.user.email}! Đăng nhập thành công.`, 'success');
-          await checkAuthState();
-          await fetchLicense();
-          await fetchProfiles();
-        } else {
-          showToast(data.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email hoặc mật khẩu.', 'danger');
-        }
-      } catch (err) {
-        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
-      } finally {
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<span>Đăng nhập</span>';
-        }
-      }
+  if (btnLoginAction) btnLoginAction.onclick = executePolyLogin;
+  if (formLogin) {
+    formLogin.onsubmit = (e) => {
+      e.preventDefault();
+      executePolyLogin();
     };
   }
+
+  ['poly-login-input-email', 'poly-login-input-password'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          executePolyLogin();
+        }
+      });
+    }
+  });
+
+  // ==========================================================================
+  // REAL-TIME 3-STATE PASSWORD STRENGTH EVALUATOR (RED / YELLOW / GREEN)
+  // ==========================================================================
+  function evaluatePassword(pwd) {
+    if (!pwd || pwd.length === 0) {
+      return { level: 'none', isPass: false, message: '', tag: '', rules: { len: false, alphanumeric: false, special: false } };
+    }
+
+    const hasLen = pwd.length >= 6;
+    const hasLetter = /[a-zA-Z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?~`]/.test(pwd);
+    const isWeak = WEAK_OR_BREACHED_PASSWORDS.has(pwd.trim().toLowerCase()) || /^(.)\1+$/.test(pwd);
+    const hasAlphanumeric = hasLetter && hasNumber;
+
+    const rules = {
+      len: hasLen,
+      alphanumeric: hasAlphanumeric,
+      special: hasSpecial && pwd.length >= 8
+    };
+
+    // Level 3 (GREEN - Rất mạnh): >= 8 ký tự, có cả chữ + số + ký tự đặc biệt, không nằm trong blacklist
+    if (hasLen && pwd.length >= 8 && hasAlphanumeric && hasSpecial && !isWeak) {
+      return {
+        level: 'green',
+        isPass: true,
+        message: 'Mật khẩu rất mạnh (Bảo mật tối đa)',
+        tag: 'Rất mạnh',
+        rules
+      };
+    }
+
+    // Level 2 (YELLOW - Đạt yêu cầu / Hợp lệ - "Vàng là pass rồi"): >= 6 ký tự, có cả chữ và số, không thuộc blacklist
+    if (hasLen && hasAlphanumeric && !isWeak) {
+      return {
+        level: 'yellow',
+        isPass: true,
+        message: 'Mật khẩu đạt yêu cầu (Hợp lệ để tạo tài khoản)',
+        tag: 'Đạt yêu cầu',
+        rules
+      };
+    }
+
+    // Level 1 (RED - Yếu / Không hợp lệ)
+    let msg = 'Mật khẩu yếu: Cần tối thiểu 6 ký tự kết hợp chữ và số';
+    if (isWeak) {
+      msg = 'Mật khẩu quá đơn giản / dễ đoán';
+    } else if (pwd.length < 6) {
+      msg = `Mật khẩu còn ngắn (${pwd.length}/6 ký tự)`;
+    } else if (!hasNumber) {
+      msg = 'Cần bổ sung thêm ít nhất 1 chữ số (0-9)';
+    } else if (!hasLetter) {
+      msg = 'Cần bổ sung thêm chữ cái (a-z)';
+    }
+
+    return {
+      level: 'red',
+      isPass: false,
+      message: msg,
+      tag: 'Chưa đạt',
+      rules
+    };
+  }
+
+  // Real-time DOM Binder for Password & Confirm Fields
+  function initPasswordStrengthListeners() {
+    const inputPass = document.getElementById('poly-reg-input-password');
+    const inputConfirm = document.getElementById('poly-reg-input-confirm');
+    const passContainer = document.getElementById('poly-reg-pass-container');
+    const wrapStrength = document.getElementById('poly-pwd-strength-wrap');
+    const trackBars = document.getElementById('poly-strength-bars-track');
+    const statusText = document.getElementById('poly-pwd-status-text');
+    const statusMsg = document.getElementById('poly-pwd-msg');
+    const levelTag = document.getElementById('poly-pwd-level-tag');
+
+    const ruleLen = document.getElementById('poly-rule-len');
+    const ruleAlphanumeric = document.getElementById('poly-rule-alphanumeric');
+    const ruleSpecial = document.getElementById('poly-rule-special');
+
+    const confirmContainer = document.getElementById('poly-reg-confirm-container');
+    const confirmWrap = document.getElementById('poly-confirm-status-wrap');
+    const confirmText = document.getElementById('poly-confirm-status-text');
+    const confirmIcon = document.getElementById('poly-confirm-status-icon');
+
+    if (!inputPass) return;
+
+    function updatePassUI() {
+      const pwd = inputPass.value || '';
+      if (!pwd) {
+        if (wrapStrength) wrapStrength.style.display = 'none';
+        if (passContainer) passContainer.className = 'poly-input-container';
+        updateConfirmUI();
+        return;
+      }
+
+      if (wrapStrength) wrapStrength.style.display = 'flex';
+      const res = evaluatePassword(pwd);
+
+      // 1. Dynamic border and glow state on input box (Red - Yellow - Green)
+      if (passContainer) {
+        passContainer.className = `poly-input-container state-${res.level}`;
+      }
+
+      // 2. Segment progress bars
+      if (trackBars) {
+        trackBars.className = `poly-strength-bars level-${res.level}`;
+      }
+
+      // 3. Status label and badge tag
+      if (statusText) {
+        statusText.className = `poly-strength-status-text text-${res.level}`;
+      }
+      if (statusMsg) {
+        statusMsg.textContent = res.message;
+      }
+      if (levelTag) {
+        levelTag.className = `poly-strength-level-tag tag-${res.level}`;
+        levelTag.textContent = res.tag;
+      }
+
+      // 4. Checklist criteria pills
+      if (ruleLen) ruleLen.classList.toggle('active', !!res.rules.len);
+      if (ruleAlphanumeric) ruleAlphanumeric.classList.toggle('active', !!res.rules.alphanumeric);
+      if (ruleSpecial) ruleSpecial.classList.toggle('active', !!res.rules.special);
+
+      updateConfirmUI();
+    }
+
+    function updateConfirmUI() {
+      if (!inputConfirm) return;
+      const pwd = inputPass.value || '';
+      const confirm = inputConfirm.value || '';
+
+      if (!confirm) {
+        if (confirmWrap) confirmWrap.style.display = 'none';
+        if (confirmContainer) confirmContainer.className = 'poly-input-container';
+        return;
+      }
+
+      if (confirmWrap) confirmWrap.style.display = 'flex';
+
+      if (confirm === pwd && pwd.length >= 6) {
+        if (confirmContainer) confirmContainer.className = 'poly-input-container state-green';
+        if (confirmWrap) confirmWrap.className = 'poly-confirm-status text-green';
+        if (confirmIcon) confirmIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+        if (confirmText) confirmText.textContent = 'Mật khẩu xác nhận trùng khớp';
+      } else {
+        if (confirmContainer) confirmContainer.className = 'poly-input-container state-red';
+        if (confirmWrap) confirmWrap.className = 'poly-confirm-status text-red';
+        if (confirmIcon) confirmIcon.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`;
+        if (confirmText) confirmText.textContent = 'Mật khẩu xác nhận chưa trùng khớp';
+      }
+    }
+
+    inputPass.addEventListener('input', updatePassUI);
+    inputPass.addEventListener('focus', updatePassUI);
+    if (inputConfirm) {
+      inputConfirm.addEventListener('input', updateConfirmUI);
+      inputConfirm.addEventListener('focus', updateConfirmUI);
+    }
+  }
+
+  // Auto initialize when PolyLogin is mounted
+  initPasswordStrengthListeners();
 
   // PolyLogin Form Submit - REGISTER
   const formReg = document.getElementById('poly-form-register');
-  if (formReg) {
-    formReg.onsubmit = async (e) => {
-      e.preventDefault();
-      const name = (document.getElementById('poly-reg-input-name')?.value || '').trim();
-      const email = (document.getElementById('poly-reg-input-email')?.value || '').trim();
-      const password = document.getElementById('poly-reg-input-password')?.value || '';
-      const confirm = document.getElementById('poly-reg-input-confirm')?.value || '';
-      const btnSubmit = document.getElementById('poly-btn-reg-action');
+  const btnRegAction = document.getElementById('poly-btn-reg-action');
 
-      if (!email) return showToast('Vui lòng nhập email đăng ký', 'warning');
-      if (!password || password.length < 6) return showToast('Mật khẩu tối thiểu 6 ký tự', 'warning');
-      if (password !== confirm) return showToast('Xác nhận mật khẩu không khớp', 'danger');
+  const executePolyRegister = async () => {
+    const name = (document.getElementById('poly-reg-input-name')?.value || '').trim();
+    const email = (document.getElementById('poly-reg-input-email')?.value || '').trim();
+    const password = document.getElementById('poly-reg-input-password')?.value || '';
+    const confirm = document.getElementById('poly-reg-input-confirm')?.value || '';
+    const btnSubmit = document.getElementById('poly-btn-reg-action');
 
+    if (!email || !email.includes('@')) {
+      return showToast('⚠️ Vui lòng nhập email hợp lệ (ví dụ: name@example.com)', 'warning');
+    }
+
+    const evalResult = evaluatePassword(password);
+    // Vàng hoặc Xanh là hợp lệ để tạo tài khoản ("vàng là pass rồi")
+    if (!evalResult.isPass) {
+      const inputPass = document.getElementById('poly-reg-input-password');
+      if (inputPass) {
+        inputPass.focus();
+        const passContainer = document.getElementById('poly-reg-pass-container');
+        if (passContainer) {
+          passContainer.classList.add('shake');
+          setTimeout(() => passContainer.classList.remove('shake'), 400);
+        }
+      }
+      return showToast(`⚠️ ${evalResult.message}. Vui lòng đặt mật khẩu đạt mức màu Vàng trở lên!`, 'warning');
+    }
+
+    if (password !== confirm) {
+      const inputConfirm = document.getElementById('poly-reg-input-confirm');
+      if (inputConfirm) {
+        inputConfirm.focus();
+        const confirmContainer = document.getElementById('poly-reg-confirm-container');
+        if (confirmContainer) {
+          confirmContainer.classList.add('shake');
+          setTimeout(() => confirmContainer.classList.remove('shake'), 400);
+        }
+      }
+      return showToast('⚠️ Xác nhận mật khẩu không trùng khớp. Vui lòng kiểm tra lại!', 'danger');
+    }
+
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<span>Đang tạo tài khoản...</span>';
+    }
+
+    try {
+      const res = await originalFetch(`${API_BASE}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name })
+      });
+      const data = await res.json();
+      if (data.success && data.token) {
+        localStorage.removeItem('cgt_manual_logout');
+        setAuthToken(data.token);
+        showToast(`🎉 Chào mừng ${data.user.name || data.user.email}! Tài khoản đã được tạo thành công.`, 'success');
+        await checkAuthState();
+        await fetchLicense();
+        await fetchProfiles();
+      } else {
+        showToast('⚠️ ' + (data.error || 'Đăng ký thất bại. Vui lòng thử lại!'), 'danger');
+      }
+    } catch (err) {
+      showToast('⚠️ Lỗi kết nối máy chủ: ' + err.message, 'danger');
+    } finally {
       if (btnSubmit) {
-        btnSubmit.disabled = true;
-        btnSubmit.innerHTML = '<span>Đang tạo tài khoản...</span>';
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<span>Tạo Tài Khoản</span>';
       }
+    }
+  };
 
-      try {
-        const res = await originalFetch(`${API_BASE}/auth/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name })
-        });
-        const data = await res.json();
-        if (data.success && data.token) {
-          localStorage.removeItem('cgt_manual_logout');
-          setAuthToken(data.token);
-          showToast(`🎉 Chào mừng ${data.user.name || data.user.email}! Tài khoản đã được tạo thành công.`, 'success');
-          await checkAuthState();
-          await fetchLicense();
-          await fetchProfiles();
-        } else {
-          showToast(data.error || 'Đăng ký thất bại', 'danger');
-        }
-      } catch (err) {
-        showToast('Lỗi kết nối máy chủ: ' + err.message, 'danger');
-      } finally {
-        if (btnSubmit) {
-          btnSubmit.disabled = false;
-          btnSubmit.innerHTML = '<span>Tạo Tài Khoản</span>';
-        }
-      }
+  if (btnRegAction) btnRegAction.onclick = executePolyRegister;
+  if (formReg) {
+    formReg.onsubmit = (e) => {
+      e.preventDefault();
+      executePolyRegister();
     };
   }
+
+  ['poly-reg-input-name', 'poly-reg-input-email', 'poly-reg-input-password', 'poly-reg-input-confirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          executePolyRegister();
+        }
+      });
+    }
+  });
 }
 
 // Initialize PolyLogin Fullscreen Auth

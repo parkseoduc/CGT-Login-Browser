@@ -15,6 +15,12 @@ function getDb() {
     _db.exec('PRAGMA synchronous = FULL;');
     _db.exec('PRAGMA foreign_keys = ON;');
     initSchema();
+    try { _db.exec('ALTER TABLE orders ADD COLUMN remote_order_id TEXT;'); } catch {} 
+    try { _db.exec('ALTER TABLE orders ADD COLUMN remote_order_code TEXT;'); } catch {}
+    try { _db.exec('ALTER TABLE users ADD COLUMN phone TEXT DEFAULT "";'); } catch {} 
+    try { _db.exec('ALTER TABLE users ADD COLUMN google_id TEXT DEFAULT "";'); } catch {} 
+    try { _db.exec('ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT "";'); } catch {} 
+    try { _db.exec('ALTER TABLE users ADD COLUMN auth_provider TEXT DEFAULT "local";'); } catch {} 
     autoRepairKernelPaths();
   }
   return _db;
@@ -78,6 +84,8 @@ function initSchema() {
       plan TEXT DEFAULT 'Free Trial',
       plan_code TEXT DEFAULT 'FREE_TRIAL',
       license_key TEXT DEFAULT '',
+      remote_order_id TEXT DEFAULT '',
+      remote_order_code TEXT DEFAULT '',
       max_profiles INTEGER DEFAULT 50,
       expires_at TEXT,
       status TEXT DEFAULT 'ACTIVE',
@@ -135,6 +143,20 @@ function initSchema() {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS team_members (
+      id TEXT PRIMARY KEY,
+      owner_id TEXT NOT NULL,
+      email TEXT NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'staff',
+      assigned_groups TEXT DEFAULT '[]',
+      permissions TEXT DEFAULT '{}',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+    );
   `);
 
   // Migrate schema
@@ -147,6 +169,13 @@ function initSchema() {
   try { _db.exec("ALTER TABLE proxies ADD COLUMN isp TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE proxies ADD COLUMN rotation_api_url TEXT DEFAULT '';"); } catch {}
   try { _db.exec("ALTER TABLE profiles ADD COLUMN proxy_guard INTEGER DEFAULT 1;"); } catch {}
+  try { _db.exec("ALTER TABLE profiles ADD COLUMN user_id TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE groups ADD COLUMN user_id TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE proxies ADD COLUMN user_id TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE users ADD COLUMN member_id TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE users ADD COLUMN owner_id TEXT DEFAULT '';"); } catch {}
+  try { _db.exec("ALTER TABLE team_members ADD COLUMN assigned_groups TEXT DEFAULT '[]';"); } catch {}
+  try { _db.exec("ALTER TABLE team_members ADD COLUMN permissions TEXT DEFAULT '{}';"); } catch {}
 
   seedDefaultUserIfEmpty();
 }
@@ -189,8 +218,8 @@ function seedDefaultUserIfEmpty() {
 function createUser(user) {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO users (id, email, password_hash, name, role, plan, plan_code, license_key, max_profiles, expires_at, status, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, email, password_hash, name, role, plan, plan_code, license_key, max_profiles, expires_at, status, created_at, updated_at, phone, google_id, avatar_url, auth_provider)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     user.id,
@@ -204,8 +233,12 @@ function createUser(user) {
     user.max_profiles || 50,
     user.expires_at || null,
     user.status || 'ACTIVE',
-    user.created_at,
-    user.updated_at
+    user.created_at || new Date().toISOString(),
+    user.updated_at || new Date().toISOString(),
+    user.phone || "",
+    user.google_id || "",
+    user.avatar_url || "",
+    user.auth_provider || "local"
   );
   return user;
 }
@@ -213,6 +246,13 @@ function createUser(user) {
 function getUserByEmail(email) {
   const db = getDb();
   return db.prepare('SELECT * FROM users WHERE LOWER(email) = LOWER(?)').get(email);
+}
+
+
+function getUserByGoogleId(googleId) {
+  if (!googleId) return null;
+  const db = getDb();
+  return db.prepare('SELECT * FROM users WHERE google_id = ?').get(googleId);
 }
 
 function getUserById(id) {
@@ -277,8 +317,21 @@ function autoRepairKernelPaths() {
 
 // ---------------- Profiles API ---------------- //
 
-function listProfiles() {
+function listProfiles(userId = null) {
   const db = getDb();
+  if (userId) {
+    return db.prepare(`
+      SELECT p.*, g.name AS group_name, g.color AS group_color,
+             pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
+             pr.username AS proxy_user, pr.password AS proxy_pass,
+             pr.rotation_api_url AS proxy_rotation_api_url
+      FROM profiles p
+      LEFT JOIN groups g ON p.group_id = g.id
+      LEFT JOIN proxies pr ON p.proxy_id = pr.id
+      WHERE p.user_id = ?
+      ORDER BY p.created_at DESC
+    `).all(userId);
+  }
   return db.prepare(`
     SELECT p.*, g.name AS group_name, g.color AS group_color,
            pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
@@ -362,12 +415,12 @@ function createProfile(data) {
       id, name, group_id, kernel_path, proxy_id, user_agent,
       canvas_noise, webgl_noise, audio_noise, webrtc_mode,
       cpu_cores, ram_gb, screen_width, screen_height,
-      custom_flags, start_url, notes, fingerprint, extension_ids, auto_rotate_proxy, proxy_guard, created_at, updated_at
+      custom_flags, start_url, notes, fingerprint, extension_ids, auto_rotate_proxy, proxy_guard, user_id, created_at, updated_at
     ) VALUES (
       ?, ?, ?, ?, ?, ?,
       ?, ?, ?, ?,
       ?, ?, ?, ?,
-      ?, ?, ?, ?, ?, ?, ?, ?, ?
+      ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
     )
   `);
 
@@ -393,6 +446,7 @@ function createProfile(data) {
     extensionIds,
     data.auto_rotate_proxy ? 1 : 0,
     data.proxy_guard !== undefined ? (data.proxy_guard ? 1 : 0) : 1,
+    data.user_id || '',
     now,
     now
   );
@@ -570,8 +624,18 @@ function bulkCreateProfiles(options = {}) {
 
 // ---------------- Groups & Proxies ---------------- //
 
-function listGroups() {
+function listGroups(userId = null) {
   const db = getDb();
+  if (userId) {
+    return db.prepare(`
+      SELECT g.*, COUNT(p.id) AS profile_count
+      FROM groups g
+      LEFT JOIN profiles p ON p.group_id = g.id
+      WHERE g.user_id = ? OR g.user_id = '' OR g.user_id IS NULL
+      GROUP BY g.id
+      ORDER BY g.created_at ASC
+    `).all(userId);
+  }
   return db.prepare(`
     SELECT g.*, COUNT(p.id) AS profile_count
     FROM groups g
@@ -585,11 +649,11 @@ function getGroup(id) {
   return getDb().prepare('SELECT * FROM groups WHERE id = ?').get(id);
 }
 
-function createGroup(name, color = '#1890ff', notes = '') {
+function createGroup(name, color = '#1890ff', notes = '', userId = '') {
   const db = getDb();
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
-  db.prepare('INSERT INTO groups (id, name, color, notes, created_at) VALUES (?, ?, ?, ?, ?)').run(id, name, color, notes, now);
+  db.prepare('INSERT INTO groups (id, name, color, notes, user_id, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, name, color, notes, userId || '', now);
   return getGroup(id);
 }
 
@@ -617,8 +681,18 @@ function deleteGroup(id) {
   return db.prepare('DELETE FROM groups WHERE id = ?').run(id);
 }
 
-function listProxies() {
+function listProxies(userId = null) {
   const db = getDb();
+  if (userId) {
+    return db.prepare(`
+      SELECT pr.*, COUNT(p.id) AS profile_count
+      FROM proxies pr
+      LEFT JOIN profiles p ON p.proxy_id = pr.id
+      WHERE pr.user_id = ? OR pr.user_id = '' OR pr.user_id IS NULL
+      GROUP BY pr.id
+      ORDER BY pr.created_at DESC
+    `).all(userId);
+  }
   return db.prepare(`
     SELECT pr.*, COUNT(p.id) AS profile_count
     FROM proxies pr
@@ -840,8 +914,8 @@ function resetUserPassword(id, passwordHash) {
 function createOrder(order) {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO orders (id, user_id, customer_email, customer_name, customer_phone, plan_code, plan_name, amount, duration_days, max_profiles, status, transfer_content, license_key, created_at, updated_at, paid_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO orders (id, user_id, customer_email, customer_name, customer_phone, plan_code, plan_name, amount, duration_days, max_profiles, status, transfer_content, license_key, created_at, updated_at, paid_at, remote_order_id, remote_order_code)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   stmt.run(
     order.id,
@@ -859,7 +933,9 @@ function createOrder(order) {
     order.license_key || '',
     order.created_at,
     order.updated_at,
-    order.paid_at || null
+    order.paid_at || null,
+    order.remote_order_id || null,
+    order.remote_order_code || null
   );
   return order;
 }
@@ -975,7 +1051,124 @@ function deleteAutomationScript(id) {
   return db.prepare('DELETE FROM automation_scripts WHERE id = ? AND is_preset = 0').run(id);
 }
 
+function formatTeamMember(row) {
+  if (!row) return null;
+  let assignedGroups = [];
+  try {
+    assignedGroups = typeof row.assigned_groups === 'string' ? JSON.parse(row.assigned_groups || '[]') : (row.assigned_groups || []);
+  } catch {
+    assignedGroups = [];
+  }
+  let permissions = {};
+  try {
+    permissions = typeof row.permissions === 'string' ? JSON.parse(row.permissions || '{}') : (row.permissions || {});
+  } catch {
+    permissions = {};
+  }
+  return {
+    ...row,
+    assigned_groups: assignedGroups,
+    permissions: permissions
+  };
+}
+
+function createTeamMember(member) {
+  const db = getDb();
+  const id = member.id || crypto.randomUUID();
+  const now = new Date().toISOString();
+  const assignedGroupsJson = JSON.stringify(member.assigned_groups || []);
+  const permissionsJson = JSON.stringify(member.permissions || {
+    safe_launch_only: member.role === 'staff',
+    can_create_profile: member.role !== 'staff',
+    can_edit_profile: true,
+    can_delete_profile: member.role === 'admin',
+    can_view_proxy: member.role !== 'staff',
+    can_export: member.role !== 'staff',
+  });
+
+  const stmt = db.prepare(`
+    INSERT INTO team_members (id, owner_id, email, full_name, role, assigned_groups, permissions, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  stmt.run(
+    id,
+    member.owner_id,
+    (member.email || '').toLowerCase().trim(),
+    (member.full_name || member.name || '').trim(),
+    member.role || 'staff',
+    assignedGroupsJson,
+    permissionsJson,
+    member.status || 'active',
+    now,
+    now
+  );
+
+  return getTeamMemberById(id);
+}
+
+function listTeamMembers(ownerId = null) {
+  const db = getDb();
+  let rows = [];
+  if (ownerId) {
+    rows = db.prepare('SELECT * FROM team_members WHERE owner_id = ? ORDER BY created_at DESC').all(ownerId);
+  } else {
+    rows = db.prepare('SELECT * FROM team_members ORDER BY created_at DESC').all();
+  }
+  return rows.map(formatTeamMember);
+}
+
+function getTeamMemberById(id) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM team_members WHERE id = ?').get(id);
+  return formatTeamMember(row);
+}
+
+function getTeamMemberByEmail(email) {
+  const db = getDb();
+  const row = db.prepare('SELECT * FROM team_members WHERE LOWER(email) = LOWER(?)').get(email);
+  return formatTeamMember(row);
+}
+
+function updateTeamMember(id, data) {
+  const db = getDb();
+  const current = getTeamMemberById(id);
+  if (!current) throw new Error('Không tìm thấy thành viên đội ngũ');
+
+  const fullName = data.full_name !== undefined ? data.full_name : current.full_name;
+  const role = data.role !== undefined ? data.role : current.role;
+  const status = data.status !== undefined ? data.status : current.status;
+  const assignedGroups = data.assigned_groups !== undefined ? JSON.stringify(data.assigned_groups) : JSON.stringify(current.assigned_groups);
+  const permissions = data.permissions !== undefined ? JSON.stringify(data.permissions) : JSON.stringify(current.permissions);
+  const now = new Date().toISOString();
+
+  const stmt = db.prepare(`
+    UPDATE team_members
+    SET full_name = ?, role = ?, status = ?, assigned_groups = ?, permissions = ?, updated_at = ?
+    WHERE id = ?
+  `);
+  stmt.run(fullName, role, status, assignedGroups, permissions, now, id);
+
+  return getTeamMemberById(id);
+}
+
+function deleteTeamMember(id) {
+  const db = getDb();
+  const stmt = db.prepare('DELETE FROM team_members WHERE id = ?');
+  const res = stmt.run(id);
+  try {
+    db.prepare('DELETE FROM users WHERE member_id = ?').run(id);
+  } catch {}
+  return res.changes > 0;
+}
+
 module.exports = {
+  createTeamMember,
+  listTeamMembers,
+  getTeamMemberById,
+  getTeamMemberByEmail,
+  updateTeamMember,
+  deleteTeamMember,
   listAutomationScripts,
   getAutomationScript,
   createAutomationScript,
@@ -1010,6 +1203,7 @@ module.exports = {
   createUser,
   getUserByEmail,
   getUserById,
+  getUserByGoogleId,
   updateUser,
   createSession,
   getSession,

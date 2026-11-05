@@ -42,14 +42,15 @@
   };
 
   const STEP_TYPE_LABELS = {
-    'navigate': '🌐 Mở trang Web (Navigate)',
-    'sleep': '⏱️ Tạm dừng / Chờ đợi (Sleep)',
-    'scroll': '📜 Cuộn trang mượt mà (Scroll)',
-    'click': '🖱️ Nhấp chuột (Click)',
-    'type': '⌨️ Gõ văn bản (Type)',
-    'press_key': '⌨️ Nhấn phím (Key)',
-    'screenshot': '📷 Chụp ảnh màn hình (Screenshot)',
-    'rotate_ip': '🔄 Xoay IP 4G Webhook (Rotate IP)'
+    'log': 'Ghi chú / Thông báo (Log)',
+    'navigate': 'Mở trang Web (Navigate)',
+    'sleep': 'Tạm dừng / Nghỉ ngơi (Sleep)',
+    'scroll': 'Cuộn trang mượt mà (Scroll)',
+    'click': 'Nhấp chuột (Click Selector)',
+    'type': 'Gõ văn bản (Type Text)',
+    'press_key': 'Nhấn phím bàn phím (Press Key)',
+    'screenshot': 'Chụp ảnh màn hình (Screenshot)',
+    'rotate_ip': 'Xoay IP 4G Webhook (Rotate IP)'
   };
 
     // Toast helper
@@ -396,12 +397,13 @@
   function addBuilderStep(type = 'navigate') {
     let newStep = { type };
     if (type === 'navigate') newStep.url = 'https://';
+    else if (type === 'log') newStep.message = 'Ghi chú thực thi bước mới...';
     else if (type === 'sleep') newStep.seconds = 5;
-    else if (type === 'scroll') { newStep.distance = 500; newStep.direction = 'down'; }
+    else if (type === 'scroll') { newStep.distance = 600; newStep.direction = 'down'; }
     else if (type === 'click') newStep.selector = '';
     else if (type === 'type') { newStep.selector = ''; newStep.text = ''; }
-    else if (type === 'press_key') newStep.key = 'Enter';
-    else if (type === 'screenshot') newStep.filename = 'step_capture';
+    else if (type === 'press_key') { newStep.key = 'Enter'; newStep.count = 1; }
+    else if (type === 'screenshot') newStep.name = 'step_capture';
     else if (type === 'rotate_ip') newStep.note = 'Kích hoạt xoay IP qua link 4G Webhook';
 
     automationState.builderSteps.push(newStep);
@@ -426,38 +428,45 @@
 
       if (step.type === 'navigate') {
         inputsHtml = `
-          <div style="flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Địa chỉ URL cần truy cập:</label>
-            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="url" value="${escapeHtml(step.url || '')}" placeholder="https://example.com" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="width: 100%;">
+            <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Địa chỉ URL cần truy cập:</label>
+            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="url" value="${escapeHtml(step.url || '')}" placeholder="https://example.com" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+          </div>
+        `;
+      } else if (step.type === 'log') {
+        inputsHtml = `
+          <div style="width: 100%;">
+            <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Ghi chú thông báo (Log):</label>
+            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="message" value="${escapeHtml(step.message || '')}" placeholder="Ghi chú bước thực thi..." style="font-size: 13px; padding: 8px 12px; width: 100%;">
           </div>
         `;
       } else if (step.type === 'sleep') {
         inputsHtml = `
-          <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Thời gian chờ (giây):</label>
-              <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="seconds" value="${step.seconds || 5}" min="1" max="300" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Thời gian chờ cố định (giây):</label>
+              <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="seconds" value="${step.seconds || 5}" min="1" max="300" style="font-size: 13px; padding: 8px 12px; width: 100%;">
             </div>
-            <div style="flex: 1;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Hoặc Khoảng ngẫu nhiên (Min - Max):</label>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="min" value="${step.min || ''}" placeholder="Min" style="font-size: 12px; padding: 6px;">
-                <span>-</span>
-                <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="max" value="${step.max || ''}" placeholder="Max" style="font-size: 12px; padding: 6px;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Hoặc khoảng ngẫu nhiên (Min - Max):</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="min" value="${step.min || ''}" placeholder="Min (s)" style="font-size: 13px; padding: 8px 10px; width: 50%;">
+                <span style="color: #94a3b8; font-weight: 600;">-</span>
+                <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="max" value="${step.max || ''}" placeholder="Max (s)" style="font-size: 13px; padding: 8px 10px; width: 50%;">
               </div>
             </div>
           </div>
         `;
       } else if (step.type === 'scroll') {
         inputsHtml = `
-          <div style="display: flex; gap: 12px; align-items: center; flex: 1;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Khoảng cách cuộn (px):</label>
-              <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="distance" value="${step.distance || 600}" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Khoảng cách cuộn (px):</label>
+              <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="distance" value="${step.distance || 600}" style="font-size: 13px; padding: 8px 12px; width: 100%;">
             </div>
-            <div style="min-width: 160px; flex: 0.8;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Hướng cuộn:</label>
-              <select class="poly-input step-field" data-idx="${idx}" data-field="direction" style="font-size: 12.5px; padding: 8px 10px; width: 100%;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Hướng cuộn:</label>
+              <select class="poly-input step-field" data-idx="${idx}" data-field="direction" style="font-size: 13px; padding: 8px 12px; width: 100%;">
                 <option value="down" ${step.direction === 'down' ? 'selected' : ''}>Cuộn xuống</option>
                 <option value="up" ${step.direction === 'up' ? 'selected' : ''}>Cuộn lên</option>
               </select>
@@ -466,73 +475,73 @@
         `;
       } else if (step.type === 'click') {
         inputsHtml = `
-          <div style="flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">CSS Selector của nút / phần tử cần nhấp:</label>
-            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="ví dụ: button.btn-login hoặc #submit-btn" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="width: 100%;">
+            <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">CSS Selector phần tử cần nhấp (Click):</label>
+            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="Ví dụ: button.btn-login hoặc #submit-btn" style="font-size: 13px; padding: 8px 12px; width: 100%;">
           </div>
         `;
       } else if (step.type === 'type') {
         inputsHtml = `
-          <div style="display: flex; gap: 10px; flex: 1;">
-            <div style="flex: 1;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">CSS Selector ô nhập:</label>
-              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="input[type='text'] hoặc #prompt-box" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; width: 100%;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">CSS Selector ô nhập:</label>
+              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="input[type='text'] hoặc #prompt-box" style="font-size: 13px; padding: 8px 12px; width: 100%;">
             </div>
-            <div style="flex: 1.5;">
-              <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Nội dung văn bản (Gõ mô phỏng người thật):</label>
-              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="text" value="${escapeHtml(step.text || '')}" placeholder="Nhập văn bản cần điền..." style="font-size: 12.5px; padding: 8px 12px;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Nội dung văn bản (Gõ như người thật):</label>
+              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="text" value="${escapeHtml(step.text || '')}" placeholder="Nhập văn bản cần điền..." style="font-size: 13px; padding: 8px 12px; width: 100%;">
             </div>
           </div>
         `;
       } else if (step.type === 'press_key') {
         inputsHtml = `
-          <div style="width: 220px;">
-            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Phím bấm:</label>
-            <select class="poly-input step-field" data-idx="${idx}" data-field="key" style="font-size: 12.5px; padding: 8px 10px;">
-              <option value="Enter" ${step.key === 'Enter' ? 'selected' : ''}>Enter ↵</option>
-              <option value="Tab" ${step.key === 'Tab' ? 'selected' : ''}>Tab ⇥</option>
-              <option value="Escape" ${step.key === 'Escape' ? 'selected' : ''}>Escape (ESC)</option>
-              <option value="Space" ${step.key === 'Space' ? 'selected' : ''}>Space (Khoảng trắng)</option>
-              <option value="ArrowDown" ${step.key === 'ArrowDown' ? 'selected' : ''}>Mũi tên xuống (Down)</option>
-              <option value="ArrowUp" ${step.key === 'ArrowUp' ? 'selected' : ''}>Mũi tên lên (Up)</option>
-            </select>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%;">
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Phím bấm:</label>
+              <select class="poly-input step-field" data-idx="${idx}" data-field="key" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+                <option value="Enter" ${step.key === 'Enter' ? 'selected' : ''}>Enter (Phím Enter)</option>
+                <option value="Tab" ${step.key === 'Tab' ? 'selected' : ''}>Tab (Chuyển ô)</option>
+                <option value="Escape" ${step.key === 'Escape' ? 'selected' : ''}>Escape (ESC)</option>
+                <option value="Space" ${step.key === 'Space' ? 'selected' : ''}>Space (Khoảng trắng)</option>
+                <option value="ArrowDown" ${step.key === 'ArrowDown' ? 'selected' : ''}>Mũi tên xuống (Down)</option>
+                <option value="ArrowUp" ${step.key === 'ArrowUp' ? 'selected' : ''}>Mũi tên lên (Up)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Số lần lặp lại:</label>
+              <input type="number" class="poly-input step-field" data-idx="${idx}" data-field="count" value="${step.count || 1}" min="1" max="50" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+            </div>
           </div>
         `;
       } else if (step.type === 'screenshot') {
         inputsHtml = `
-          <div style="flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Tên file ảnh chụp lưu lại:</label>
-            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="filename" value="${escapeHtml(step.filename || 'screen')}" placeholder="vd: muse_ai_login_success" style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="width: 100%;">
+            <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Tên file ảnh chụp lưu lại:</label>
+            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="name" value="${escapeHtml(step.name || step.filename || 'screen')}" placeholder="Ví dụ: iphey_audit_result" style="font-size: 13px; padding: 8px 12px; width: 100%;">
           </div>
         `;
       } else if (step.type === 'rotate_ip') {
         inputsHtml = `
-          <div style="flex: 1; font-size: 12px; color: #0284c7; background: #e0f2fe; padding: 8px 12px; border-radius: 8px;">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block; vertical-align:middle; margin-right:4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> Kích hoạt xoay IP 4G Webhook đã cấu hình trong Hồ sơ/Proxy trước khi thực hiện bước tiếp theo.
-          </div>
-        `;
-      } else if (step.type === 'log') {
-        inputsHtml = `
-          <div style="flex: 1;">
-            <label style="font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 3px; display: block;">Ghi chú thông báo (Log):</label>
-            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="message" value="${escapeHtml(step.message || '')}" placeholder="Ghi chú bước..." style="font-size: 12.5px; padding: 8px 12px;">
+          <div style="width: 100%; font-size: 12.5px; color: #0284c7; background: #f0f9ff; border: 1px solid #bae6fd; padding: 10px 14px; border-radius: 8px; display: flex; align-items: center; gap: 8px;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>Kích hoạt link Webhook xoay IP 4G đã cấu hình trong Proxy/Hồ sơ trước khi chạy bước tiếp theo.</span>
           </div>
         `;
       }
 
       return `
         <div class="automation-step-item" data-step-index="${idx}">
-          <div class="automation-step-header">
-            <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="automation-step-header" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid #f1f5f9;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
               <span class="automation-step-badge">${idx + 1}</span>
-              <select class="poly-input step-type-select" data-idx="${idx}" style="font-size: 12.5px; font-weight: 600; padding: 5px 10px; width: 280px; min-width: 270px;">
+              <select class="poly-input step-type-select" data-idx="${idx}" style="font-size: 13px; font-weight: 600; padding: 6px 12px; flex: 1; max-width: 360px;">
                 ${Object.entries(STEP_TYPE_LABELS).map(([k, lbl]) => `
                   <option value="${k}" ${step.type === k ? 'selected' : ''}>${lbl}</option>
                 `).join('')}
               </select>
             </div>
             
-            <div style="display: flex; gap: 6px;">
+            <div style="display: flex; gap: 6px; align-items: center;">
               <button type="button" class="uiv-icon-btn btn-step-move-up" data-idx="${idx}" title="Di chuyển lên" ${idx === 0 ? 'disabled' : ''}>
                 ${SVG_ICONS.arrowUp}
               </button>
@@ -545,34 +554,48 @@
             </div>
           </div>
 
-          <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="automation-step-body" style="width: 100%;">
             ${inputsHtml}
           </div>
         </div>
       `;
     }).join('');
 
-    // Attach step input listeners
+    // Attach step type change listener
     list.querySelectorAll('.step-type-select').forEach(sel => {
       sel.addEventListener('change', (e) => {
         const idx = parseInt(sel.dataset.idx, 10);
         const newType = sel.value;
-        automationState.builderSteps[idx] = { type: newType };
-        if (newType === 'navigate') automationState.builderSteps[idx].url = 'https://';
-        else if (newType === 'sleep') automationState.builderSteps[idx].seconds = 5;
-        else if (newType === 'scroll') { automationState.builderSteps[idx].distance = 600; automationState.builderSteps[idx].direction = 'down'; }
+        const current = automationState.builderSteps[idx] || {};
+        const newStep = { type: newType };
+        if (newType === 'navigate') newStep.url = current.url || 'https://';
+        else if (newType === 'log') newStep.message = current.message || 'Ghi chú bước thực thi...';
+        else if (newType === 'sleep') newStep.seconds = current.seconds || 5;
+        else if (newType === 'scroll') { newStep.distance = current.distance || 600; newStep.direction = current.direction || 'down'; }
+        else if (newType === 'click') newStep.selector = current.selector || '';
+        else if (newType === 'type') { newStep.selector = current.selector || ''; newStep.text = current.text || ''; }
+        else if (newType === 'press_key') { newStep.key = current.key || 'Enter'; newStep.count = current.count || 1; }
+        else if (newType === 'screenshot') newStep.name = current.name || current.filename || 'step_capture';
+        else if (newType === 'rotate_ip') newStep.note = current.note || 'Kích hoạt xoay IP';
+
+        automationState.builderSteps[idx] = newStep;
         renderBuilderSteps();
       });
     });
 
+    // Attach step field input/change listeners
     list.querySelectorAll('.step-field').forEach(input => {
-      input.addEventListener('input', () => {
+      const onFieldChange = () => {
         const idx = parseInt(input.dataset.idx, 10);
         const field = input.dataset.field;
         let val = input.value;
         if (input.type === 'number') val = val === '' ? '' : Number(val);
-        automationState.builderSteps[idx][field] = val;
-      });
+        if (automationState.builderSteps[idx]) {
+          automationState.builderSteps[idx][field] = val;
+        }
+      };
+      input.addEventListener('input', onFieldChange);
+      input.addEventListener('change', onFieldChange);
     });
 
     list.querySelectorAll('.btn-step-move-up').forEach(btn => {
@@ -608,7 +631,7 @@
     });
   }
 
-  async function saveBuilderScript() {
+    async function saveBuilderScript() {
     const nameInput = document.getElementById('builder-script-name');
     const descInput = document.getElementById('builder-script-desc');
     const catSelect = document.getElementById('builder-script-category');

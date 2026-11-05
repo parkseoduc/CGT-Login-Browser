@@ -181,10 +181,66 @@ function createServer() {
       }
 
       if ((pathname === '/api/v1/system/browse-folder' || pathname === '/api/v1/extensions/browse-folder') && (method === 'GET' || method === 'POST')) {
-        const { exec } = require('node:child_process');
+        const { execFile } = require('node:child_process');
         if (process.platform === 'win32') {
-          const psCmd = 'powershell.exe -NoProfile -STA -Command "Add-Type -AssemblyName System.Windows.Forms; $f = New-Object System.Windows.Forms.FolderBrowserDialog; $f.Description = \'Chon thu muc Tien ich Extension da giai nen\'; $f.ShowNewFolderButton = $false; if ($f.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { [Console]::WriteLine($f.SelectedPath) }"';
-          exec(psCmd, { timeout: 60000 }, (err, stdout) => {
+          const spawnDesktopExe = path.join(config.BASE_DIR, 'bin', 'spawn-desktop.exe');
+          const pickerExe = path.join(config.BASE_DIR, 'bin', 'pick-folder.exe');
+          const tmpDir = path.join(config.BASE_DIR, 'tmp');
+          if (!fs.existsSync(tmpDir)) {
+            try { fs.mkdirSync(tmpDir, { recursive: true }); } catch {}
+          }
+          const outFile = path.join(tmpDir, `picked_folder_${Date.now()}_${Math.random().toString(36).slice(2, 7)}.txt`);
+
+          if (fs.existsSync(spawnDesktopExe) && fs.existsSync(pickerExe)) {
+            // Launch via spawn-desktop.exe with --wait to guarantee execution on WinSta0\Default interactive desktop
+            execFile(spawnDesktopExe, ['--wait', pickerExe, outFile], { timeout: 120000, windowsHide: false }, (err) => {
+              let selected = '';
+              if (fs.existsSync(outFile)) {
+                try {
+                  selected = fs.readFileSync(outFile, 'utf8').trim();
+                  fs.unlinkSync(outFile);
+                } catch {}
+              }
+              return sendJson(res, 200, { success: !!selected, path: selected });
+            });
+            return;
+          }
+
+          if (fs.existsSync(pickerExe)) {
+            execFile(pickerExe, [outFile], { timeout: 120000, windowsHide: false, encoding: 'utf8' }, (err, stdout) => {
+              let selected = stdout ? stdout.trim() : '';
+              if (!selected && fs.existsSync(outFile)) {
+                try {
+                  selected = fs.readFileSync(outFile, 'utf8').trim();
+                  fs.unlinkSync(outFile);
+                } catch {}
+              }
+              return sendJson(res, 200, { success: !!selected, path: selected });
+            });
+            return;
+          }
+
+          // Fallback via PowerShell EncodedCommand (avoids quoting & escaping issues completely)
+          const psScript = `
+            [System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms") | Out-Null
+            $form = New-Object System.Windows.Forms.Form
+            $form.TopMost = $true
+            $form.ShowInTaskbar = $false
+            $form.WindowState = [System.Windows.Forms.FormWindowState]::Minimized
+            $form.Show()
+            $form.Activate()
+            $f = New-Object System.Windows.Forms.FolderBrowserDialog
+            $f.Description = "Chọn thư mục Extension đã giải nén (chứa manifest.json)"
+            $f.ShowNewFolderButton = $true
+            $res = $f.ShowDialog($form)
+            $form.Close()
+            if ($res -eq [System.Windows.Forms.DialogResult]::OK -and $f.SelectedPath) {
+              [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+              [Console]::WriteLine($f.SelectedPath)
+            }
+          `;
+          const encoded = Buffer.from(psScript, 'utf16le').toString('base64');
+          execFile('powershell.exe', ['-NoProfile', '-STA', '-WindowStyle', 'Hidden', '-EncodedCommand', encoded], { timeout: 120000, encoding: 'utf8' }, (err, stdout) => {
             const selected = stdout ? stdout.trim() : '';
             return sendJson(res, 200, { success: !!selected, path: selected });
           });
@@ -231,6 +287,7 @@ function createServer() {
           });
         }
         try {
+          if (user) body.user_id = user.id;
           const createdList = db.bulkCreateProfiles(body);
           return sendJson(res, 201, { success: true, count: createdList.length, profiles: createdList });
         } catch (err) {
@@ -262,12 +319,275 @@ function createServer() {
         }
       }
 
+      // -------------------------------------------------------------
+      // Team Members & Workspace Permissions API (Lượt 3 - Strict RBAC & Plan Tiers)
+      // -------------------------------------------------------------
+      const teamMatch = pathname.match(/^\/api\/v1\/team\/members(?:\/([a-zA-Z0-9_-]+))?$/);
+      if (teamMatch) {
+        const memberId = teamMatch[1];
+        const user = await auth.getUserFromRequest(req);
+        
+        // Resolve Effective Caller Role (Admin / Leader / Staff)
+        let callerRole = auth.resolveUserRole ? auth.resolveUserRole(user) : (user?.role || 'admin');
+        const previewRoleHeader = req.headers['x-team-preview-role'];
+        if (callerRole === 'admin' && previewRoleHeader && ['admin', 'leader', 'staff'].includes(previewRoleHeader)) {
+          callerRole = previewRoleHeader;
+        }
+
+        // Plan Tier Verification (Free vs Plus vs Pro)
+        const previewPlanHeader = req.headers['x-team-preview-plan'];
+        let effectivePlanCode = user?.plan_code || 'PRO_MONTHLY';
+        let effectivePlanName = user?.plan || 'Gói Pro';
+
+        if (previewPlanHeader && ['free', 'plus', 'pro'].includes(previewPlanHeader)) {
+          if (previewPlanHeader === 'free') {
+            effectivePlanCode = 'FREE_TRIAL';
+            effectivePlanName = 'Gói Free (Miễn Phí)';
+          } else if (previewPlanHeader === 'plus') {
+            effectivePlanCode = 'PLUS';
+            effectivePlanName = 'Gói Plus (Tối đa 5 thành viên)';
+          } else {
+            effectivePlanCode = 'PRO_MONTHLY';
+            effectivePlanName = 'Gói Pro (Doanh nghiệp)';
+          }
+        }
+
+        const effectiveUser = {
+          ...user,
+          plan_code: effectivePlanCode,
+          plan: effectivePlanName
+        };
+
+        // Gating Check: Free accounts CANNOT use the Team feature
+        const isTeamAllowed = auth.isTeamFeatureAllowed ? auth.isTeamFeatureAllowed(effectiveUser) : true;
+        if (!isTeamAllowed) {
+          return sendJson(res, 403, {
+            success: false,
+            featureLocked: true,
+            currentPlan: effectivePlanName,
+            requiredPlans: ['PLUS', 'PRO'],
+            error: '🔒 Tính năng Quản lý Đội ngũ chỉ dành cho Gói Plus và Pro. Vui lòng nâng cấp tài khoản để sử dụng.'
+          });
+        }
+
+        // List team members
+        if (method === 'GET' && !memberId) {
+          const ownerId = (user && user.id) || null;
+          let members = db.listTeamMembers(ownerId);
+          // Seed sample demo members if completely empty
+          if (members.length === 0) {
+            try {
+              const defaultOwner = db.getDb().prepare("SELECT id FROM users ORDER BY created_at ASC LIMIT 1").get();
+              const defaultOwnerId = (user && user.id) || (defaultOwner && defaultOwner.id);
+              if (!db.getUserByEmail('leader-muse@cgtdev.space')) {
+                await auth.createTeamMemberAccount({
+                  ownerId: defaultOwnerId,
+                  email: 'leader-muse@cgtdev.space',
+                  password: 'OmniTeam@2026!',
+                  fullName: 'Nguyễn Văn Tuấn (Leader)',
+                  role: 'leader',
+                  assignedGroups: [],
+                  permissions: { safe_launch_only: false, can_create_profile: true, can_edit_profile: true, can_delete_profile: false }
+                });
+              }
+              if (!db.getUserByEmail('staff-safe@cgtdev.space')) {
+                await auth.createTeamMemberAccount({
+                  ownerId: defaultOwnerId,
+                  email: 'staff-safe@cgtdev.space',
+                  password: 'OmniTeam@2026!',
+                  fullName: 'Lê Thị Mai (Staff Safe Launch)',
+                  role: 'staff',
+                  assignedGroups: [],
+                  permissions: { safe_launch_only: true, can_create_profile: false, can_edit_profile: false, can_delete_profile: false }
+                });
+              }
+              members = db.listTeamMembers(ownerId);
+            } catch {}
+          }
+          return sendJson(res, 200, {
+            success: true,
+            callerRole,
+            count: members.length,
+            members
+          });
+        }
+
+        // Create team member (Strict RBAC)
+        if (method === 'POST' && !memberId) {
+          try {
+            if (callerRole === 'staff') {
+              return sendJson(res, 403, {
+                success: false,
+                error: '🛡️ Quyền bị từ chối: Chế độ Nhân viên (Staff Safe Launch) chỉ có quyền xem, không thể tạo hoặc mời thành viên mới.'
+              });
+            }
+
+            const body = await parseJsonBody(req);
+            const targetRole = body.role || 'staff';
+
+            if (callerRole === 'leader' && targetRole !== 'staff') {
+              return sendJson(res, 403, {
+                success: false,
+                error: '🛡️ Quyền bị từ chối: Trưởng nhóm (Leader) chỉ có quyền tạo Nhân viên (Staff), không thể tạo thêm Trưởng nhóm hoặc Quản trị viên.'
+              });
+            }
+
+            const defaultOwner = db.getDb().prepare("SELECT id FROM users ORDER BY created_at ASC LIMIT 1").get();
+            const ownerId = (user && user.id) || (defaultOwner && defaultOwner.id);
+
+            // Seat Limit Check based on Plan (Plus: max 5, Pro: max 50)
+            const memberLimit = auth.getTeamMemberLimit ? auth.getTeamMemberLimit(effectiveUser) : 50;
+            const currentMembers = db.listTeamMembers(ownerId);
+            if (currentMembers.length >= memberLimit) {
+              return sendJson(res, 400, {
+                success: false,
+                limitReached: true,
+                limit: memberLimit,
+                error: `⚠️ Bạn đã đạt giới hạn tối đa ${memberLimit} thành viên của ${effectivePlanName}. Vui lòng nâng cấp lên Gói Pro để mở rộng thêm thành viên đội ngũ.`
+              });
+            }
+            const created = await auth.createTeamMemberAccount({
+              ownerId,
+              email: body.email,
+              password: body.password || 'OmniTeam@2026!',
+              fullName: body.full_name || body.name,
+              role: targetRole,
+              assignedGroups: body.assigned_groups || [],
+              permissions: body.permissions || {}
+            });
+            return sendJson(res, 201, { success: true, member: created });
+          } catch (err) {
+            return sendJson(res, 400, { success: false, error: err.message });
+          }
+        }
+
+        // Get single member
+        if (method === 'GET' && memberId) {
+          const m = db.getTeamMemberById(memberId);
+          if (!m) return sendJson(res, 404, { success: false, error: 'Không tìm thấy thành viên' });
+          return sendJson(res, 200, { success: true, member: m });
+        }
+
+        // Update team member / Lock / Unlock (Strict RBAC)
+        if ((method === 'PUT' || method === 'POST') && memberId) {
+          try {
+            const target = db.getTeamMemberById(memberId);
+            if (!target) return sendJson(res, 404, { success: false, error: 'Không tìm thấy thành viên cần sửa' });
+
+            // 1. Staff is strictly read-only
+            if (callerRole === 'staff') {
+              return sendJson(res, 403, {
+                success: false,
+                error: '🛡️ Quyền bị từ chối: Bạn đang ở quyền Nhân viên (Staff). Không thể chỉnh sửa cấu hình hoặc khóa tài khoản của người khác.'
+              });
+            }
+
+            // 2. Leader can only modify Staff accounts
+            if (callerRole === 'leader') {
+              if (target.role === 'admin' || target.role === 'leader') {
+                return sendJson(res, 403, {
+                  success: false,
+                  error: '🛡️ Quyền bị từ chối: Trưởng nhóm (Leader) không có quyền can thiệp, chỉnh sửa hoặc khóa tài khoản của Trưởng nhóm hoặc Quản trị viên.'
+                });
+              }
+            }
+
+            const body = await parseJsonBody(req);
+
+            // Leader cannot promote staff to leader or admin
+            if (callerRole === 'leader' && body.role && body.role !== 'staff') {
+              return sendJson(res, 403, {
+                success: false,
+                error: '🛡️ Quyền bị từ chối: Trưởng nhóm (Leader) không thể thăng cấp tài khoản lên Trưởng nhóm hoặc Quản trị viên.'
+              });
+            }
+
+            // Self protection for Admin
+            if (user && (target.email === user.email || target.id === user.member_id) && body.status === 'suspended') {
+              return sendJson(res, 400, {
+                success: false,
+                error: 'Bạn không thể tự khóa tài khoản của chính mình.'
+              });
+            }
+
+            const updated = db.updateTeamMember(memberId, body);
+            if (body.password && body.password.length >= 6) {
+              const u = db.getUserByEmail(updated.email);
+              if (u) {
+                const passwordHash = auth.hashPassword(body.password);
+                db.getDb().prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, u.id);
+              }
+            }
+            return sendJson(res, 200, { success: true, member: updated });
+          } catch (err) {
+            return sendJson(res, 400, { success: false, error: err.message });
+          }
+        }
+
+        // Delete team member (Strict RBAC)
+        if (method === 'DELETE' && memberId) {
+          try {
+            const target = db.getTeamMemberById(memberId);
+            if (!target) return sendJson(res, 404, { success: false, error: 'Không tìm thấy thành viên cần xóa' });
+
+            // 1. Staff cannot delete anyone
+            if (callerRole === 'staff') {
+              return sendJson(res, 403, {
+                success: false,
+                error: '🛡️ Quyền bị từ chối: Bạn đang ở quyền Nhân viên (Staff). Không có quyền xóa thành viên khỏi Đội Ngũ.'
+              });
+            }
+
+            // 2. Leader can only delete Staff
+            if (callerRole === 'leader') {
+              if (target.role === 'admin' || target.role === 'leader') {
+                return sendJson(res, 403, {
+                  success: false,
+                  error: '🛡️ Quyền bị từ chối: Trưởng nhóm (Leader) không có quyền xóa tài khoản của Trưởng nhóm hoặc Quản trị viên.'
+                });
+              }
+            }
+
+            // Self protection
+            if (user && (target.email === user.email || target.id === user.member_id)) {
+              return sendJson(res, 400, {
+                success: false,
+                error: 'Bạn không thể tự xóa tài khoản của chính mình.'
+              });
+            }
+
+            const ok = db.deleteTeamMember(memberId);
+            return sendJson(res, 200, { success: ok });
+          } catch (err) {
+            return sendJson(res, 500, { success: false, error: err.message });
+          }
+        }
+      }
+
       // 2. Profiles CRUD
       if (method === 'GET' && pathname === '/api/v1/profiles') {
-        const list = db.listProfiles().map(p => ({
+        const user = await auth.getUserFromRequest(req);
+        const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+        let list = db.listProfiles(effectiveUserId).map(p => ({
           ...p,
           isRunning: launcher.isProfileRunning(p.id),
         }));
+
+        // Workspace Group Assignment filter for Staff / Leader
+        if (user && (user.role === 'staff' || user.role === 'leader') && Array.isArray(user.assigned_groups) && user.assigned_groups.length > 0) {
+          list = list.filter(p => user.assigned_groups.includes(p.group_id));
+        }
+
+        // Staff Safe Launch Mode: Mask sensitive Proxy passwords & ISP credentials
+        if (user && (user.safe_launch_mode || user.role === 'staff')) {
+          list = list.map(p => {
+            const safe = { ...p };
+            if (safe.proxy_password) safe.proxy_password = '••••••••';
+            if (safe.proxy_raw) safe.proxy_raw = safe.proxy_raw.replace(/:[^:@]+@/, ':••••••••@');
+            return safe;
+          });
+        }
+
         return sendJson(res, 200, { success: true, count: list.length, profiles: list });
       }
 
@@ -285,6 +605,7 @@ function createServer() {
           });
         }
         const body = await parseJsonBody(req);
+        if (user) body.user_id = user.id;
         const created = db.createProfile(body);
         return sendJson(res, 201, { success: true, profile: created });
       }
@@ -329,6 +650,100 @@ function createServer() {
         }
       }
 
+      if (method === 'GET' && pathname === '/api/v1/auth/google/callback') {
+        const callbackHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Google Authentication</title>
+</head>
+<body style="font-family:sans-serif; text-align:center; padding:40px; background:#f8fafc;">
+  <h3>Đang kết nối tài khoản Google...</h3>
+  <script>
+    (async function() {
+      try {
+        const hash = window.location.hash.substring(1);
+        const params = new URLSearchParams(hash || window.location.search);
+        const accessToken = params.get('access_token');
+        const code = params.get('code');
+        const error = params.get('error');
+
+        if (error) {
+          if (window.opener) {
+            window.opener.postMessage({ type: 'GOOGLE_AUTH_ERROR', error }, '*');
+          }
+          window.close();
+          return;
+        }
+
+        if (accessToken) {
+          // Lấy thông tin user trực tiếp từ Google UserInfo API
+          const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: 'Bearer ' + accessToken }
+          });
+          const profile = await uRes.json();
+          if (window.opener) {
+            window.opener.postMessage({
+              type: 'GOOGLE_AUTH_SUCCESS',
+              accessToken,
+              googleProfile: profile,
+              email: profile.email,
+              name: profile.name,
+              avatar: profile.picture
+            }, '*');
+          }
+          window.close();
+          return;
+        }
+
+        if (window.opener) {
+          window.opener.postMessage({ type: 'GOOGLE_AUTH_CODE', code }, '*');
+        }
+        window.close();
+      } catch (err) {
+        if (window.opener) {
+          window.opener.postMessage({ type: 'GOOGLE_AUTH_ERROR', error: err.message }, '*');
+        }
+        window.close();
+      }
+    })();
+  </script>
+</body>
+</html>`;
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(callbackHtml);
+        return;
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/google') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = await auth.googleAuth(body);
+          return sendJson(res, 200, { success: true, ...result });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'GET' && pathname === '/api/v1/auth/google-config') {
+        try {
+          const config = auth.getGoogleConfig();
+          return sendJson(res, 200, { success: true, config });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/auth/google-config') {
+        const body = await parseJsonBody(req);
+        try {
+          const config = auth.saveGoogleConfig(body);
+          return sendJson(res, 200, { success: true, config, message: 'Đã lưu cấu hình Google Client ID' });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
       if (method === 'GET' && pathname === '/api/v1/auth/me') {
         try {
           const user = await auth.getUserFromRequest(req);
@@ -361,11 +776,33 @@ function createServer() {
       }
 
       // ----------------- CHECKOUT & PRICING API ----------------- //
-      if (method === 'GET' && pathname === '/api/v1/checkout/plans') {
+      if (method === 'GET' && (pathname === '/api/v1/checkout/plans' || pathname === '/api/v1/license/packages')) {
+        const forceRefresh = reqUrl.searchParams.get('refresh') === '1' || reqUrl.searchParams.get('force') === '1';
+        const [plans, bankInfo] = await Promise.all([
+          checkout.getPlans(forceRefresh),
+          checkout.getBankConfig(forceRefresh)
+        ]);
         return sendJson(res, 200, {
           success: true,
-          plans: checkout.getPlans(),
-          bankInfo: checkout.getBankConfig()
+          server_url: licenseAdmin.DEFAULT_ADMIN.serverUrl,
+          synced_at: new Date().toISOString(),
+          plans,
+          bankInfo
+        });
+      }
+
+      if ((method === 'POST' || method === 'GET') && pathname === '/api/v1/license/sync') {
+        const [plans, bankInfo] = await Promise.all([
+          checkout.getPlans(true),
+          checkout.getBankConfig(true)
+        ]);
+        return sendJson(res, 200, {
+          success: true,
+          server_url: licenseAdmin.DEFAULT_ADMIN.serverUrl,
+          synced_at: new Date().toISOString(),
+          plans,
+          bankInfo,
+          message: 'Đồng bộ danh mục gói thành công từ máy chủ lic.cgtdev.space'
         });
       }
 
@@ -398,6 +835,32 @@ function createServer() {
         } catch (err) {
           return sendJson(res, 400, { success: false, error: err.message });
         }
+      }
+
+      // Webhook tự động duyệt thanh toán (SePay, Casso, MB Bank Bot, IPN)
+      if (method === 'POST' && (pathname === '/api/v1/checkout/webhook' || pathname === '/api/v1/payment/webhook')) {
+        try {
+          const body = await parseJsonBody(req);
+          const result = await checkout.processPaymentWebhook(body);
+          return sendJson(res, result.success ? 200 : 400, result);
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // Kiểm tra trạng thái đơn hàng thời gian thực (Polling khi đang mở VietQR & tự động đồng bộ từ lic.cgtdev.space)
+      if (method === 'GET' && pathname === '/api/v1/checkout/order-status') {
+        const orderId = reqUrl.searchParams.get('orderId');
+        const order = await checkout.getOrderStatus(orderId);
+        if (!order) return sendJson(res, 404, { success: false, error: 'Đơn hàng không tồn tại' });
+        return sendJson(res, 200, {
+          success: true,
+          status: order.status,
+          is_paid: order.status === 'PAID',
+          license_key: order.license_key || '',
+          plan_name: order.plan_name,
+          paid_at: order.paid_at
+        });
       }
 
       // ----------------- ADMIN USERS & SYSTEM MANAGEMENT API ----------------- //
@@ -929,6 +1392,14 @@ function createServer() {
 
         // Export Profile to ZIP
         if (method === 'GET' && action === 'export-zip') {
+          const user = await auth.getUserFromRequest(req);
+          if (user && (user.safe_launch_mode || user.role === 'staff')) {
+            return sendJson(res, 403, {
+              success: false,
+              safeLaunchBlocked: true,
+              error: '🛡️ Chế độ Staff Safe Launch: Bạn không có quyền xuất dữ liệu hồ sơ (Export ZIP) nhằm bảo vệ an toàn tài nguyên MMO của chủ sở hữu.'
+            });
+          }
           try {
             const { zipFilePath, zipFileName } = await profileBackup.exportProfileToZip(profileId);
             res.writeHead(200, {
@@ -970,6 +1441,14 @@ function createServer() {
 
         // Cookies Export
         if (method === 'GET' && action === 'cookies') {
+          const user = await auth.getUserFromRequest(req);
+          if (user && (user.safe_launch_mode || user.role === 'staff')) {
+            return sendJson(res, 403, {
+              success: false,
+              safeLaunchBlocked: true,
+              error: '🛡️ Chế độ Staff Safe Launch: Bạn không có quyền xem hoặc xuất Cookie thô nhằm bảo mật tài nguyên MMO.'
+            });
+          }
           try {
             const result = await cookiesModule.exportCookies(profileId);
             return sendJson(res, 200, result);
@@ -1212,7 +1691,18 @@ function createServer() {
 
         // List proxies
         if (method === 'GET' && !proxyId) {
-          return sendJson(res, 200, { success: true, proxies: db.listProxies() });
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          let list = db.listProxies(effectiveUserId);
+          if (user && (user.safe_launch_mode || user.role === 'staff')) {
+            list = list.map(p => ({
+              ...p,
+              password: '••••••••',
+              username: p.username ? (p.username.slice(0, 2) + '***') : '',
+              rotation_api_url: p.rotation_api_url ? '••••••••' : '',
+            }));
+          }
+          return sendJson(res, 200, { success: true, proxies: list });
         }
 
         // Create or Batch Import proxies

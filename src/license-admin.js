@@ -145,8 +145,15 @@ async function issueKey({ planCode = 'VIP_LIFETIME', durationDays = 3650, notes 
   const product = session.catalog.products?.find(p => p.code === 'ANTIDETECT');
   if (!product) throw new Error('Product ANTIDETECT not found on license server');
 
-  const plan = session.catalog.plans?.find(p => p.product_id === product.id && p.code === planCode) || session.catalog.plans?.[0];
-  if (!plan) throw new Error(`Plan ${planCode} not found`);
+  const antidetectPlans = (session.catalog.plans || []).filter(p => p.product_id === product.id);
+  const plan = antidetectPlans.find(p => 
+    p.code === planCode || 
+    (planCode === 'VIP_LIFETIME' && (p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.duration_days && p.duration_days >= 365))) ||
+    (planCode === 'PRO' && (p.code === 'PRO' || (p.duration_days && p.duration_days >= 365))) ||
+    ((planCode === 'PRO_MONTHLY' || planCode === 'PLUS') && (p.code === 'PRO_MONTHLY' || (p.duration_days && p.duration_days <= 31)))
+  ) || antidetectPlans[0];
+
+  if (!plan) throw new Error(`Plan ${planCode} not found for ANTIDETECT`);
 
   let customerId = customer?.id || null;
   if (!customerId && customer?.email) {
@@ -154,7 +161,6 @@ async function issueKey({ planCode = 'VIP_LIFETIME', durationDays = 3650, notes 
     if (remoteCust) customerId = remoteCust.id;
   }
 
-  // Nếu vẫn chưa có customer, lấy customer đầu tiên làm fallback
   if (!customerId) {
     try {
       const licAdminRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/licensing`, { headers: { 'Cookie': session.cookie } });
@@ -165,6 +171,8 @@ async function issueKey({ planCode = 'VIP_LIFETIME', durationDays = 3650, notes 
     } catch {}
   }
 
+  const effectiveDuration = durationDays || plan.duration_days || 30;
+
   const issueRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/licenses`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Cookie': session.cookie, 'x-cgt-csrf': session.csrf },
@@ -174,8 +182,8 @@ async function issueKey({ planCode = 'VIP_LIFETIME', durationDays = 3650, notes 
       plan_id: plan.id,
       customer_id: customerId,
       kind: 'days',
-      duration_days: durationDays || (planCode === 'VIP_LIFETIME' ? 3650 : 30),
-      notes: notes || `Created by OmniBrowser Admin (${plan.name})`
+      duration_days: effectiveDuration,
+      notes: notes || `Created by OmniBrowser (${plan.name})`
     })
   });
 
@@ -188,8 +196,8 @@ async function issueKey({ planCode = 'VIP_LIFETIME', durationDays = 3650, notes 
   return {
     key: issued?.license_key,
     planName: plan.name,
-    planCode,
-    durationDays: durationDays || (planCode === 'VIP_LIFETIME' ? 3650 : 30),
+    planCode: plan.code,
+    durationDays: effectiveDuration,
     expiresAt: issued?.expires_at,
     issued,
     customerId
@@ -210,10 +218,315 @@ async function listAdminLicenses() {
   };
 }
 
+
+const PACKAGES_CACHE_FILE = path.join(__dirname, '..', 'data', '.packages_cache.json');
+
+/**
+ * Tự động đồng bộ các gói sản phẩm của OmniBrowser từ lic.cgtdev.space
+ */
+async function getCatalogPackages({ forceRefresh = false } = {}) {
+  if (!forceRefresh && fs.existsSync(PACKAGES_CACHE_FILE)) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(PACKAGES_CACHE_FILE, 'utf8'));
+      if (cached && Array.isArray(cached.packages) && cached.packages.length > 0 && (Date.now() - (cached.timestamp || 0) < 5 * 60 * 1000)) {
+        return cached.packages;
+      }
+    } catch {}
+  }
+
+  try {
+    const session = await getAdminSession(forceRefresh);
+    const product = session.catalog?.products?.find(p => p.code === 'ANTIDETECT');
+    if (!product) throw new Error('Không tìm thấy sản phẩm ANTIDETECT trong catalog');
+
+    const featuresMap = new Map((session.catalog.features || []).map(f => [f.id, f]));
+    const plans = (session.catalog.plans || []).filter(p => p.product_id === product.id && p.status === 'active');
+
+    const mapped = plans.map(p => {
+      const featObj = {};
+      (p.features || []).forEach(f => {
+        const def = featuresMap.get(f.feature_id);
+        if (def) featObj[def.code] = f.value;
+      });
+
+      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY')) || (p.name && p.name.includes('Pro') && !p.name.includes('Plus'));
+      const maxProfiles = Number(featObj.MAX_PROFILES) || (isVip ? 2000 : 500);
+      const maxThreads = Number(featObj.MAX_CONCURRENCY) || (isVip ? 50 : 20);
+      const teamMembers = isVip ? 50 : 5;
+
+      const durationStr = isVip ? 'trọn đời (10 năm)' : `${p.duration_days || 30} ngày`;
+
+      return {
+        id: p.id,
+        code: p.code,
+        name: p.name,
+        tag: isVip ? 'VIP Trọn Đời' : 'Phổ Biến',
+        badge: `${maxProfiles.toLocaleString('vi-VN')} Hồ Sơ`,
+        description: p.description || (isVip ? 'Gói Pro không giới hạn thời gian (10 năm)' : 'Gói Plus 30 ngày cho cá nhân và đội ngũ'),
+        duration_days: p.duration_days,
+        price: p.price_vnd,
+        original_price: p.original_price_vnd || (p.price_vnd * 2),
+        price_formatted: `${p.price_vnd.toLocaleString('vi-VN')} đ / ${durationStr}`,
+        max_profiles: maxProfiles,
+        max_threads: maxThreads,
+        team_members: teamMembers,
+        sync_actions: featObj.SYNC_ACTIONS ?? true,
+        chromium_153: featObj.CHROMIUM_153 ?? true,
+        features: [
+          `${maxProfiles.toLocaleString('vi-VN')} Hồ sơ Antidetect cao cấp độc lập`,
+          `Chạy đồng thời tối đa ${maxThreads} luồng độc lập`,
+          `Tối đa ${teamMembers} thành viên Đội Ngũ (Workspace Team)`,
+          'Đồng bộ hóa thao tác chuột & bàn phím',
+          'Tự động tích hợp Proxy xoay 4G / IPv6',
+          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+          isVip ? 'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev' : 'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+        ]
+      };
+    });
+
+    // Sắp xếp: Gói ngày ngắn (Plus) lên trước, Gói ngày dài (Pro) sau
+    mapped.sort((a, b) => (a.duration_days || 0) - (b.duration_days || 0));
+
+    // Lưu vào bộ nhớ đệm
+    try {
+      const dir = path.dirname(PACKAGES_CACHE_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(PACKAGES_CACHE_FILE, JSON.stringify({
+        timestamp: Date.now(),
+        packages: mapped
+      }, null, 2), 'utf8');
+    } catch {}
+
+    return mapped;
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi lấy gói từ catalog:', err.message);
+    if (fs.existsSync(PACKAGES_CACHE_FILE)) {
+      try {
+        const cached = JSON.parse(fs.readFileSync(PACKAGES_CACHE_FILE, 'utf8'));
+        if (cached && Array.isArray(cached.packages) && cached.packages.length > 0) {
+          return cached.packages;
+        }
+      } catch {}
+    }
+    // Gói dự phòng mặc định khớp với license server
+    return [
+      {
+        id: '51f31667-7c8c-46d7-82e8-95f2bf3fc64c',
+        code: 'PRO_MONTHLY',
+        name: 'OmniBrowser Plus',
+        tag: 'Phổ Biến',
+        badge: '500 Hồ Sơ',
+        description: 'Gói Plus 30 ngày cho cá nhân và đội ngũ (Tối đa 500 hồ sơ)',
+        duration_days: 30,
+        price: 199000,
+        original_price: 399000,
+        price_formatted: '199.000 đ / 30 ngày',
+        max_profiles: 500,
+        max_threads: 20,
+        team_members: 5,
+        sync_actions: true,
+        chromium_153: true,
+        features: [
+          '500 Hồ sơ Antidetect cao cấp độc lập',
+          'Chạy đồng thời tối đa 20 luồng độc lập',
+          'Tối đa 5 thành viên Đội Ngũ (Workspace Team)',
+          'Đồng bộ hóa thao tác chuột & bàn phím',
+          'Tự động tích hợp Proxy xoay 4G / IPv6',
+          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+          'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+        ]
+      },
+      {
+        id: '1f23582e-e1eb-4db5-b40e-7781b61021af',
+        code: 'PRO',
+        name: 'OmniBrowser Pro',
+        tag: 'VIP Trọn Đời',
+        badge: '2.000 Hồ Sơ',
+        description: 'Gói Pro không giới hạn 3650 ngày (Tối đa 2000 hồ sơ)',
+        duration_days: 3650,
+        price: 1990000,
+        original_price: 4990000,
+        price_formatted: '1.990.000 đ / trọn đời (10 năm)',
+        max_profiles: 2000,
+        max_threads: 50,
+        team_members: 50,
+        sync_actions: true,
+        chromium_153: true,
+        features: [
+          '2.000 Hồ sơ Antidetect cao cấp độc lập',
+          'Chạy đồng thời tối đa 50 luồng độc lập',
+          'Tối đa 50 thành viên Đội Ngũ (Workspace Team)',
+          'Đồng bộ hóa thao tác chuột & bàn phím',
+          'Tự động tích hợp Proxy xoay 4G / IPv6',
+          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+          'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev'
+        ]
+      }
+    ];
+  }
+}
+
+async function getCatalogSettings({ forceRefresh = false } = {}) {
+  try {
+    const session = await getAdminSession(forceRefresh);
+    if (session.catalog && session.catalog.settings) {
+      return session.catalog.settings;
+    }
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi lấy settings:', err.message);
+  }
+  return null;
+}
+
+
+/**
+ * Tạo đơn hàng trên Store của lic.cgtdev.space
+ * Đơn hàng sẽ xuất hiện trực tiếp trong mục "Đơn hàng" trên trang quản trị license server
+ */
+async function createRemoteOrder({ planId, name, email, phone }) {
+  try {
+    let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+    if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 12) {
+      cleanPhone = '0988888888';
+    }
+
+    const res = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/store/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plan_id: planId,
+        name: (name || email.split('@')[0]).trim(),
+        email: email.trim().toLowerCase(),
+        phone: cleanPhone
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.order) {
+      throw new Error(data.message || `Tạo đơn hàng từ xa thất bại (${res.status})`);
+    }
+
+    const order = data.order;
+    let remoteId = null;
+
+    // Lấy UUID nội bộ từ admin danh sách đơn hàng
+    try {
+      const session = await getAdminSession();
+      const adminRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders`, {
+        headers: { 'Cookie': session.cookie }
+      });
+      if (adminRes.ok) {
+        const adminData = await adminRes.json();
+        const found = (adminData.orders || []).find(o => o.order_code === order.order_code);
+        if (found) {
+          remoteId = found.id;
+        }
+      }
+    } catch {}
+
+    return {
+      orderCode: order.order_code,
+      remoteOrderId: remoteId,
+      status: order.status || 'pending',
+      amountVnd: order.amount_vnd,
+      paymentContent: order.payment_content,
+      token: data.token
+    };
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi tạo đơn hàng Store từ xa:', err.message);
+    return null;
+  }
+}
+
+/**
+ * Duyệt đơn hàng trên lic.cgtdev.space và tự động lấy mã License Key được hệ thống cấp
+ */
+async function approveRemoteOrder({ remoteOrderId, orderCode, reason }) {
+  const session = await getAdminSession();
+  let targetId = remoteOrderId;
+
+  if (!targetId && orderCode) {
+    try {
+      const adminRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders`, {
+        headers: { 'Cookie': session.cookie }
+      });
+      if (adminRes.ok) {
+        const adminData = await adminRes.json();
+        const found = (adminData.orders || []).find(o => o.order_code === orderCode);
+        if (found) {
+          targetId = found.id;
+        }
+      }
+    } catch {}
+  }
+
+  if (!targetId) {
+    throw new Error(`Không tìm thấy ID đơn hàng trên License Server (Code: ${orderCode || 'N/A'})`);
+  }
+
+  const approveRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders/${targetId}/approve`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Cookie': session.cookie,
+      'x-cgt-csrf': session.csrf
+    },
+    body: JSON.stringify({
+      reason: reason || 'Tự động duyệt thanh toán từ OmniBrowser'
+    })
+  });
+
+  const approveData = await approveRes.json();
+  if (!approveRes.ok || approveData.code) {
+    throw new Error(approveData.message || `Duyệt đơn hàng thất bại (${approveRes.status})`);
+  }
+
+  // Lấy chi tiết đơn hàng sau khi duyệt để lấy mã License Key chuẩn
+  let issuedKey = null;
+  try {
+    const checkRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders`, {
+      headers: { 'Cookie': session.cookie }
+    });
+    if (checkRes.ok) {
+      const checkData = await checkRes.json();
+      const updated = (checkData.orders || []).find(o => o.id === targetId || o.order_code === orderCode);
+      if (updated && updated.license_key) {
+        issuedKey = updated.license_key;
+      }
+    }
+  } catch {}
+
+  return {
+    success: true,
+    remoteOrderId: targetId,
+    orderCode: orderCode || approveData.data?.order_code,
+    licenseKey: issuedKey,
+    licenseId: approveData.data?.license_id,
+    data: approveData.data
+  };
+}
+
+/**
+ * Lấy danh sách toàn bộ đơn hàng từ License Server
+ */
+async function listAdminOrders() {
+  const session = await getAdminSession();
+  const res = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders`, {
+    headers: { 'Cookie': session.cookie }
+  });
+  if (!res.ok) throw new Error(`Không thể lấy danh sách đơn hàng (${res.status})`);
+  const data = await res.json();
+  return data.orders || [];
+}
+
 module.exports = {
   DEFAULT_ADMIN,
   getAdminSession,
   findOrCreateCustomer,
   issueKey,
-  listAdminLicenses
+  listAdminLicenses,
+  getCatalogPackages,
+  getCatalogSettings,
+  createRemoteOrder,
+  approveRemoteOrder,
+  listAdminOrders
 };

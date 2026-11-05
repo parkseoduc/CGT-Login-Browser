@@ -46,18 +46,38 @@ public class Program {
         ref STARTUPINFO lpStartupInfo,
         out PROCESS_INFORMATION lpProcessInformation);
 
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern UInt32 WaitForSingleObject(IntPtr hHandle, UInt32 dwMilliseconds);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool CloseHandle(IntPtr hObject);
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    public static extern bool GetExitCodeProcess(IntPtr hProcess, out UInt32 lpExitCode);
+
     public static int Main(string[] args) {
         if (args.Length == 0) {
-            Console.Error.WriteLine("Usage: spawn-desktop.exe <cmd> [args...]");
+            Console.Error.WriteLine("Usage: spawn-desktop.exe [--wait] <cmd> [args...]");
             return 1;
+        }
+
+        bool shouldWait = false;
+        int startIdx = 0;
+        if (args.Length > 0 && args[0].Equals("--wait", StringComparison.OrdinalIgnoreCase)) {
+            shouldWait = true;
+            startIdx = 1;
+            if (args.Length == 1) {
+                Console.Error.WriteLine("Usage: spawn-desktop.exe [--wait] <cmd> [args...]");
+                return 1;
+            }
         }
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         string workDir = null;
 
-        for (int i = 0; i < args.Length; i++) {
+        for (int i = startIdx; i < args.Length; i++) {
             string a = args[i];
-            if (i > 0) sb.Append(" ");
+            if (sb.Length > 0) sb.Append(" ");
             if (a.Contains(" ") && !a.StartsWith("\"")) {
                 sb.Append("\"").Append(a).Append("\"");
             } else {
@@ -102,7 +122,18 @@ public class Program {
             return err;
         }
 
+        if (shouldWait) {
+            WaitForSingleObject(pi.hProcess, 0xFFFFFFFF);
+            uint exitCode = 0;
+            GetExitCodeProcess(pi.hProcess, out exitCode);
+            CloseHandle(pi.hProcess);
+            CloseHandle(pi.hThread);
+            return (int)exitCode;
+        }
+
         Console.WriteLine(pi.dwProcessId);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
         return 0;
     }
 }
