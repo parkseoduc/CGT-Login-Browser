@@ -371,10 +371,13 @@ function getGoogleConfig() {
   let clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
   if (fs.existsSync(GOOGLE_CONFIG_FILE)) {
     try {
-      const cfg = JSON.parse(fs.readFileSync(GOOGLE_CONFIG_FILE, 'utf8'));
+      const raw = fs.readFileSync(GOOGLE_CONFIG_FILE, 'utf8').replace(/^\uFEFF/, '');
+      const cfg = JSON.parse(raw);
       if (cfg && cfg.clientId) clientId = cfg.clientId;
       if (cfg && cfg.clientSecret) clientSecret = cfg.clientSecret;
-    } catch {}
+    } catch (err) {
+      console.warn('[Google SSO] Lỗi đọc GOOGLE_CONFIG_FILE:', err.message);
+    }
   }
   return {
     clientId: (clientId || '').trim(),

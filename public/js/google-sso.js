@@ -43,6 +43,7 @@
 
   function initGIS() {
     if (!window.google?.accounts?.oauth2) return;
+    if (!_googleConfig.clientId) return;
     try {
       _tokenClient = window.google.accounts.oauth2.initTokenClient({
         client_id: _googleConfig.clientId,
@@ -61,6 +62,9 @@
           }
         }
       });
+      if (_tokenClient) {
+        _tokenClient._clientId = _googleConfig.clientId;
+      }
     } catch (err) {
       console.warn('[Google SSO] initTokenClient warning:', err);
     }
@@ -163,9 +167,18 @@
     const cfg = await getGoogleConfig();
     const clientId = cfg.clientId;
 
+    if (!clientId) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Chưa cấu hình Google Client ID trong hệ thống', 'warning');
+      }
+      return;
+    }
+
+    _googleConfig = cfg;
+
     // 1. Thử dùng Google Identity Services chính thức (Popup native)
     if (window.google?.accounts?.oauth2) {
-      if (!_tokenClient) {
+      if (!_tokenClient || !_tokenClient._clientId || _tokenClient._clientId !== clientId) {
         initGIS();
       }
       if (_tokenClient) {
@@ -234,7 +247,8 @@
     });
   }
 
-  function initGoogleSSO() {
+  async function initGoogleSSO() {
+    await getGoogleConfig();
     loadGoogleGIS();
     bindSSOButtons();
 
