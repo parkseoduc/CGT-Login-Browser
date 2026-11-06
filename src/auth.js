@@ -60,10 +60,6 @@ function publicUser(user) {
     }
   } catch {}
 
-  // Workspace Owner has role 'admin'
-  if (!memberId && (memberRole === 'user' || memberRole === 'admin')) {
-    memberRole = 'admin';
-  }
 
   const isStaff = memberRole === 'staff';
   const safeLaunchMode = isStaff || Boolean(permissions && permissions.safe_launch_only);
