@@ -3592,76 +3592,106 @@ async function automateProfile(profileId) {
                   <span>MÃ THANH TOÁN VIETQR CHUYỂN KHOẢN</span>
                 </div>
 
-                <div class="vietqr-img-wrapper">
-                  <img id="chk-qr-img" src="" alt="Mã VietQR" class="vietqr-image" style="display: none;" />
-                  <div id="chk-qr-loading" class="vietqr-loading">Đang sinh mã QR...</div>
+                <!-- 5-MINUTE COUNTDOWN BAR -->
+                <div class="chk-countdown-bar" id="chk-countdown-bar" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; padding: 7px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; font-size: 12.5px;">
+                  <span style="color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Mã thanh toán hết hạn sau:</span>
+                  </span>
+                  <span id="chk-countdown-val" class="mono" style="font-weight: 800; font-size: 14.5px; color: #EF4444; letter-spacing: 0.5px;">05:00</span>
                 </div>
 
-                <div class="vietqr-details-table">
-                  <div class="vietqr-row">
-                    <span class="vietqr-lbl">Ngân hàng:</span>
-                    <span class="vietqr-val" id="chk-bank-name">MB Bank (Quân Đội)</span>
+                <!-- ACTIVE QR CODE AND CONTENT WRAPPER -->
+                <div id="chk-qr-active-content">
+                  <div class="vietqr-img-wrapper">
+                    <img id="chk-qr-img" src="" alt="Mã VietQR" class="vietqr-image" style="display: none;" />
+                    <div id="chk-qr-loading" class="vietqr-loading">Đang sinh mã QR...</div>
                   </div>
-                  <div class="vietqr-row">
-                    <span class="vietqr-lbl">Số tài khoản:</span>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <span class="vietqr-val mono" id="chk-acc-num">0988888888</span>
-                      <button class="chk-copy-mini" id="chk-btn-copy-acc">Copy</button>
-                    </div>
-                  </div>
-                  <div class="vietqr-row">
-                    <span class="vietqr-lbl">Chủ tài khoản:</span>
-                    <span class="vietqr-val" id="chk-acc-name">CONG TY CONG NGHE CGT</span>
-                  </div>
-                  <div class="vietqr-row">
-                    <span class="vietqr-lbl">Số tiền:</span>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <span class="vietqr-val text-primary" id="chk-amount-val" style="font-weight: 800;">3.000 đ</span>
-                      <button class="chk-copy-mini" id="chk-btn-copy-amount">Copy</button>
-                    </div>
-                  </div>
-                  <div class="vietqr-row highlight-row">
-                    <span class="vietqr-lbl" style="font-weight: 700; color: #2563EB;">Nội dung CK:</span>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <span class="vietqr-val mono text-primary" id="chk-transfer-content" style="font-weight: 800; font-size: 13.5px;">OMNI 123456</span>
-                      <button class="chk-copy-mini primary" id="chk-btn-copy-content">Copy</button>
-                    </div>
-                  </div>
-                </div>
 
-                <p class="vietqr-instruction">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-                  Quét mã QR bằng ứng dụng Ngân hàng để thanh toán tự động, hoặc mở cổng quản trị lic.cgtdev.space.
-                </p>
-                <a href="https://lic.cgtdev.space/licenses" target="_blank" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-bottom: 12px; font-size: 12.5px; text-decoration: none; gap: 6px;">
-                  <span>Mở Cổng Bản Quyền lic.cgtdev.space</span>
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                </a>
-
-                <!-- LIVE AUTO PAYMENT LISTENER (Tự động kích hoạt khi nhận tiền) -->
-                <div class="chk-live-listener-box" id="chk-live-listener-box" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
-                  <div class="chk-spinner-pulse" style="position: relative; width: 24px; height: 24px; flex-shrink: 0;">
-                    <div style="width: 100%; height: 100%; border: 2.5px solid #10B981; border-top-color: transparent; border-radius: 50%; animation: spin 0.9s linear infinite;"></div>
-                  </div>
-                  <div style="flex: 1; min-width: 0;">
-                    <div style="font-size: 13px; font-weight: 700; color: #059669; display: flex; align-items: center; gap: 6px;">
-                      <span>⚡ Đang chờ tiền vào để kích hoạt tự động...</span>
+                  <div class="vietqr-details-table">
+                    <div class="vietqr-row">
+                      <span class="vietqr-lbl">Ngân hàng:</span>
+                      <span class="vietqr-val" id="chk-bank-name">MB Bank (Quân Đội)</span>
                     </div>
-                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
-                      Hệ thống tự động duyệt & cấp Key ngay khi chuyển khoản thành công (không cần ấn nút).
+                    <div class="vietqr-row">
+                      <span class="vietqr-lbl">Số tài khoản:</span>
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="vietqr-val mono" id="chk-acc-num">0988888888</span>
+                        <button class="chk-copy-mini" id="chk-btn-copy-acc">Copy</button>
+                      </div>
+                    </div>
+                    <div class="vietqr-row">
+                      <span class="vietqr-lbl">Chủ tài khoản:</span>
+                      <span class="vietqr-val" id="chk-acc-name">CONG TY CONG NGHE CGT</span>
+                    </div>
+                    <div class="vietqr-row">
+                      <span class="vietqr-lbl">Số tiền:</span>
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="vietqr-val text-primary" id="chk-amount-val" style="font-weight: 800;">3.000 đ</span>
+                        <button class="chk-copy-mini" id="chk-btn-copy-amount">Copy</button>
+                      </div>
+                    </div>
+                    <div class="vietqr-row highlight-row">
+                      <span class="vietqr-lbl" style="font-weight: 700; color: #2563EB;">Nội dung CK:</span>
+                      <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="vietqr-val mono text-primary" id="chk-transfer-content" style="font-weight: 800; font-size: 13.5px;">OMNI 123456</span>
+                        <button class="chk-copy-mini primary" id="chk-btn-copy-content">Copy</button>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div style="text-align: center; margin-top: 2px;">
-                  <button type="button" class="btn-chk-subtle-check" id="btn-chk-confirm-payment" style="background: none; border: none; color: var(--text-muted); font-size: 11.5px; text-decoration: underline; cursor: pointer; padding: 4px;">
-                    Đã chuyển tiền nhưng chưa thấy kích hoạt? Nhấn để kiểm tra ngay
+                  <p class="vietqr-instruction">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    Quét mã QR bằng ứng dụng Ngân hàng để thanh toán tự động, hoặc mở cổng quản trị lic.cgtdev.space.
+                  </p>
+                  <a href="https://lic.cgtdev.space/licenses" target="_blank" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-bottom: 12px; font-size: 12.5px; text-decoration: none; gap: 6px;">
+                    <span>Mở Cổng Bản Quyền lic.cgtdev.space</span>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  </a>
+
+                  <!-- LIVE AUTO PAYMENT LISTENER (Tự động kích hoạt khi nhận tiền) -->
+                  <div class="chk-live-listener-box" id="chk-live-listener-box" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px;">
+                    <div class="chk-spinner-pulse" style="position: relative; width: 24px; height: 24px; flex-shrink: 0;">
+                      <div style="width: 100%; height: 100%; border: 2.5px solid #10B981; border-top-color: transparent; border-radius: 50%; animation: spin 0.9s linear infinite;"></div>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                      <div style="font-size: 13px; font-weight: 700; color: #059669; display: flex; align-items: center; gap: 6px;">
+                        <span>⚡ Đang chờ tiền vào để kích hoạt tự động...</span>
+                      </div>
+                      <div style="font-size: 11px; color: var(--text-muted); margin-top: 1px;">
+                        Hệ thống tự động duyệt & cấp Key ngay khi chuyển khoản thành công (không cần ấn nút).
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style="text-align: center; margin-top: 2px;">
+                    <button type="button" class="btn-chk-subtle-check" id="btn-chk-confirm-payment" style="background: none; border: none; color: var(--text-muted); font-size: 11.5px; text-decoration: underline; cursor: pointer; padding: 4px;">
+                      Đã chuyển tiền nhưng chưa thấy kích hoạt? Nhấn để kiểm tra ngay
+                    </button>
+                  </div>
+
+                  <button type="button" id="btn-chk-back-to-summary" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-top: 12px; font-size: 12px; gap: 6px;">
+                    <span>← Chọn lại gói cước hoặc sửa thông tin</span>
                   </button>
                 </div>
 
-                <button type="button" id="btn-chk-back-to-summary" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-top: 12px; font-size: 12px; gap: 6px;">
-                  <span>← Chọn lại gói cước hoặc sửa thông tin</span>
-                </button>
+                <!-- STATE: QR EXPIRED / FAILED (Khi quá 5 phút) -->
+                <div id="chk-qr-expired-box" style="display: none; text-align: center; padding: 26px 18px; background: rgba(239, 68, 68, 0.04); border: 1.5px dashed rgba(239, 68, 68, 0.4); border-radius: 12px; margin: 8px 0 12px;">
+                  <div style="width: 52px; height: 52px; margin: 0 auto 12px; background: rgba(239, 68, 68, 0.12); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #EF4444;">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  </div>
+                  <h4 style="font-size: 15px; font-weight: 800; color: #EF4444; margin: 0 0 8px;">Mã QR Đã Hết Hạn (Quá 5 Phút)</h4>
+                  <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 18px; line-height: 1.5;">
+                    Đơn hàng thanh toán đã tự động hủy để đảm bảo an toàn giao dịch. Quý khách vui lòng tạo mã mới để tiếp tục đăng ký.
+                  </p>
+                  <button type="button" class="uiv-cta-primary" id="btn-chk-renew-qr" style="width: 100%; padding: 12px; font-size: 14px; font-weight: 700; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+                    <span>Tạo Lại Mã VietQR Mới (5 Phút)</span>
+                  </button>
+                  <button type="button" class="uiv-btn uiv-btn-secondary" id="btn-chk-expired-back" style="width: 100%; justify-content: center; font-size: 12px;">
+                    <span>← Chọn lại gói cước hoặc đóng</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

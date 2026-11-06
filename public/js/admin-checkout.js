@@ -52,8 +52,10 @@
     if (stepPayment) stepPayment.style.display = 'block';
     if (stepSuccess) stepSuccess.style.display = 'none';
 
-    // Stop previous polling
+    // Stop previous polling & countdown
     stopOrderPolling();
+    stopCheckoutCountdown();
+    resetCheckoutActiveView();
 
     // Reset right column to State 1: Preview & Review (Không tạo đơn rác trên server)
     const ctaBox = document.getElementById('chk-qr-cta-box');
@@ -189,7 +191,89 @@
     }
   }
 
-  async function generateCheckoutOrder() {
+  let checkoutCountdownTimer = null;
+  let checkoutSecondsRemaining = 300;
+
+  function stopCheckoutCountdown() {
+    if (checkoutCountdownTimer) {
+      clearInterval(checkoutCountdownTimer);
+      checkoutCountdownTimer = null;
+    }
+  }
+
+  function formatTimeMMSS(sec) {
+    const s = Math.max(0, Math.floor(sec));
+    const mins = Math.floor(s / 60);
+    const remainder = s % 60;
+    return `${String(mins).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
+  }
+
+  function updateCountdownDisplay() {
+    const timerEl = document.getElementById('chk-countdown-val');
+    if (!timerEl) return;
+    timerEl.textContent = formatTimeMMSS(checkoutSecondsRemaining);
+    if (checkoutSecondsRemaining <= 60) {
+      timerEl.style.color = '#EF4444';
+      timerEl.style.fontWeight = '900';
+    } else {
+      timerEl.style.color = '#EF4444';
+      timerEl.style.fontWeight = '800';
+    }
+  }
+
+  function showCheckoutExpiredView() {
+    stopCheckoutCountdown();
+    stopOrderPolling();
+
+    const activeContent = document.getElementById('chk-qr-active-content');
+    const expiredBox = document.getElementById('chk-qr-expired-box');
+    const countdownVal = document.getElementById('chk-countdown-val');
+
+    if (activeContent) activeContent.style.display = 'none';
+    if (expiredBox) expiredBox.style.display = 'block';
+    if (countdownVal) countdownVal.textContent = '00:00 (Hết hạn)';
+
+    if (currentOrder && currentOrder.id) {
+      fetch('/api/v1/checkout/expire-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+        body: JSON.stringify({ orderId: currentOrder.id })
+      }).catch(() => {});
+    }
+  }
+
+  function resetCheckoutActiveView() {
+    const activeContent = document.getElementById('chk-qr-active-content');
+    const expiredBox = document.getElementById('chk-qr-expired-box');
+    if (activeContent) activeContent.style.display = 'block';
+    if (expiredBox) expiredBox.style.display = 'none';
+  }
+
+  function startCheckoutCountdown(totalSeconds = 300) {
+    stopCheckoutCountdown();
+    resetCheckoutActiveView();
+    checkoutSecondsRemaining = Math.max(1, Math.floor(totalSeconds));
+    updateCountdownDisplay();
+
+    checkoutCountdownTimer = setInterval(async () => {
+      const modal = document.getElementById('checkout-modal');
+      const stepPay = document.getElementById('checkout-step-payment');
+      if (!modal || modal.style.display === 'none' || (stepPay && stepPay.style.display === 'none')) {
+        stopCheckoutCountdown();
+        return;
+      }
+
+      checkoutSecondsRemaining--;
+      updateCountdownDisplay();
+
+      if (checkoutSecondsRemaining <= 0) {
+        showCheckoutExpiredView();
+        showNotification('⏱️ Mã QR thanh toán đã hết hạn sau 5 phút. Đơn hàng đã tự động bị hủy.', 'warning');
+      }
+    }, 1000);
+  }
+
+  async function generateCheckoutOrder(forceNew = false) {
     const qrImg = document.getElementById('chk-qr-img');
     const qrLoading = document.getElementById('chk-qr-loading');
     const accNum = document.getElementById('chk-acc-num');
@@ -198,8 +282,12 @@
     const amountVal = document.getElementById('chk-amount-val');
     const contentVal = document.getElementById('chk-transfer-content');
 
+    resetCheckoutActiveView();
     if (qrImg) qrImg.style.display = 'none';
-    if (qrLoading) qrLoading.style.display = 'block';
+    if (qrLoading) {
+      qrLoading.style.display = 'block';
+      qrLoading.textContent = 'Đang khởi tạo mã QR thanh toán...';
+    }
 
     const emailInput = document.getElementById('chk-customer-email');
     const nameInput = document.getElementById('chk-customer-name');
@@ -225,7 +313,8 @@
           email,
           name,
           phone,
-          planCode: currentCheckoutPlan
+          planCode: currentCheckoutPlan,
+          forceNew
         })
       });
 
@@ -233,6 +322,9 @@
       if (data.success && data.order) {
         currentOrder = data.order;
         startOrderPolling(currentOrder.id);
+        const remaining = Number(data.expiresInSeconds) || 300;
+        startCheckoutCountdown(remaining);
+
         const b = data.bankInfo;
 
         if (bankName) bankName.textContent = b.bankName;
@@ -275,6 +367,7 @@
         const modal = document.getElementById('checkout-modal');
         if (!modal || modal.style.display === 'none') {
           stopOrderPolling();
+          stopCheckoutCountdown();
           return;
         }
 
@@ -283,8 +376,11 @@
         const data = await res.json();
         if (data.success && data.is_paid) {
           stopOrderPolling();
+          stopCheckoutCountdown();
           showNotification('🎉 Chúc mừng! Giao dịch đã được hệ thống tự động xác nhận và cấp key thành công.', 'success');
           showSuccessScreen(currentOrder, data.license_key);
+        } else if (data.success && (data.is_expired || data.status === 'EXPIRED')) {
+          showCheckoutExpiredView();
         }
       } catch (err) {}
     }, 2000);
@@ -1163,10 +1259,11 @@
     const chkClose = document.getElementById('checkout-modal-close');
     const btnFinish = document.getElementById('btn-chk-finish');
     const btnGotoLic = document.getElementById('btn-chk-goto-license');
-    if (chkClose) chkClose.onclick = () => { stopOrderPolling(); if (chkModal) chkModal.style.display = 'none'; };
+    if (chkClose) chkClose.onclick = () => { stopOrderPolling(); stopCheckoutCountdown(); if (chkModal) chkModal.style.display = 'none'; };
     if (btnFinish) {
       btnFinish.onclick = () => {
         stopOrderPolling();
+        stopCheckoutCountdown();
         if (chkModal) chkModal.style.display = 'none';
         if (typeof switchTab === 'function') switchTab('profiles');
       };
@@ -1174,6 +1271,7 @@
     if (btnGotoLic) {
       btnGotoLic.onclick = () => {
         stopOrderPolling();
+        stopCheckoutCountdown();
         if (chkModal) chkModal.style.display = 'none';
         if (typeof switchTab === 'function') switchTab('license');
       };
@@ -1343,6 +1441,35 @@ Cảm ơn bạn đã tin dùng OmniBrowser!
     if (btnBackSummary) {
       btnBackSummary.onclick = () => {
         stopOrderPolling();
+        stopCheckoutCountdown();
+        resetCheckoutActiveView();
+        const ctaBox = document.getElementById('chk-qr-cta-box');
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        if (qrBox) qrBox.style.display = 'none';
+        if (ctaBox) ctaBox.style.display = 'flex';
+      };
+    }
+
+    // Nút [🔄 Tạo Lại Mã VietQR Mới] khi hết hạn 5 phút
+    const btnRenewQr = document.getElementById('btn-chk-renew-qr');
+    if (btnRenewQr) {
+      btnRenewQr.onclick = async () => {
+        btnRenewQr.disabled = true;
+        try {
+          await generateCheckoutOrder(true);
+        } finally {
+          btnRenewQr.disabled = false;
+        }
+      };
+    }
+
+    // Nút [← Chọn lại gói cước hoặc đóng] khi ở màn hình hết hạn
+    const btnExpiredBack = document.getElementById('btn-chk-expired-back');
+    if (btnExpiredBack) {
+      btnExpiredBack.onclick = () => {
+        stopCheckoutCountdown();
+        stopOrderPolling();
+        resetCheckoutActiveView();
         const ctaBox = document.getElementById('chk-qr-cta-box');
         const qrBox = document.getElementById('chk-vietqr-active-box');
         if (qrBox) qrBox.style.display = 'none';

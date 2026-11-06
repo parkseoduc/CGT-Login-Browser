@@ -631,6 +631,47 @@ async function listAdminOrders() {
   return data.orders || [];
 }
 
+/**
+ * Từ chối / Hủy đơn hàng trên License Server khi quá thời hạn thanh toán (5 phút)
+ */
+async function rejectRemoteOrder({ remoteOrderId, orderCode, reason }) {
+  try {
+    const session = await getAdminSession();
+    let targetId = remoteOrderId;
+
+    if (!targetId && orderCode) {
+      try {
+        const adminRes = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders`, {
+          headers: { 'Cookie': session.cookie }
+        });
+        if (adminRes.ok) {
+          const adminData = await adminRes.json();
+          const found = (adminData.orders || []).find(o => o.order_code === orderCode);
+          if (found) targetId = found.id;
+        }
+      } catch {}
+    }
+
+    if (!targetId) return false;
+
+    const res = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/admin/orders/${targetId}/reject`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cookie': session.cookie,
+        'x-cgt-csrf': session.csrf
+      },
+      body: JSON.stringify({
+        reason: reason || 'Hết hạn thanh toán (quá 5 phút)'
+      })
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi từ chối đơn hàng từ xa:', err.message);
+    return false;
+  }
+}
+
 module.exports = {
   DEFAULT_ADMIN,
   getAdminSession,
@@ -641,5 +682,6 @@ module.exports = {
   getCatalogSettings,
   createRemoteOrder,
   approveRemoteOrder,
+  rejectRemoteOrder,
   listAdminOrders
 };

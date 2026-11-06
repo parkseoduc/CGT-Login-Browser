@@ -126,7 +126,7 @@ function generateVietQRUrl({ amount, transferContent, bank = null }) {
 /**
  * Tạo đơn hàng mua gói và đồng bộ trực tiếp lên Store lic.cgtdev.space
  */
-async function createOrder({ userId, email, name, phone, planCode }) {
+async function createOrder({ userId, email, name, phone, planCode, forceNew = false }) {
   if (!email || !email.includes('@')) {
     throw new Error('Email không hợp lệ');
   }
@@ -175,54 +175,67 @@ async function createOrder({ userId, email, name, phone, planCode }) {
     cleanPhone = '0988888888';
   }
 
-  // 1. Kiểm tra xem người dùng này đã có đơn hàng PENDING cho gói này trong 15 phút gần nhất chưa để tái sử dụng
-  try {
-    const recentPending = db.getDb().prepare(`
-      SELECT * FROM orders 
-      WHERE customer_email = ? 
-        AND plan_code = ? 
-        AND status = 'PENDING' 
-        AND datetime(created_at) > datetime('now', '-15 minutes')
-      ORDER BY created_at DESC 
-      LIMIT 1
-    `).get(cleanEmail, plan.code);
+  // 1. Kiểm tra xem người dùng này đã có đơn hàng PENDING cho gói này trong 5 phút gần nhất chưa để tái sử dụng
+  if (!forceNew) {
+    try {
+      const recentPending = db.getDb().prepare(`
+        SELECT * FROM orders 
+        WHERE customer_email = ? 
+          AND plan_code = ? 
+          AND status = 'PENDING' 
+          AND datetime(created_at) > datetime('now', '-5 minutes')
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `).get(cleanEmail, plan.code);
 
-    if (recentPending) {
-      if (cleanPhone && cleanPhone !== recentPending.customer_phone) {
-        try {
-          db.getDb().prepare(`UPDATE orders SET customer_phone = ? WHERE id = ?`).run(cleanPhone, recentPending.id);
-        } catch (_) {}
-      }
-      const existingQrUrl = generateVietQRUrl({
-        amount: recentPending.amount,
-        transferContent: recentPending.transfer_content,
-        bank
-      });
-      console.log(`[Checkout] Tái sử dụng đơn hàng đang chờ: ${recentPending.id} (${recentPending.transfer_content})`);
-      return {
-        order: {
-          id: recentPending.id,
-          user_id: recentPending.user_id,
-          customer_email: recentPending.customer_email,
-          customer_name: recentPending.customer_name,
-          customer_phone: cleanPhone || recentPending.customer_phone,
-          plan_code: recentPending.plan_code,
-          plan_name: recentPending.plan_name,
+      if (recentPending) {
+        if (cleanPhone && cleanPhone !== recentPending.customer_phone) {
+          try {
+            db.getDb().prepare(`UPDATE orders SET customer_phone = ? WHERE id = ?`).run(cleanPhone, recentPending.id);
+          } catch (_) {}
+        }
+        const existingQrUrl = generateVietQRUrl({
           amount: recentPending.amount,
-          duration_days: recentPending.duration_days,
-          max_profiles: recentPending.max_profiles,
-          status: recentPending.status,
-          transfer_content: recentPending.transfer_content,
-          created_at: recentPending.created_at,
-          qr_url: existingQrUrl
-        },
-        qrUrl: existingQrUrl,
-        bankInfo: bank,
-        reused: true
-      };
+          transferContent: recentPending.transfer_content,
+          bank
+        });
+        const elapsedSec = Math.floor((Date.now() - new Date(recentPending.created_at).getTime()) / 1000);
+        const remainingSec = Math.max(10, 300 - elapsedSec);
+
+        console.log(`[Checkout] Tái sử dụng đơn hàng đang chờ: ${recentPending.id} (${recentPending.transfer_content}), còn lại ${remainingSec}s`);
+        return {
+          order: {
+            id: recentPending.id,
+            user_id: recentPending.user_id,
+            customer_email: recentPending.customer_email,
+            customer_name: recentPending.customer_name,
+            customer_phone: cleanPhone || recentPending.customer_phone,
+            plan_code: recentPending.plan_code,
+            plan_name: recentPending.plan_name,
+            amount: recentPending.amount,
+            duration_days: recentPending.duration_days,
+            max_profiles: recentPending.max_profiles,
+            status: recentPending.status,
+            transfer_content: recentPending.transfer_content,
+            created_at: recentPending.created_at,
+            qr_url: existingQrUrl
+          },
+          qrUrl: existingQrUrl,
+          bankInfo: {
+            ...bank,
+            amount: recentPending.amount,
+            amountFormatted: `${recentPending.amount.toLocaleString('vi-VN')} đ`,
+            transferContent: recentPending.transfer_content,
+            qrUrl: existingQrUrl
+          },
+          reused: true,
+          expiresInSeconds: remainingSec,
+          expiresAt: new Date(new Date(recentPending.created_at).getTime() + 300 * 1000).toISOString()
+        };
+      }
+    } catch (checkErr) {
+      console.warn('[Checkout] Kiểm tra đơn hàng gần nhất:', checkErr.message);
     }
-  } catch (checkErr) {
-    console.warn('[Checkout] Kiểm tra đơn hàng gần nhất:', checkErr.message);
   }
 
   // Tạo đơn hàng trực tiếp lên mục "Đơn hàng" của lic.cgtdev.space
@@ -283,7 +296,9 @@ async function createOrder({ userId, email, name, phone, planCode }) {
       amountFormatted: `${plan.price.toLocaleString('vi-VN')} đ`,
       transferContent,
       qrUrl
-    }
+    },
+    expiresInSeconds: 300,
+    expiresAt: new Date(Date.now() + 300 * 1000).toISOString()
   };
 }
 
@@ -486,6 +501,40 @@ async function processPaymentWebhook(payload) {
   };
 }
 
+/**
+ * Hủy / Đánh dấu đơn hàng hết hạn 5 phút (Thất bại) và từ chối trên License Server
+ */
+async function expireOrder(orderId) {
+  if (!orderId) return null;
+  let order = db.getOrderById(orderId);
+  if (!order) return null;
+
+  if (order.status === 'PENDING') {
+    const now = new Date().toISOString();
+    db.updateOrder(orderId, {
+      status: 'EXPIRED',
+      updated_at: now
+    });
+    console.log(`[Checkout] Đơn hàng ${orderId} đã hết hạn 5 phút -> Chuyển trạng thái EXPIRED (Thất bại)`);
+
+    // Từ chối đơn hàng trên lic.cgtdev.space nếu có
+    if (order.remote_order_id || order.remote_order_code) {
+      try {
+        await licenseAdmin.rejectRemoteOrder({
+          remoteOrderId: order.remote_order_id,
+          orderCode: order.remote_order_code,
+          reason: 'Hết hạn thanh toán (quá 5 phút)'
+        });
+      } catch (err) {
+        console.warn('[Checkout] Lỗi từ chối đơn hàng từ xa:', err.message);
+      }
+    }
+    order = db.getOrderById(orderId);
+  }
+
+  return order;
+}
+
 async function getOrderStatus(orderId) {
   if (!orderId) return null;
   let order = db.getOrderById(orderId);
@@ -496,7 +545,13 @@ async function getOrderStatus(orderId) {
     return order;
   }
 
+  // Nếu đơn đã EXPIRED -> trả về luôn
+  if (order.status === 'EXPIRED') {
+    return order;
+  }
+
   // Nếu đơn đang PENDING, kiểm tra xem trên lic.cgtdev.space đã được thanh toán & tự động duyệt chưa
+  let isApprovedOnRemote = false;
   if (order.status === 'PENDING' && (order.remote_order_code || order.remote_order_id)) {
     try {
       const orders = await licenseAdmin.listAdminOrders();
@@ -506,6 +561,7 @@ async function getOrderStatus(orderId) {
       );
 
       if (remote && (remote.status === 'approved' || remote.license_key)) {
+        isApprovedOnRemote = true;
         const issuedKey = remote.license_key;
         const now = new Date().toISOString();
         console.log(`[Checkout AutoSync] Đơn hàng ${order.id} (${remote.order_code}) đã được thanh toán & tự động duyệt trên lic.cgtdev.space! Key: ${issuedKey}`);
@@ -561,6 +617,15 @@ async function getOrderStatus(orderId) {
     }
   }
 
+  // Nếu vẫn PENDING và không được duyệt trên remote: Kiểm tra xem đã quá 5 phút chưa
+  if (order.status === 'PENDING' && !isApprovedOnRemote) {
+    const createdAtTime = new Date(order.created_at).getTime();
+    if (!isNaN(createdAtTime) && (Date.now() - createdAtTime > 5 * 60 * 1000)) {
+      console.log(`[Checkout AutoSync] Đơn hàng ${order.id} đã quá hạn 5 phút chưa thanh toán -> Tự động chuyển thành EXPIRED (Thất bại)`);
+      return await expireOrder(orderId);
+    }
+  }
+
   return order;
 }
 
@@ -573,6 +638,7 @@ module.exports = {
   getBankConfig,
   generateVietQRUrl,
   createOrder,
+  expireOrder,
   confirmOrder,
   processPaymentWebhook,
   getOrderStatus

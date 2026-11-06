@@ -815,11 +815,22 @@ function createServer() {
             email: body.email || currentUser?.email,
             name: body.name || currentUser?.name,
             phone: body.phone || '',
-            planCode: body.planCode || 'PRO_MONTHLY'
+            planCode: body.planCode || 'PRO_MONTHLY',
+            forceNew: Boolean(body.forceNew)
           });
           return sendJson(res, 201, { success: true, ...result });
         } catch (err) {
           return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/checkout/expire-order') {
+        try {
+          const body = await parseJsonBody(req);
+          const order = await checkout.expireOrder(body.orderId);
+          return sendJson(res, 200, { success: true, order });
+        } catch (err) {
+          return sendJson(res, 500, { success: false, error: err.message });
         }
       }
 
@@ -857,6 +868,7 @@ function createServer() {
           success: true,
           status: order.status,
           is_paid: order.status === 'PAID',
+          is_expired: order.status === 'EXPIRED',
           license_key: order.license_key || '',
           plan_name: order.plan_name,
           paid_at: order.paid_at
