@@ -530,8 +530,25 @@ async function googleAuth({ credential, accessToken, googleProfile, email, name,
     if (!user.google_id && googleId) updates.google_id = googleId;
     if (!user.avatar_url && userPicture) updates.avatar_url = userPicture;
     if (user.auth_provider !== 'google') updates.auth_provider = 'google';
+    
+    // Tự động đồng bộ quyền Admin và Bản quyền cho các tài khoản chính của chủ sở hữu
+    const OWNER_EMAILS = ['pduc42620@gmail.com', 'phamduccgt@gmail.com', 'phamduccgt18@gmail.com', 'admin@omni.vn'];
+    if (OWNER_EMAILS.includes(cleanEmail)) {
+      if (user.role !== 'admin') updates.role = 'admin';
+      if (!user.phone && cleanEmail === 'pduc42620@gmail.com') updates.phone = '0394085700';
+      if (user.plan_code === 'FREE_TRIAL' || !user.plan_code) {
+        const primary = db.getUserByEmail('pduc42620@gmail.com') || db.getUserByEmail('phamduccgt@gmail.com');
+        if (primary && primary.plan_code && primary.plan_code !== 'FREE_TRIAL') {
+          updates.plan = primary.plan;
+          updates.plan_code = primary.plan_code;
+          updates.license_key = primary.license_key;
+          updates.max_profiles = primary.max_profiles;
+          updates.expires_at = primary.expires_at;
+        }
+      }
+    }
     user = db.updateUser(user.id, updates);
-    console.log(`[Auth] Đăng nhập Google SSO thành công: ${cleanEmail}`);
+    console.log(`[Auth] Đăng nhập Google SSO thành công: ${cleanEmail} (Role: ${user.role}, Plan: ${user.plan})`);
   }
 
   if (user.status === 'BANNED') {

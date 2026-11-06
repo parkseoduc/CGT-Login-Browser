@@ -71,7 +71,7 @@
     const code = String(cu.plan_code || '').toUpperCase();
     const name = String(cu.plan || '').toUpperCase();
     if (code === 'FREE' || code === 'FREE_TRIAL' || name.includes('FREE')) return 'free';
-    if (code === 'PLUS' || code === 'PRO_MONTHLY' || name.includes('PLUS') || code.includes('MONTHLY')) return 'plus';
+    if (code === 'PLUS' || code === 'PULS' || code === 'PRO_MONTHLY' || name.includes('PLUS') || code.includes('MONTHLY')) return 'plus';
     return 'pro';
   }
 
@@ -151,6 +151,52 @@
     }
   }
 
+  let paywallSynced = false;
+  async function syncPaywallPackages() {
+    try {
+      const res = await fetch('/api/v1/checkout/plans');
+      const data = await res.json();
+      if (!data || !data.success || !Array.isArray(data.plans)) return;
+      const plans = data.plans;
+
+      const plusPlan = plans.find(p => p.code === 'PRO_MONTHLY' || p.code === 'PLUS' || p.code === 'PULS' || (p.name && p.name.includes('Plus')));
+      const proPlan = plans.find(p => p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.name && p.name.includes('Pro') && !p.name.includes('Plus')));
+
+      if (plusPlan) {
+        const elPrice = document.getElementById('team-paywall-price-plus');
+        const elBtn = document.getElementById('team-paywall-btn-text-plus');
+        const pVal = Number(plusPlan.price) || 0;
+        const dur = Number(plusPlan.duration_days) || 30;
+        const durText = dur >= 365 ? `${Math.round(dur/365)} năm` : `${dur} ngày`;
+        if (elPrice) {
+          elPrice.innerHTML = `${pVal.toLocaleString('vi-VN')} đ <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">/ ${durText}</span>`;
+        }
+        if (elBtn) {
+          const kPrice = pVal >= 1000 ? `${Math.round(pVal/1000)}K` : `${pVal}đ`;
+          elBtn.textContent = `Nâng Cấp Gói Plus (${kPrice})`;
+        }
+      }
+
+      if (proPlan) {
+        const elPrice = document.getElementById('team-paywall-price-pro');
+        const elBtn = document.getElementById('team-paywall-btn-text-pro');
+        const pVal = Number(proPlan.price) || 0;
+        const dur = Number(proPlan.duration_days) || 3650;
+        const durText = dur >= 3650 ? 'trọn đời (10 năm)' : (dur >= 365 ? `${Math.round(dur/365)} năm` : `${dur} ngày`);
+        if (elPrice) {
+          elPrice.innerHTML = `${pVal.toLocaleString('vi-VN')} đ <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">/ ${durText}</span>`;
+        }
+        if (elBtn) {
+          const kPrice = pVal >= 1000 ? `${Math.round(pVal/1000)}K` : `${pVal}đ`;
+          elBtn.textContent = `Nâng Cấp Gói Pro (${kPrice})`;
+        }
+      }
+      paywallSynced = true;
+    } catch (e) {
+      console.warn('[TeamUI] Lỗi đồng bộ giá gói paywall:', e.message);
+    }
+  }
+
   function updatePlanUI() {
     const plan = getEffectivePlan();
     const unlocked = plan !== 'free';
@@ -161,6 +207,9 @@
     }
     if (el.activeWorkspace) {
       el.activeWorkspace.style.display = unlocked ? 'block' : 'none';
+    }
+    if (!unlocked) {
+      syncPaywallPackages();
     }
 
     // 2. Highlight Plan Switcher Buttons
