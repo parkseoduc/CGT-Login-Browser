@@ -112,6 +112,7 @@
     if (plan) {
       const isLifetime = Boolean(plan.duration_days && plan.duration_days >= 365);
       const isPro = (plan.code && plan.code.includes('PRO')) || (plan.name && plan.name.includes('Pro'));
+      const isVip = isLifetime || isPro;
       if (tag) {
         tag.textContent = plan.tag || (isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến'));
         tag.style.background = isPro ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.2)';
@@ -883,6 +884,7 @@
     plansToRender.forEach(p => {
       const isLifetime = Boolean(p.duration_days && p.duration_days >= 365);
       const isPro = (p.code && p.code.includes('PRO')) || (p.name && p.name.includes('Pro'));
+      const isVip = isLifetime || isPro;
       const isMatch = (activeKey === 'PRO_MONTHLY' && !isPro) || (activeKey === 'PRO' && isPro);
       const tagText = p.tag || (isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến'));
       const badgeText = p.badge || `${p.max_profiles} Hồ Sơ`;
