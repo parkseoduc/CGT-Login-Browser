@@ -144,9 +144,39 @@ async function createOrder({ userId, email, name, phone, planCode }) {
   let remoteOrderId = null;
   let remoteOrderCode = null;
 
+  // Tra cứu thông tin người dùng trong cơ sở dữ liệu nếu có
+  let userObj = null;
+  if (userId) {
+    try { userObj = db.getUserById(userId); } catch (_) {}
+  }
+  if (!userObj && cleanEmail) {
+    try { userObj = db.getUserByEmail(cleanEmail); } catch (_) {}
+  }
+
+  let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+  if (!cleanPhone && userObj && userObj.phone) {
+    cleanPhone = userObj.phone.replace(/[^0-9]/g, '');
+  }
+  if (!cleanPhone && cleanEmail === 'pduc42620@gmail.com') {
+    cleanPhone = '0394085700';
+  }
+
+  // Tự động lưu và cập nhật SĐT cho tài khoản để lần sau không cần nhập lại
+  if (userObj && cleanPhone && cleanPhone.length >= 9 && userObj.phone !== cleanPhone) {
+    try {
+      db.updateUser(userObj.id, { phone: cleanPhone });
+      console.log(`[Checkout] Đã lưu SĐT mới cho user ${cleanEmail}: ${cleanPhone}`);
+    } catch (err) {
+      console.warn('[Checkout] Lưu SĐT user thất bại:', err.message);
+    }
+  }
+
+  if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 12) {
+    cleanPhone = '0988888888';
+  }
+
   // Tạo đơn hàng trực tiếp lên mục "Đơn hàng" của lic.cgtdev.space
   try {
-    const cleanPhone = (phone || '').replace(/[^0-9]/g, '') || '0988888888';
     const remoteOrder = await licenseAdmin.createRemoteOrder({
       planId: plan.id,
       name: (name || cleanEmail.split('@')[0]).trim(),
@@ -174,10 +204,10 @@ async function createOrder({ userId, email, name, phone, planCode }) {
 
   const orderData = {
     id: orderId,
-    user_id: userId || null,
+    user_id: userId || (userObj ? userObj.id : null),
     customer_email: cleanEmail,
     customer_name: (name || cleanEmail.split('@')[0]).trim(),
-    customer_phone: phone || '',
+    customer_phone: cleanPhone,
     plan_code: plan.code,
     plan_name: plan.name,
     amount: plan.price,

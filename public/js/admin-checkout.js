@@ -61,6 +61,11 @@
     const nameInput = document.getElementById('chk-customer-name');
     const phoneInput = document.getElementById('chk-customer-phone');
 
+    const savedPhone = localStorage.getItem('omni_customer_phone') || 
+                       (user && user.phone ? user.phone : '') || 
+                       (user && user.email && user.email.toLowerCase() === 'pduc42620@gmail.com' ? '0394085700' : '') || 
+                       '';
+
     if (user) {
       if (emailInput && (!emailInput.value || emailInput.value === 'guest@cgt.vn')) {
         emailInput.value = user.email || '';
@@ -68,9 +73,9 @@
       if (nameInput && !nameInput.value) {
         nameInput.value = user.name || (user.email ? user.email.split('@')[0] : '');
       }
-      if (phoneInput && !phoneInput.value && user.phone) {
-        phoneInput.value = user.phone;
-      }
+    }
+    if (phoneInput && (!phoneInput.value || phoneInput.value === '0988888888')) {
+      phoneInput.value = savedPhone;
     }
 
     modal.style.display = 'flex';
@@ -161,7 +166,16 @@
     const phoneInput = document.getElementById('chk-customer-phone');
     const email = (emailInput && emailInput.value.trim()) || (window.currentUser ? window.currentUser.email : 'guest@cgt.vn');
     const name = (nameInput && nameInput.value.trim()) || (window.currentUser ? window.currentUser.name : 'Khách Hàng');
-    const phone = (phoneInput && phoneInput.value.trim()) || (window.currentUser ? window.currentUser.phone : '') || '';
+    let phone = (phoneInput && phoneInput.value.trim()) || localStorage.getItem('omni_customer_phone') || (window.currentUser ? window.currentUser.phone : '') || '';
+    if (!phone && email.toLowerCase() === 'pduc42620@gmail.com') {
+      phone = '0394085700';
+    }
+    if (phoneInput && (!phoneInput.value || phoneInput.value === '0988888888') && phone) {
+      phoneInput.value = phone;
+    }
+    if (phone) {
+      localStorage.setItem('omni_customer_phone', phone);
+    }
 
     try {
       const res = await fetch('/api/v1/checkout/create-order', {
@@ -1169,6 +1183,39 @@ Cảm ơn bạn đã tin dùng OmniBrowser!
         updatePlanPillUI('VIP_LIFETIME');
         generateCheckoutOrder();
       };
+    }
+
+    // Debounced auto-sync listeners for customer contact info
+    const chkPhoneInput = document.getElementById('chk-customer-phone');
+    const chkNameInput = document.getElementById('chk-customer-name');
+    const chkEmailInput = document.getElementById('chk-customer-email');
+
+    let customerInfoDebounceTimer = null;
+    function handleCustomerInfoChange() {
+      const pVal = chkPhoneInput ? chkPhoneInput.value.trim() : '';
+      if (pVal && pVal.replace(/[^0-9]/g, '').length >= 9) {
+        localStorage.setItem('omni_customer_phone', pVal);
+        if (window.currentUser) window.currentUser.phone = pVal;
+      }
+      clearTimeout(customerInfoDebounceTimer);
+      customerInfoDebounceTimer = setTimeout(() => {
+        const modal = document.getElementById('checkout-modal');
+        const stepPay = document.getElementById('checkout-step-payment');
+        if (modal && modal.style.display !== 'none' && (!stepPay || stepPay.style.display !== 'none')) {
+          generateCheckoutOrder();
+        }
+      }, 700);
+    }
+
+    if (chkPhoneInput) {
+      chkPhoneInput.addEventListener('input', handleCustomerInfoChange);
+      chkPhoneInput.addEventListener('change', handleCustomerInfoChange);
+    }
+    if (chkNameInput) {
+      chkNameInput.addEventListener('change', handleCustomerInfoChange);
+    }
+    if (chkEmailInput) {
+      chkEmailInput.addEventListener('change', handleCustomerInfoChange);
     }
 
     // Confirm payment button

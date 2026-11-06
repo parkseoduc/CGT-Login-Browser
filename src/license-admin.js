@@ -485,6 +485,20 @@ async function getCatalogSettings({ forceRefresh = false } = {}) {
 async function createRemoteOrder({ planId, name, email, phone }) {
   try {
     let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+    const cleanEmail = (email || '').trim().toLowerCase();
+
+    if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 12) {
+      if (cleanEmail === 'pduc42620@gmail.com') {
+        cleanPhone = '0394085700';
+      } else {
+        try {
+          const db = require('./db');
+          const u = db.getUserByEmail(cleanEmail);
+          if (u && u.phone) cleanPhone = u.phone.replace(/[^0-9]/g, '');
+        } catch (_) {}
+      }
+    }
+
     if (!cleanPhone || cleanPhone.length < 9 || cleanPhone.length > 12) {
       cleanPhone = '0988888888';
     }
@@ -494,8 +508,8 @@ async function createRemoteOrder({ planId, name, email, phone }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         plan_id: planId,
-        name: (name || email.split('@')[0]).trim(),
-        email: email.trim().toLowerCase(),
+        name: (name || cleanEmail.split('@')[0]).trim(),
+        email: cleanEmail,
         phone: cleanPhone
       })
     });

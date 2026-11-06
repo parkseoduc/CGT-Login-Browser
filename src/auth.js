@@ -89,7 +89,7 @@ function publicUser(user) {
     is_expired: isExpired,
     status: user.status || 'ACTIVE',
     created_at: user.created_at,
-    phone: user.phone || "",
+    phone: user.phone || (user.email === 'pduc42620@gmail.com' ? '0394085700' : '') || "",
     avatar_url: user.avatar_url || "",
     auth_provider: user.auth_provider || "local",
   };
