@@ -3534,7 +3534,59 @@ async function automateProfile(profileId) {
 
             <!-- Right Column: VietQR Code & Bank Details -->
             <div class="checkout-col-qr">
-              <div class="vietqr-box">
+              <!-- STATE 1: PRE-ORDER SUMMARY & CTA (Chưa tạo đơn trên server để tránh spam đơn rác) -->
+              <div class="vietqr-box" id="chk-qr-cta-box" style="display: flex; flex-direction: column; justify-content: space-between; min-height: 480px;">
+                <div>
+                  <div class="vietqr-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                    <span>XÁC NHẬN THANH TOÁN GÓI</span>
+                  </div>
+
+                  <div style="background: var(--bg-body, rgba(0,0,0,0.02)); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 16px; margin: 16px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <span style="font-size: 13px; color: var(--text-muted);">Gói đăng ký:</span>
+                      <span id="chk-pre-plan-name" style="font-size: 14px; font-weight: 800; color: #2563EB;">OmniBrowser Plus</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <span style="font-size: 13px; color: var(--text-muted);">Thời hạn bản quyền:</span>
+                      <span id="chk-pre-plan-period" style="font-size: 13px; font-weight: 600; color: var(--text-main);">30 ngày • 500 Hồ sơ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <span style="font-size: 13px; color: var(--text-muted);">Email nhận Key:</span>
+                      <span id="chk-pre-email" class="mono" style="font-size: 12.5px; font-weight: 600; color: var(--text-main);">...</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                      <span style="font-size: 13px; color: var(--text-muted);">Số điện thoại:</span>
+                      <span id="chk-pre-phone" class="mono" style="font-size: 12.5px; font-weight: 600; color: var(--text-main);">...</span>
+                    </div>
+                    <div style="height: 1px; background: var(--border-subtle); margin: 12px 0;"></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <span style="font-size: 13.5px; font-weight: 700; color: var(--text-main);">Tổng thanh toán:</span>
+                      <span id="chk-pre-amount" style="font-size: 22px; font-weight: 900; color: #10B981;">3.000 đ</span>
+                    </div>
+                  </div>
+
+                  <div style="background: rgba(37, 99, 235, 0.05); border: 1px dashed rgba(37, 99, 235, 0.4); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+                    <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: flex-start; gap: 8px; line-height: 1.5;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.5" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                      <span>Thanh toán tự động 24/7 qua VietQR MB Bank. Khi bạn ấn nút bên dưới, hệ thống mới khởi tạo mã QR chuyển khoản và kết nối máy chủ License.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <button type="button" class="uiv-cta-primary" id="btn-chk-start-payment" style="width: 100%; padding: 14px 20px; font-size: 15px; font-weight: 800; border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                    <span id="btn-chk-start-payment-text">Tạo Mã VietQR Thanh Toán</span>
+                  </button>
+                  <p style="font-size: 11px; color: var(--text-muted); text-align: center; margin: 8px 0 0;">
+                    Không phát sinh chi phí phụ • Kích hoạt tài khoản ngay tức thì
+                  </p>
+                </div>
+              </div>
+
+              <!-- STATE 2: ACTIVE VIETQR CODE & PAYMENT LISTENER (Chỉ hiện khi khách hàng đã bấm xác nhận) -->
+              <div class="vietqr-box" id="chk-vietqr-active-box" style="display: none;">
                 <div class="vietqr-header">
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2.2"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                   <span>MÃ THANH TOÁN VIETQR CHUYỂN KHOẢN</span>
@@ -3606,6 +3658,10 @@ async function automateProfile(profileId) {
                     Đã chuyển tiền nhưng chưa thấy kích hoạt? Nhấn để kiểm tra ngay
                   </button>
                 </div>
+
+                <button type="button" id="btn-chk-back-to-summary" class="uiv-btn uiv-btn-secondary" style="width: 100%; justify-content: center; margin-top: 12px; font-size: 12px; gap: 6px;">
+                  <span>← Chọn lại gói cước hoặc sửa thông tin</span>
+                </button>
               </div>
             </div>
           </div>

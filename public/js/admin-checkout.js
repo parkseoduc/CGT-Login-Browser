@@ -52,8 +52,14 @@
     if (stepPayment) stepPayment.style.display = 'block';
     if (stepSuccess) stepSuccess.style.display = 'none';
 
-    // Update plan pill active state
-    updatePlanPillUI(planCode);
+    // Stop previous polling
+    stopOrderPolling();
+
+    // Reset right column to State 1: Preview & Review (Không tạo đơn rác trên server)
+    const ctaBox = document.getElementById('chk-qr-cta-box');
+    const qrBox = document.getElementById('chk-vietqr-active-box');
+    if (ctaBox) ctaBox.style.display = 'flex';
+    if (qrBox) qrBox.style.display = 'none';
 
     // Populate email and name from logged in user if available
     const user = window.currentUser;
@@ -78,8 +84,11 @@
       phoneInput.value = savedPhone;
     }
 
+    // Update plan pill active state & preview information
+    updatePlanPillUI(planCode);
+
     modal.style.display = 'flex';
-    await generateCheckoutOrder();
+    // KHÔNG gọi generateCheckoutOrder() tại đây! Khách hàng bấm nút "Tạo Mã VietQR Thanh Toán" mới tạo đơn.
   }
 
   function updatePlanPillUI(planCode) {
@@ -98,6 +107,22 @@
     const price = document.getElementById('chk-plan-price');
     const period = document.getElementById('chk-plan-period');
     const featList = document.getElementById('chk-features-list');
+
+    // State 1 review elements
+    const prePlanName = document.getElementById('chk-pre-plan-name');
+    const prePlanPeriod = document.getElementById('chk-pre-plan-period');
+    const preAmount = document.getElementById('chk-pre-amount');
+    const preEmail = document.getElementById('chk-pre-email');
+    const prePhone = document.getElementById('chk-pre-phone');
+
+    const emailInput = document.getElementById('chk-customer-email');
+    const phoneInput = document.getElementById('chk-customer-phone');
+    const user = window.currentUser;
+    const currentEmail = (emailInput && emailInput.value.trim()) || (user ? user.email : 'guest@cgt.vn');
+    const currentPhone = (phoneInput && phoneInput.value.trim()) || localStorage.getItem('omni_customer_phone') || (user ? user.phone : '0394085700');
+
+    if (preEmail) preEmail.textContent = currentEmail;
+    if (prePhone) prePhone.textContent = currentPhone || '—';
 
     // Find in cachedPlans
     const plan = cachedPlans.find(p => {
@@ -118,6 +143,10 @@
       const isLifetime = Boolean(plan.duration_days && plan.duration_days >= 365);
       const isPro = (plan.code && plan.code.includes('PRO')) || (plan.name && plan.name.includes('Pro'));
       const isVip = isLifetime || isPro;
+      const durationDays = Number(plan.duration_days) || 30;
+      const durText = durationDays >= 3650 ? '10 năm (Trọn đời)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
+      const formattedPrice = (plan.price || 0).toLocaleString('vi-VN') + ' đ';
+
       if (tag) {
         tag.textContent = plan.tag || (isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến'));
         tag.style.background = isPro ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.2)';
@@ -125,14 +154,25 @@
       }
       if (name) name.textContent = plan.name;
       if (price) {
-        price.textContent = (plan.price || 0).toLocaleString('vi-VN') + ' đ';
+        price.textContent = formattedPrice;
         price.style.color = isPro ? '#10B981' : '#60A5FA';
       }
       if (period) {
-        const durationDays = Number(plan.duration_days) || 30;
-        const durText = durationDays >= 3650 ? '10 năm (Trọn đời)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
         period.textContent = `Thời hạn: ${durText} • ${plan.badge || (plan.max_profiles + ' Hồ sơ')}`;
       }
+
+      if (prePlanName) {
+        prePlanName.textContent = plan.name;
+        prePlanName.style.color = isPro ? '#10B981' : '#2563EB';
+      }
+      if (prePlanPeriod) {
+        prePlanPeriod.textContent = `${durText} • ${plan.badge || (plan.max_profiles + ' Hồ sơ')}`;
+      }
+      if (preAmount) {
+        preAmount.textContent = formattedPrice;
+        preAmount.style.color = isPro ? '#10B981' : '#2563EB';
+      }
+
       if (featList) {
         if (Array.isArray(plan.features) && plan.features.length > 0) {
           featList.innerHTML = plan.features.map(f => `<div class="chk-feat-item">✓ ${escapeHtml(f)}</div>`).join('');
@@ -989,7 +1029,10 @@
         const pCode = pill.dataset.plan;
         currentCheckoutPlan = pCode;
         updatePlanPillUI(pCode);
-        generateCheckoutOrder();
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        if (qrBox && qrBox.style.display !== 'none') {
+          generateCheckoutOrder();
+        }
       };
     });
   }
@@ -1212,14 +1255,20 @@ Cảm ơn bạn đã tin dùng OmniBrowser!
       pillPro.onclick = () => {
         currentCheckoutPlan = 'PRO_MONTHLY';
         updatePlanPillUI('PRO_MONTHLY');
-        generateCheckoutOrder();
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        if (qrBox && qrBox.style.display !== 'none') {
+          generateCheckoutOrder();
+        }
       };
     }
     if (pillVip) {
       pillVip.onclick = () => {
         currentCheckoutPlan = 'VIP_LIFETIME';
         updatePlanPillUI('VIP_LIFETIME');
-        generateCheckoutOrder();
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        if (qrBox && qrBox.style.display !== 'none') {
+          generateCheckoutOrder();
+        }
       };
     }
 
@@ -1235,6 +1284,17 @@ Cảm ơn bạn đã tin dùng OmniBrowser!
         localStorage.setItem('omni_customer_phone', pVal);
         if (window.currentUser) window.currentUser.phone = pVal;
       }
+      const preEmail = document.getElementById('chk-pre-email');
+      const prePhone = document.getElementById('chk-pre-phone');
+      if (preEmail && chkEmailInput) preEmail.textContent = chkEmailInput.value.trim() || '—';
+      if (prePhone && chkPhoneInput) prePhone.textContent = chkPhoneInput.value.trim() || '—';
+
+      // Chỉ tái tạo đơn hàng nếu đang hiển thị State 2 (VietQR active)
+      const qrBox = document.getElementById('chk-vietqr-active-box');
+      if (!qrBox || qrBox.style.display === 'none') {
+        return;
+      }
+
       clearTimeout(customerInfoDebounceTimer);
       customerInfoDebounceTimer = setTimeout(() => {
         const modal = document.getElementById('checkout-modal');
@@ -1254,6 +1314,40 @@ Cảm ơn bạn đã tin dùng OmniBrowser!
     }
     if (chkEmailInput) {
       chkEmailInput.addEventListener('change', handleCustomerInfoChange);
+    }
+
+    // Nút [⚡ Tạo Mã VietQR Thanh Toán] (Chuyển từ State 1 sang State 2 và gọi API tạo đơn)
+    const btnStartPayment = document.getElementById('btn-chk-start-payment');
+    if (btnStartPayment) {
+      btnStartPayment.onclick = async () => {
+        const ctaBox = document.getElementById('chk-qr-cta-box');
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        const btnText = document.getElementById('btn-chk-start-payment-text');
+
+        btnStartPayment.disabled = true;
+        if (btnText) btnText.textContent = 'Đang khởi tạo mã QR...';
+
+        try {
+          if (ctaBox) ctaBox.style.display = 'none';
+          if (qrBox) qrBox.style.display = 'block';
+          await generateCheckoutOrder();
+        } finally {
+          btnStartPayment.disabled = false;
+          if (btnText) btnText.textContent = 'Tạo Mã VietQR Thanh Toán';
+        }
+      };
+    }
+
+    // Nút [← Chọn lại gói cước hoặc sửa thông tin] (Chuyển ngược từ State 2 về State 1)
+    const btnBackSummary = document.getElementById('btn-chk-back-to-summary');
+    if (btnBackSummary) {
+      btnBackSummary.onclick = () => {
+        stopOrderPolling();
+        const ctaBox = document.getElementById('chk-qr-cta-box');
+        const qrBox = document.getElementById('chk-vietqr-active-box');
+        if (qrBox) qrBox.style.display = 'none';
+        if (ctaBox) ctaBox.style.display = 'flex';
+      };
     }
 
     // Confirm payment button

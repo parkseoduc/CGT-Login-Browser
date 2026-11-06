@@ -175,6 +175,56 @@ async function createOrder({ userId, email, name, phone, planCode }) {
     cleanPhone = '0988888888';
   }
 
+  // 1. Kiểm tra xem người dùng này đã có đơn hàng PENDING cho gói này trong 15 phút gần nhất chưa để tái sử dụng
+  try {
+    const recentPending = db.getDb().prepare(`
+      SELECT * FROM orders 
+      WHERE customer_email = ? 
+        AND plan_code = ? 
+        AND status = 'PENDING' 
+        AND datetime(created_at) > datetime('now', '-15 minutes')
+      ORDER BY created_at DESC 
+      LIMIT 1
+    `).get(cleanEmail, plan.code);
+
+    if (recentPending) {
+      if (cleanPhone && cleanPhone !== recentPending.customer_phone) {
+        try {
+          db.getDb().prepare(`UPDATE orders SET customer_phone = ? WHERE id = ?`).run(cleanPhone, recentPending.id);
+        } catch (_) {}
+      }
+      const existingQrUrl = generateVietQRUrl({
+        amount: recentPending.amount,
+        transferContent: recentPending.transfer_content,
+        bank
+      });
+      console.log(`[Checkout] Tái sử dụng đơn hàng đang chờ: ${recentPending.id} (${recentPending.transfer_content})`);
+      return {
+        order: {
+          id: recentPending.id,
+          user_id: recentPending.user_id,
+          customer_email: recentPending.customer_email,
+          customer_name: recentPending.customer_name,
+          customer_phone: cleanPhone || recentPending.customer_phone,
+          plan_code: recentPending.plan_code,
+          plan_name: recentPending.plan_name,
+          amount: recentPending.amount,
+          duration_days: recentPending.duration_days,
+          max_profiles: recentPending.max_profiles,
+          status: recentPending.status,
+          transfer_content: recentPending.transfer_content,
+          created_at: recentPending.created_at,
+          qr_url: existingQrUrl
+        },
+        qrUrl: existingQrUrl,
+        bankInfo: bank,
+        reused: true
+      };
+    }
+  } catch (checkErr) {
+    console.warn('[Checkout] Kiểm tra đơn hàng gần nhất:', checkErr.message);
+  }
+
   // Tạo đơn hàng trực tiếp lên mục "Đơn hàng" của lic.cgtdev.space
   try {
     const remoteOrder = await licenseAdmin.createRemoteOrder({
