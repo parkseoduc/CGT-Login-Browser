@@ -151,13 +151,17 @@
     }
   }
 
-  let paywallSynced = false;
   async function syncPaywallPackages() {
     try {
-      const res = await fetch('/api/v1/checkout/plans');
-      const data = await res.json();
-      if (!data || !data.success || !Array.isArray(data.plans)) return;
-      const plans = data.plans;
+      let plans = window._omniCatalogPlans || null;
+      if (!plans || plans.length === 0) {
+        const res = await fetch('/api/v1/checkout/plans');
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.plans)) {
+          plans = data.plans;
+        }
+      }
+      if (!plans || plans.length === 0) return;
 
       const plusPlan = plans.find(p => p.code === 'PRO_MONTHLY' || p.code === 'PLUS' || p.code === 'PULS' || (p.name && p.name.includes('Plus')));
       const proPlan = plans.find(p => p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.name && p.name.includes('Pro') && !p.name.includes('Plus')));
@@ -191,7 +195,6 @@
           elBtn.textContent = `Nâng Cấp Gói Pro (${kPrice})`;
         }
       }
-      paywallSynced = true;
     } catch (e) {
       console.warn('[TeamUI] Lỗi đồng bộ giá gói paywall:', e.message);
     }
@@ -208,9 +211,7 @@
     if (el.activeWorkspace) {
       el.activeWorkspace.style.display = unlocked ? 'block' : 'none';
     }
-    if (!unlocked) {
-      syncPaywallPackages();
-    }
+    syncPaywallPackages();
 
     // 2. Highlight Plan Switcher Buttons
     document.querySelectorAll('.team-test-plan-btn').forEach(btn => {

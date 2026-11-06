@@ -782,6 +782,7 @@
 
         renderPackagesGridUI();
         renderCheckoutModalPills();
+        updateTeamPaywallPackages(cachedPlans);
 
         if (forceRefresh) {
           showNotification('🎉 Đã đồng bộ thành công danh mục gói và tài khoản ngân hàng từ lic.cgtdev.space! Mọi tài khoản khác đã nhận dữ liệu mới nhất.', 'success');
@@ -993,8 +994,45 @@
     });
   }
 
+  function updateTeamPaywallPackages(plans) {
+    if (!Array.isArray(plans) || plans.length === 0) return;
+    const plusPlan = plans.find(p => p.code === 'PRO_MONTHLY' || p.code === 'PLUS' || p.code === 'PULS' || (p.name && p.name.includes('Plus')));
+    const proPlan = plans.find(p => p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.name && p.name.includes('Pro') && !p.name.includes('Plus')));
+
+    if (plusPlan) {
+      const elPrice = document.getElementById('team-paywall-price-plus');
+      const elBtn = document.getElementById('team-paywall-btn-text-plus');
+      const pVal = Number(plusPlan.price) || 0;
+      const dur = Number(plusPlan.duration_days) || 30;
+      const durText = dur >= 365 ? `${Math.round(dur/365)} năm` : `${dur} ngày`;
+      if (elPrice) {
+        elPrice.innerHTML = `${pVal.toLocaleString('vi-VN')} đ <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">/ ${durText}</span>`;
+      }
+      if (elBtn) {
+        const kPrice = pVal >= 1000 ? `${Math.round(pVal/1000)}K` : `${pVal}đ`;
+        elBtn.textContent = `Nâng Cấp Gói Plus (${kPrice})`;
+      }
+    }
+
+    if (proPlan) {
+      const elPrice = document.getElementById('team-paywall-price-pro');
+      const elBtn = document.getElementById('team-paywall-btn-text-pro');
+      const pVal = Number(proPlan.price) || 0;
+      const dur = Number(proPlan.duration_days) || 3650;
+      const durText = dur >= 3650 ? 'trọn đời (10 năm)' : (dur >= 365 ? `${Math.round(dur/365)} năm` : `${dur} ngày`);
+      if (elPrice) {
+        elPrice.innerHTML = `${pVal.toLocaleString('vi-VN')} đ <span style="font-size: 12px; font-weight: 500; color: var(--text-muted);">/ ${durText}</span>`;
+      }
+      if (elBtn) {
+        const kPrice = pVal >= 1000 ? `${Math.round(pVal/1000)}K` : `${pVal}đ`;
+        elBtn.textContent = `Nâng Cấp Gói Pro (${kPrice})`;
+      }
+    }
+  }
+
   window.loadLicensePackages = loadLicensePackages;
   window.renderPackagesGridUI = renderPackagesGridUI;
+  window.updateTeamPaywallPackages = updateTeamPaywallPackages;
 
   function initAdminAndCheckoutDOM() {
     // Topbar upgrade button: Link directly to "Bản quyền & Gói" tab
