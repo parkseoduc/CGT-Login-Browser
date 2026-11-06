@@ -95,28 +95,36 @@
     const featList = document.getElementById('chk-features-list');
 
     // Find in cachedPlans
-    const plan = cachedPlans.find(p => 
-      p.code === planCode || 
-      p.id === planCode ||
-      (planCode === 'VIP_LIFETIME' && (p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.duration_days && p.duration_days >= 365))) ||
-      (planCode === 'PRO' && (p.code === 'PRO' || (p.duration_days && p.duration_days >= 365))) ||
-      ((planCode === 'PRO_MONTHLY' || planCode === 'PLUS') && (p.code === 'PRO_MONTHLY' || (p.duration_days && p.duration_days <= 31)))
-    ) || cachedPlans[0];
+    const plan = cachedPlans.find(p => {
+      if (p.code === planCode || p.id === planCode) return true;
+      const pCode = String(p.code || '').toUpperCase();
+      const pName = String(p.name || '').toUpperCase();
+      const target = String(planCode || '').toUpperCase();
+      if (target === 'PRO' || target === 'VIP' || target === 'VIP_LIFETIME') {
+        return pCode === 'PRO' || (pName.includes('PRO') && !pName.includes('PLUS'));
+      }
+      if (target === 'PRO_MONTHLY' || target === 'PLUS' || target === 'PULS') {
+        return pCode === 'PRO_MONTHLY' || pCode === 'PULS' || pName.includes('PLUS');
+      }
+      return false;
+    }) || cachedPlans[0];
 
     if (plan) {
-      const isVip = (plan.duration_days && plan.duration_days >= 365) || (plan.code && plan.code.includes('PRO') && !plan.code.includes('MONTHLY'));
+      const isLifetime = Boolean(plan.duration_days && plan.duration_days >= 365);
+      const isPro = (plan.code && plan.code.includes('PRO')) || (plan.name && plan.name.includes('Pro'));
       if (tag) {
-        tag.textContent = plan.tag || (isVip ? 'VIP Trọn Đời' : 'Phổ Biến');
-        tag.style.background = isVip ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.2)';
-        tag.style.color = isVip ? '#10B981' : '#60A5FA';
+        tag.textContent = plan.tag || (isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến'));
+        tag.style.background = isPro ? 'rgba(16, 185, 129, 0.2)' : 'rgba(37, 99, 235, 0.2)';
+        tag.style.color = isPro ? '#10B981' : '#60A5FA';
       }
       if (name) name.textContent = plan.name;
       if (price) {
-        price.textContent = plan.price.toLocaleString('vi-VN') + ' đ';
-        price.style.color = isVip ? '#10B981' : '#60A5FA';
+        price.textContent = (plan.price || 0).toLocaleString('vi-VN') + ' đ';
+        price.style.color = isPro ? '#10B981' : '#60A5FA';
       }
       if (period) {
-        const durText = isVip ? '10 năm (Trọn đời)' : (plan.duration_days + ' ngày');
+        const durationDays = Number(plan.duration_days) || 30;
+        const durText = durationDays >= 3650 ? '10 năm (Trọn đời)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
         period.textContent = `Thời hạn: ${durText} • ${plan.badge || (plan.max_profiles + ' Hồ sơ')}`;
       }
       if (featList) {
@@ -221,27 +229,123 @@
         if (data.success && data.is_paid) {
           stopOrderPolling();
           showNotification('🎉 Chúc mừng! Giao dịch đã được hệ thống tự động xác nhận và cấp key thành công.', 'success');
-
-          const stepPayment = document.getElementById('checkout-step-payment');
-          const stepSuccess = document.getElementById('checkout-step-success');
-          const keyDisplay = document.getElementById('chk-success-key-val');
-
-          if (stepPayment) stepPayment.style.display = 'none';
-          if (stepSuccess) stepSuccess.style.display = 'block';
-          if (keyDisplay) keyDisplay.textContent = data.license_key || 'OMNI-ACTIVE';
-
-          const successMsg = document.getElementById('chk-success-msg');
-          const buyerName = document.getElementById('chk-customer-name')?.value || currentOrder?.customer_name || 'Quý khách';
-          const buyerEmail = document.getElementById('chk-customer-email')?.value || currentOrder?.customer_email || '';
-          if (successMsg) {
-            successMsg.innerHTML = '🎉 Bản quyền đã được kích hoạt thành công cho <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong>! Mã License Key đã gửi về email: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
-          }
-
-          if (typeof checkAuthState === 'function') checkAuthState();
-          if (typeof fetchLicense === 'function') fetchLicense();
+          showSuccessScreen(currentOrder, data.license_key);
         }
       } catch (err) {}
     }, 2000);
+  }
+
+  
+  function triggerCheckoutConfetti() {
+    const canvas = document.getElementById('chk-confetti-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const parent = canvas.parentElement || document.body;
+    canvas.width = parent.offsetWidth || 840;
+    canvas.height = parent.offsetHeight || 520;
+
+    const colors = ['#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4'];
+    const particles = [];
+    for (let i = 0; i < 70; i++) {
+      particles.push({
+        x: canvas.width / 2,
+        y: canvas.height * 0.22,
+        r: Math.random() * 5 + 3,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        vx: (Math.random() - 0.5) * 14,
+        vy: (Math.random() - 0.75) * 12,
+        tilt: Math.random() * 10,
+        tiltSpeed: Math.random() * 0.1 + 0.05,
+        gravity: 0.28,
+        alpha: 1
+      });
+    }
+
+    let frames = 0;
+    function render() {
+      frames++;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+      particles.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= 0.98;
+        if (frames > 45) p.alpha -= 0.018;
+        if (p.alpha > 0 && p.y < canvas.height + 20) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      });
+      if (alive && frames < 140) {
+        requestAnimationFrame(render);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+    render();
+  }
+
+  function showSuccessScreen(orderInfo, key, planData) {
+    stopOrderPolling();
+
+    const stepPayment = document.getElementById('checkout-step-payment');
+    const stepSuccess = document.getElementById('checkout-step-success');
+    if (stepPayment) stepPayment.style.display = 'none';
+    if (stepSuccess) stepSuccess.style.display = 'block';
+
+    const buyerName = orderInfo?.customer_name || document.getElementById('chk-customer-name')?.value || (window.currentUser ? window.currentUser.name : 'Quý khách');
+    const buyerEmail = orderInfo?.customer_email || document.getElementById('chk-customer-email')?.value || (window.currentUser ? window.currentUser.email : '');
+    const issuedKey = key || orderInfo?.license_key || 'OMNI-ACTIVE';
+
+    const targetCode = orderInfo?.plan_code || currentCheckoutPlan || 'PRO';
+    const plan = planData || cachedPlans.find(p => 
+      p.code === targetCode || 
+      p.id === targetCode || 
+      (targetCode === 'PRO' && (p.code === 'PRO' || p.name?.toLowerCase().includes('pro'))) ||
+      ((targetCode === 'PULS' || targetCode === 'PRO_MONTHLY') && (p.code === 'PULS' || p.code === 'PRO_MONTHLY' || p.name?.toLowerCase().includes('plus')))
+    ) || cachedPlans.find(p => p.code === 'PRO') || cachedPlans[0] || {};
+
+    const elName = document.getElementById('chk-success-user-name');
+    const elEmail = document.getElementById('chk-success-user-email');
+    const elPlanName = document.getElementById('chk-success-plan-name');
+    const elKey = document.getElementById('chk-success-key-val');
+    const elProfiles = document.getElementById('chk-perk-profiles');
+    const elThreads = document.getElementById('chk-perk-threads');
+    const elTeam = document.getElementById('chk-perk-team');
+    const elDuration = document.getElementById('chk-perk-duration');
+
+    const isPro = (plan.code && plan.code.includes('PRO')) || (plan.name && plan.name.toLowerCase().includes('pro'));
+    const maxProfiles = plan.max_profiles || (isPro ? 2000 : 500);
+    const maxThreads = plan.max_threads || (isPro ? 50 : 20);
+    const teamMembers = plan.team_members || (isPro ? 50 : 5);
+    const durationDays = Number(plan.duration_days) || 30;
+    const durText = durationDays >= 3650 ? 'Trọn đời (10 năm)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
+
+    if (elName) elName.textContent = buyerName;
+    if (elEmail) elEmail.textContent = buyerEmail;
+    if (elPlanName) elPlanName.textContent = plan.name || orderInfo?.plan_name || (isPro ? 'OmniBrowser Pro' : 'OmniBrowser Plus');
+    if (elKey) elKey.textContent = issuedKey;
+
+    if (elProfiles) elProfiles.textContent = `${maxProfiles.toLocaleString('vi-VN')} Hồ sơ`;
+    if (elThreads) elThreads.textContent = `${maxThreads} Luồng`;
+    if (elTeam) elTeam.textContent = `${teamMembers} Nhân viên`;
+    if (elDuration) elDuration.textContent = durText;
+
+    setTimeout(() => {
+      triggerCheckoutConfetti();
+    }, 120);
+
+    if (typeof checkAuthState === 'function') checkAuthState();
+    if (typeof fetchLicense === 'function') fetchLicense();
   }
 
   async function confirmPayment() {
@@ -267,26 +371,7 @@
       if (data.success) {
         stopOrderPolling();
         showNotification('🎉 Chúc mừng! Gói bản quyền đã được kích hoạt thành công.', 'success');
-
-        // Switch to success step in modal
-        const stepPayment = document.getElementById('checkout-step-payment');
-        const stepSuccess = document.getElementById('checkout-step-success');
-        const keyDisplay = document.getElementById('chk-success-key-val');
-
-        if (stepPayment) stepPayment.style.display = 'none';
-        if (stepSuccess) stepSuccess.style.display = 'block';
-        if (keyDisplay) keyDisplay.textContent = data.key || currentOrder.license_key || 'OMNI-ACTIVE';
-
-        const successMsg = document.getElementById('chk-success-msg');
-        const buyerName = document.getElementById('chk-customer-name')?.value || currentOrder.customer_name || 'Quý khách';
-        const buyerEmail = document.getElementById('chk-customer-email')?.value || currentOrder.customer_email || '';
-        if (successMsg) {
-          successMsg.innerHTML = '🎉 Bản quyền đã được kích hoạt thành công cho <strong style="color:var(--text-main);">' + escapeHtml(buyerName) + '</strong>! Mã License Key đã gửi về email: <strong style="color:var(--primary);">' + escapeHtml(buyerEmail) + '</strong>.';
-        }
-
-        // Refresh global user state and license status
-        if (typeof checkAuthState === 'function') checkAuthState();
-        if (typeof fetchLicense === 'function') fetchLicense();
+        showSuccessScreen(currentOrder, data.key || data.license_key);
       } else {
         showNotification(data.error || 'Chưa nhận được giao dịch. Vui lòng thử lại sau 30 giây.', 'warning');
       }
@@ -757,8 +842,8 @@
         tag: 'Phổ Biến',
         badge: '500 Hồ Sơ',
         duration_days: 30,
-        price: 199000,
-        price_formatted: '199.000 đ / 30 ngày',
+        price: 3000,
+        price_formatted: '3.000 đ / 30 ngày',
         max_profiles: 500,
         max_threads: 20,
         team_members: 5,
@@ -775,11 +860,11 @@
       {
         code: 'PRO',
         name: 'OmniBrowser Pro',
-        tag: 'VIP Trọn Đời',
+        tag: 'Gói Pro',
         badge: '2.000 Hồ Sơ',
-        duration_days: 3650,
-        price: 1990000,
-        price_formatted: '1.990.000 đ / trọn đời (10 năm)',
+        duration_days: 30,
+        price: 3000,
+        price_formatted: '3.000 đ / 30 ngày',
         max_profiles: 2000,
         max_threads: 50,
         team_members: 50,
@@ -796,13 +881,16 @@
     ];
 
     plansToRender.forEach(p => {
-      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY'));
-      const isMatch = (activeKey === 'PRO_MONTHLY' && !isVip) || (activeKey === 'PRO' && isVip);
-      const tagText = p.tag || (isVip ? 'VIP Trọn Đời' : 'Phổ Biến');
+      const isLifetime = Boolean(p.duration_days && p.duration_days >= 365);
+      const isPro = (p.code && p.code.includes('PRO')) || (p.name && p.name.includes('Pro'));
+      const isMatch = (activeKey === 'PRO_MONTHLY' && !isPro) || (activeKey === 'PRO' && isPro);
+      const tagText = p.tag || (isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến'));
       const badgeText = p.badge || `${p.max_profiles} Hồ Sơ`;
-      const priceText = p.price_formatted || `${p.price.toLocaleString('vi-VN')}đ / ${isVip ? 'trọn đời' : 'tháng'}`;
-      const ctaClass = isVip ? 'uiv-cta-emerald' : 'uiv-cta-primary';
-      const kPrice = Math.round(p.price / 1000);
+      const durationDays = Number(p.duration_days) || 30;
+      const periodStr = durationDays >= 3650 ? 'trọn đời (10 năm)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
+      const priceText = p.price_formatted || `${(p.price || 0).toLocaleString('vi-VN')} đ / ${periodStr}`;
+      const ctaClass = isPro ? 'uiv-cta-emerald' : 'uiv-cta-primary';
+      const kPrice = Math.round((p.price || 0) / 1000);
 
       const featuresHtml = (p.features || []).slice(0, 5).map(f => `<div>✓ ${escapeHtml(f)}</div>`).join('');
 
@@ -858,22 +946,23 @@
     if (!switcher) return;
 
     const plansToRender = cachedPlans.length > 0 ? cachedPlans : [
-      { code: 'PRO_MONTHLY', name: 'OmniBrowser Plus', price: 199000, duration_days: 30 },
-      { code: 'PRO', name: 'OmniBrowser Pro', price: 1990000, duration_days: 3650 }
+      { code: 'PRO_MONTHLY', name: 'OmniBrowser Plus', price: 3000, duration_days: 30 },
+      { code: 'PRO', name: 'OmniBrowser Pro', price: 3000, duration_days: 30 }
     ];
 
     switcher.innerHTML = plansToRender.map(p => {
-      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY'));
+      const isPro = (p.code && p.code.includes('PRO')) || (p.name && p.name.includes('Pro'));
       const isMatch = p.code === currentCheckoutPlan || 
-        (currentCheckoutPlan === 'PRO_MONTHLY' && !isVip) ||
-        ((currentCheckoutPlan === 'PRO' || currentCheckoutPlan === 'VIP_LIFETIME') && isVip);
-      const color = isVip ? '#10B981' : '#2563EB';
-      const periodStr = isVip ? '10 năm (Trọn đời)' : '30 ngày';
+        (currentCheckoutPlan === 'PRO_MONTHLY' && !isPro) ||
+        ((currentCheckoutPlan === 'PRO' || currentCheckoutPlan === 'VIP_LIFETIME') && isPro);
+      const color = isPro ? '#10B981' : '#2563EB';
+      const durationDays = Number(p.duration_days) || 30;
+      const periodStr = durationDays >= 3650 ? '10 năm (Trọn đời)' : (durationDays >= 365 ? `${Math.round(durationDays / 365)} năm` : `${durationDays} ngày`);
 
       return `
         <div class="checkout-plan-pill ${isMatch ? 'active' : ''}" data-plan="${escapeHtml(p.code)}" style="cursor: pointer;">
           <div style="font-weight: 700; font-size: 13.5px;">${escapeHtml(p.name)}</div>
-          <div style="font-size: 12px; color: ${color}; font-weight: 600;">${p.price.toLocaleString('vi-VN')} đ / ${periodStr}</div>
+          <div style="font-size: 12px; color: ${color}; font-weight: 600;">${(p.price || 0).toLocaleString('vi-VN')} đ / ${periodStr}</div>
         </div>
       `;
     }).join('');
@@ -971,12 +1060,88 @@
       btnOpenCheckout.onclick = () => openCheckoutModal('PRO_MONTHLY');
     }
 
+    
     // Modal close & pills
     const chkModal = document.getElementById('checkout-modal');
     const chkClose = document.getElementById('checkout-modal-close');
     const btnFinish = document.getElementById('btn-chk-finish');
+    const btnGotoLic = document.getElementById('btn-chk-goto-license');
     if (chkClose) chkClose.onclick = () => { stopOrderPolling(); if (chkModal) chkModal.style.display = 'none'; };
-    if (btnFinish) btnFinish.onclick = () => { stopOrderPolling(); if (chkModal) chkModal.style.display = 'none'; };
+    if (btnFinish) {
+      btnFinish.onclick = () => {
+        stopOrderPolling();
+        if (chkModal) chkModal.style.display = 'none';
+        if (typeof switchTab === 'function') switchTab('profiles');
+      };
+    }
+    if (btnGotoLic) {
+      btnGotoLic.onclick = () => {
+        stopOrderPolling();
+        if (chkModal) chkModal.style.display = 'none';
+        if (typeof switchTab === 'function') switchTab('license');
+      };
+    }
+
+    const btnCopy = document.getElementById('btn-copy-success-key');
+    if (btnCopy) {
+      btnCopy.onclick = () => {
+        const keyVal = document.getElementById('chk-success-key-val')?.textContent || '';
+        navigator.clipboard.writeText(keyVal.trim()).then(() => {
+          const textSpan = document.getElementById('btn-copy-text') || btnCopy.querySelector('span');
+          if (textSpan) textSpan.textContent = '✓ Đã Sao Chép!';
+          if (typeof showToast === 'function') showToast('✓ Đã sao chép mã License Key!', 'success');
+          setTimeout(() => {
+            if (textSpan) textSpan.textContent = 'Sao Chép Mã Key';
+          }, 2000);
+        });
+      };
+    }
+
+    const btnDownload = document.getElementById('btn-download-success-key');
+    if (btnDownload) {
+      btnDownload.onclick = () => {
+        const keyVal = document.getElementById('chk-success-key-val')?.textContent || '';
+        const planName = document.getElementById('chk-success-plan-name')?.textContent || 'OmniBrowser Pro';
+        const userName = document.getElementById('chk-success-user-name')?.textContent || 'Khách hàng';
+        const userEmail = document.getElementById('chk-success-user-email')?.textContent || '';
+        const dateStr = new Date().toLocaleString('vi-VN');
+
+        const fileData = `=====================================================
+OMNIBROWSER - THÔNG TIN BẢN QUYỀN CHÍNH THỨC
+=====================================================
+
+Khách hàng:      ${userName}
+Email đăng ký:   ${userEmail}
+Gói bản quyền:   ${planName}
+Mã License Key:  ${keyVal}
+Ngày kích hoạt:  ${dateStr}
+Máy chủ cấp phép: https://lic.cgtdev.space
+
+HƯỚNG DẪN SỬ DỤNG:
+1. Bản quyền đã được kích hoạt trực tiếp vào phần mềm OmniBrowser trên máy tính này.
+2. Khi chuyển sang máy tính mới hoặc cài lại hệ điều hành:
+   - Mở OmniBrowser -> Vào mục "Bản Quyền & Gói"
+   - Chọn "Kích Hoạt License Key" và nhập mã License Key ở trên.
+3. Liên hệ hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev:
+   - Zalo: 0394085700
+   - Email: phamduccgt18@gmail.com
+
+Cảm ơn bạn đã tin dùng OmniBrowser!
+=====================================================`;
+
+        const blob = new Blob([fileData], { type: 'text/plain;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `OmniBrowser-License-${keyVal.replace(/[^A-Za-z0-9_-]/g, '') || 'Key'}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+        if (typeof showToast === 'function') showToast('✓ Đã tải file bản quyền (.txt) về máy!', 'success');
+      };
+    }
+
 
     const btnSwitchLogin = document.getElementById('chk-btn-switch-login');
     if (btnSwitchLogin) {

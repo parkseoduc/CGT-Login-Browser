@@ -10,8 +10,8 @@ const PLANS = {
     tag: 'Phổ Biến',
     badge: '500 Hồ Sơ',
     duration_days: 30,
-    price: 199000,
-    price_formatted: '199.000 đ / 30 ngày',
+    price: 3000,
+    price_formatted: '3.000 đ / 30 ngày',
     max_profiles: 500,
     max_threads: 20,
     team_members: 5,
@@ -28,17 +28,16 @@ const PLANS = {
   VIP_LIFETIME: {
     code: 'PRO',
     name: 'OmniBrowser Pro',
-    tag: 'VIP Trọn Đời',
+    tag: 'Gói Pro',
     badge: '2.000 Hồ Sơ',
-    duration_days: 3650,
-    price: 1990000,
-    price_formatted: '1.990.000 đ / trọn đời (10 năm)',
+    duration_days: 30,
+    price: 3000,
+    price_formatted: '3.000 đ / 30 ngày',
     max_profiles: 2000,
     max_threads: 50,
     team_members: 50,
     features: [
-      'Tối đa 2.000 Hồ sơ Antidetect không giới hạn thời gian',
-      'Hạn sử dụng 10 năm (Trọn đời)',
+      'Tối đa 2.000 Hồ sơ Antidetect cao cấp độc lập',
       'Chạy đồng thời tối đa 50 luồng hiệu suất cao',
       'Tối đa 50 thành viên Đội Ngũ (Workspace Team)',
       'Đồng bộ dữ liệu đám mây Cloud Sync không giới hạn',
@@ -76,14 +75,19 @@ async function getPlans(forceRefresh = false) {
 async function findPlan(planCode, forceRefresh = false) {
   const plans = await getPlans(forceRefresh);
   const normalized = String(planCode || '').toUpperCase().trim();
-  const found = plans.find(p => 
-    p.code === planCode || 
-    p.code?.toUpperCase() === normalized ||
-    p.id === planCode ||
-    (normalized === 'VIP_LIFETIME' && (p.code === 'PRO' || p.code === 'VIP_LIFETIME' || (p.duration_days && p.duration_days >= 365))) ||
-    (normalized === 'PRO' && (p.code === 'PRO' || (p.duration_days && p.duration_days >= 365))) ||
-    ((normalized === 'PRO_MONTHLY' || normalized === 'PLUS') && (p.code === 'PRO_MONTHLY' || (p.duration_days && p.duration_days <= 31)))
-  );
+  const found = plans.find(p => {
+    if (p.code === planCode || p.id === planCode) return true;
+    const pCode = String(p.code || '').toUpperCase();
+    const pName = String(p.name || '').toUpperCase();
+    if (pCode === normalized) return true;
+    if (normalized === 'PRO' || normalized === 'VIP' || normalized === 'VIP_LIFETIME') {
+      return pCode === 'PRO' || (pName.includes('PRO') && !pName.includes('PLUS'));
+    }
+    if (normalized === 'PRO_MONTHLY' || normalized === 'PLUS' || normalized === 'PULS') {
+      return pCode === 'PRO_MONTHLY' || pCode === 'PULS' || pName.includes('PLUS');
+    }
+    return false;
+  });
   return found || plans[0] || PLANS.PRO_MONTHLY;
 }
 

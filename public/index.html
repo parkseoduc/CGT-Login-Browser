@@ -3612,26 +3612,134 @@ async function automateProfile(profileId) {
         </div>
 
         <!-- Success Screen inside Modal -->
-        <div id="checkout-step-success" style="display: none; text-align: center; padding: 30px 20px;">
-          <div class="chk-success-icon">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
-          </div>
-          <h2 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Nâng Cấp Gói Bản Quyền Thành Công!</h2>
-          <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 20px;" id="chk-success-msg">
-            Tài khoản của bạn đã được kích hoạt thành công. Mã License Key đã được gửi về email của bạn!
-          </p>
+        <div id="checkout-step-success" class="chk-success-screen" style="display: none;">
+          <!-- Canvas for celebratory confetti particles -->
+          <canvas id="chk-confetti-canvas" class="chk-confetti-canvas"></canvas>
 
+          <!-- Header Section with Ambient Glow -->
+          <div class="chk-success-hero">
+            <div class="chk-success-icon-wrapper">
+              <div class="chk-success-glow"></div>
+              <div class="chk-success-icon-ring">
+                <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+              </div>
+            </div>
+
+            <div class="chk-success-pill-badge">
+              <span class="chk-success-pill-dot"></span>
+              <span>GIAO DỊCH HOÀN TẤT • ĐÃ KÍCH HOẠT TỰ ĐỘNG</span>
+            </div>
+
+            <h2 class="chk-success-title">Nâng Cấp Gói Bản Quyền Thành Công!</h2>
+            <p class="chk-success-desc" id="chk-success-msg">
+              Chúc mừng <b id="chk-success-user-name">Phạm Chí Đức</b>! Gói bản quyền <span id="chk-success-plan-name" class="chk-plan-pill-highlight">OmniBrowser Pro</span> đã được kích hoạt trực tiếp vào tài khoản của bạn.
+            </p>
+            <div class="chk-success-email-notice">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+              <span>Mã bản quyền & biên nhận điện tử đã gửi tới email: <strong id="chk-success-user-email">pduc42620@gmail.com</strong></span>
+            </div>
+          </div>
+
+          <!-- Unlocked Privileges 4-Column Card Grid -->
+          <div class="chk-perks-container">
+            <div class="chk-perks-title">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              <span>CÁC ĐẶC QUYỀN HỆ THỐNG VỪA MỞ KHÓA</span>
+            </div>
+            <div class="chk-perks-grid">
+              <div class="chk-perk-card">
+                <div class="chk-perk-icon emerald">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                </div>
+                <div class="chk-perk-content">
+                  <div class="chk-perk-label">HẠN MỨC HỒ SƠ</div>
+                  <div class="chk-perk-value" id="chk-perk-profiles">2.000 Hồ sơ</div>
+                  <div class="chk-perk-sub">Độc lập vân tay 100%</div>
+                </div>
+              </div>
+
+              <div class="chk-perk-card">
+                <div class="chk-perk-icon blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
+                <div class="chk-perk-content">
+                  <div class="chk-perk-label">LUỒNG ĐỒNG THỜI</div>
+                  <div class="chk-perk-value" id="chk-perk-threads">50 Luồng</div>
+                  <div class="chk-perk-sub">Chạy song song tối đa</div>
+                </div>
+              </div>
+
+              <div class="chk-perk-card">
+                <div class="chk-perk-icon purple">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                </div>
+                <div class="chk-perk-content">
+                  <div class="chk-perk-label">THÀNH VIÊN TEAM</div>
+                  <div class="chk-perk-value" id="chk-perk-team">50 Nhân viên</div>
+                  <div class="chk-perk-sub">Safe Launch bảo vệ dữ liệu</div>
+                </div>
+              </div>
+
+              <div class="chk-perk-card">
+                <div class="chk-perk-icon amber">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                </div>
+                <div class="chk-perk-content">
+                  <div class="chk-perk-label">THỜI HẠN GÓI</div>
+                  <div class="chk-perk-value" id="chk-perk-duration">30 Ngày</div>
+                  <div class="chk-perk-sub">Nhân Chromium 153 Core</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- License Key Showcase Box -->
           <div class="chk-success-key-box">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">Mã License Key của bạn:</div>
-            <div class="chk-key-display mono" id="chk-success-key-val">OMNI-PRO-XXXXX</div>
-            <button class="uiv-btn-copy" id="btn-copy-success-key" style="margin-top: 10px;">
-              <span>Sao chép mã Key</span>
+            <div class="chk-key-box-header">
+              <div class="chk-key-box-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                <span>MÃ BẢN QUYỀN CHÍNH THỨC (LICENSE KEY)</span>
+              </div>
+              <div class="chk-key-status-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>ĐÃ KÍCH HOẠT VÀO THIẾT BỊ NÀY</span>
+              </div>
+            </div>
+
+            <div class="chk-key-display-row">
+              <div class="chk-key-display mono" id="chk-success-key-val">OMNI-2S0P8-BJ9CB-1CTHG-F2Y39</div>
+              <div class="chk-key-actions">
+                <button type="button" class="chk-btn-key-action" id="btn-copy-success-key" title="Sao chép mã Key">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                  <span id="btn-copy-text">Sao Chép Mã Key</span>
+                </button>
+                <button type="button" class="chk-btn-key-action secondary" id="btn-download-success-key" title="Tải file bản quyền .txt">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  <span>Tải File .TXT</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="chk-key-box-note">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span>Phần mềm đã tự động đồng bộ giấy phép vào máy tính của bạn. Bạn không cần dán lại mã key này. Hãy lưu lại mã để kích hoạt khi đổi máy.</span>
+            </div>
+          </div>
+
+          <!-- Bottom Action Buttons -->
+          <div class="chk-success-footer-actions">
+            <button class="chk-btn-cta-large" id="btn-chk-finish">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>Bắt Đầu Sử Dụng Ngay (Quản Lý Hồ Sơ)</span>
+            </button>
+            <button type="button" class="chk-btn-secondary-large" id="btn-chk-goto-license">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+              <span>Xem Bảng Quản Lý Bản Quyền</span>
             </button>
           </div>
-
-          <button class="uiv-cta-primary" id="btn-chk-finish" style="padding: 12px 30px; font-size: 14px; margin-top: 24px;">
-            <span>Bắt Đầu Sử Dụng Ngay</span>
-          </button>
         </div>
       </div>
     </div>

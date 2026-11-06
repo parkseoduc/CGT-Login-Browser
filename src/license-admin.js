@@ -228,145 +228,249 @@ async function getCatalogPackages({ forceRefresh = false } = {}) {
   if (!forceRefresh && fs.existsSync(PACKAGES_CACHE_FILE)) {
     try {
       const cached = JSON.parse(fs.readFileSync(PACKAGES_CACHE_FILE, 'utf8'));
-      if (cached && Array.isArray(cached.packages) && cached.packages.length > 0 && (Date.now() - (cached.timestamp || 0) < 5 * 60 * 1000)) {
+      if (cached && Array.isArray(cached.packages) && cached.packages.length > 0 && (Date.now() - (cached.timestamp || 0) < 60 * 1000)) {
         return cached.packages;
       }
     } catch {}
   }
 
+  // 1. Lấy trực tiếp từ Public Store API của lic.cgtdev.space (Không cần session admin, không bị 429)
+  try {
+    const res = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/store/products`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(6000)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const product = (data.products || []).find(p => p.code === 'ANTIDETECT');
+      if (product && Array.isArray(product.plans) && product.plans.length > 0) {
+        const mapped = product.plans.map(p => {
+          const featObj = {};
+          (p.features || []).forEach(f => {
+            if (f.code) featObj[f.code] = f.value;
+          });
+
+          const isLifetime = Boolean(p.duration_days && p.duration_days >= 365);
+          const durationDays = Number(p.duration_days) || 30;
+          let durationStr;
+          if (durationDays >= 3650) {
+            durationStr = 'trọn đời (10 năm)';
+          } else if (durationDays >= 365) {
+            durationStr = `${Math.round(durationDays / 365)} năm`;
+          } else {
+            durationStr = `${durationDays} ngày`;
+          }
+
+          const isPro = (p.code && p.code.includes('PRO')) || (p.name && p.name.toLowerCase().includes('pro'));
+          const maxProfiles = Number(featObj.MAX_PROFILES) || (isPro ? 2000 : 500);
+          const maxThreads = Number(featObj.MAX_CONCURRENCY) || (isPro ? 50 : 20);
+          const teamMembers = Number(featObj.TEAM) || (isPro ? 50 : 5);
+          const tag = isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến');
+
+          return {
+            id: p.id,
+            code: p.code,
+            name: p.name,
+            tag: tag,
+            badge: `${maxProfiles.toLocaleString('vi-VN')} Hồ Sơ`,
+            description: p.description || `${p.name} (${durationStr})`,
+            duration_days: durationDays,
+            price: Number(p.price_vnd) || 0,
+            original_price: Number(p.original_price_vnd) || ((Number(p.price_vnd) || 0) * 2),
+            price_formatted: `${(Number(p.price_vnd) || 0).toLocaleString('vi-VN')} đ / ${durationStr}`,
+            max_profiles: maxProfiles,
+            max_threads: maxThreads,
+            team_members: teamMembers,
+            sync_actions: featObj.SYNC_ACTIONS ?? true,
+            chromium_153: featObj.CHROMIUM_153 ?? true,
+            features: [
+              `${maxProfiles.toLocaleString('vi-VN')} Hồ sơ Antidetect cao cấp độc lập`,
+              `Chạy đồng thời tối đa ${maxThreads} luồng độc lập`,
+              `Tối đa ${teamMembers} thành viên Đội Ngũ (Workspace Team)`,
+              'Đồng bộ hóa thao tác chuột & bàn phím',
+              'Tự động tích hợp Proxy xoay 4G / IPv6',
+              'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+              isPro ? 'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev' : 'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+            ]
+          };
+        });
+
+        mapped.sort((a, b) => (a.duration_days || 0) - (b.duration_days || 0) || (a.price || 0) - (b.price || 0));
+
+        try {
+          const dir = path.dirname(PACKAGES_CACHE_FILE);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(PACKAGES_CACHE_FILE, JSON.stringify({
+            timestamp: Date.now(),
+            packages: mapped
+          }, null, 2), 'utf8');
+        } catch {}
+
+        return mapped;
+      }
+    }
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi lấy gói từ store/products:', err.message);
+  }
+
+  // 2. Dự phòng: Thử lấy qua Admin Session
   try {
     const session = await getAdminSession(forceRefresh);
     const product = session.catalog?.products?.find(p => p.code === 'ANTIDETECT');
-    if (!product) throw new Error('Không tìm thấy sản phẩm ANTIDETECT trong catalog');
+    if (product) {
+      const featuresMap = new Map((session.catalog.features || []).map(f => [f.id, f]));
+      const plans = (session.catalog.plans || []).filter(p => p.product_id === product.id && p.status === 'active');
 
-    const featuresMap = new Map((session.catalog.features || []).map(f => [f.id, f]));
-    const plans = (session.catalog.plans || []).filter(p => p.product_id === product.id && p.status === 'active');
+      const mapped = plans.map(p => {
+        const featObj = {};
+        (p.features || []).forEach(f => {
+          const def = featuresMap.get(f.feature_id);
+          if (def) featObj[def.code] = f.value;
+        });
 
-    const mapped = plans.map(p => {
-      const featObj = {};
-      (p.features || []).forEach(f => {
-        const def = featuresMap.get(f.feature_id);
-        if (def) featObj[def.code] = f.value;
+        const isLifetime = Boolean(p.duration_days && p.duration_days >= 365);
+        const durationDays = Number(p.duration_days) || 30;
+        let durationStr;
+        if (durationDays >= 3650) {
+          durationStr = 'trọn đời (10 năm)';
+        } else if (durationDays >= 365) {
+          durationStr = `${Math.round(durationDays / 365)} năm`;
+        } else {
+          durationStr = `${durationDays} ngày`;
+        }
+
+        const isPro = (p.code && p.code.includes('PRO')) || (p.name && p.name.includes('Pro') && !p.name.includes('Plus'));
+        const maxProfiles = Number(featObj.MAX_PROFILES) || (isPro ? 2000 : 500);
+        const maxThreads = Number(featObj.MAX_CONCURRENCY) || (isPro ? 50 : 20);
+        const teamMembers = Number(featObj.TEAM) || (isPro ? 50 : 5);
+        const tag = isLifetime ? 'VIP Trọn Đời' : (isPro ? 'Gói Pro' : 'Phổ Biến');
+
+        return {
+          id: p.id,
+          code: p.code,
+          name: p.name,
+          tag: tag,
+          badge: `${maxProfiles.toLocaleString('vi-VN')} Hồ Sơ`,
+          description: p.description || `${p.name} ${durationStr}`,
+          duration_days: durationDays,
+          price: Number(p.price_vnd) || 0,
+          original_price: Number(p.original_price_vnd) || ((Number(p.price_vnd) || 0) * 2),
+          price_formatted: `${(Number(p.price_vnd) || 0).toLocaleString('vi-VN')} đ / ${durationStr}`,
+          max_profiles: maxProfiles,
+          max_threads: maxThreads,
+          team_members: teamMembers,
+          sync_actions: featObj.SYNC_ACTIONS ?? true,
+          chromium_153: featObj.CHROMIUM_153 ?? true,
+          features: [
+            `${maxProfiles.toLocaleString('vi-VN')} Hồ sơ Antidetect cao cấp độc lập`,
+            `Chạy đồng thời tối đa ${maxThreads} luồng độc lập`,
+            `Tối đa ${teamMembers} thành viên Đội Ngũ (Workspace Team)`,
+            'Đồng bộ hóa thao tác chuột & bàn phím',
+            'Tự động tích hợp Proxy xoay 4G / IPv6',
+            'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+            isPro ? 'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev' : 'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+          ]
+        };
       });
 
-      const isVip = (p.duration_days && p.duration_days >= 365) || (p.code && p.code.includes('PRO') && !p.code.includes('MONTHLY')) || (p.name && p.name.includes('Pro') && !p.name.includes('Plus'));
-      const maxProfiles = Number(featObj.MAX_PROFILES) || (isVip ? 2000 : 500);
-      const maxThreads = Number(featObj.MAX_CONCURRENCY) || (isVip ? 50 : 20);
-      const teamMembers = isVip ? 50 : 5;
-
-      const durationStr = isVip ? 'trọn đời (10 năm)' : `${p.duration_days || 30} ngày`;
-
-      return {
-        id: p.id,
-        code: p.code,
-        name: p.name,
-        tag: isVip ? 'VIP Trọn Đời' : 'Phổ Biến',
-        badge: `${maxProfiles.toLocaleString('vi-VN')} Hồ Sơ`,
-        description: p.description || (isVip ? 'Gói Pro không giới hạn thời gian (10 năm)' : 'Gói Plus 30 ngày cho cá nhân và đội ngũ'),
-        duration_days: p.duration_days,
-        price: p.price_vnd,
-        original_price: p.original_price_vnd || (p.price_vnd * 2),
-        price_formatted: `${p.price_vnd.toLocaleString('vi-VN')} đ / ${durationStr}`,
-        max_profiles: maxProfiles,
-        max_threads: maxThreads,
-        team_members: teamMembers,
-        sync_actions: featObj.SYNC_ACTIONS ?? true,
-        chromium_153: featObj.CHROMIUM_153 ?? true,
-        features: [
-          `${maxProfiles.toLocaleString('vi-VN')} Hồ sơ Antidetect cao cấp độc lập`,
-          `Chạy đồng thời tối đa ${maxThreads} luồng độc lập`,
-          `Tối đa ${teamMembers} thành viên Đội Ngũ (Workspace Team)`,
-          'Đồng bộ hóa thao tác chuột & bàn phím',
-          'Tự động tích hợp Proxy xoay 4G / IPv6',
-          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
-          isVip ? 'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev' : 'Hỗ trợ kỹ thuật qua Telegram / Zalo'
-        ]
-      };
-    });
-
-    // Sắp xếp: Gói ngày ngắn (Plus) lên trước, Gói ngày dài (Pro) sau
-    mapped.sort((a, b) => (a.duration_days || 0) - (b.duration_days || 0));
-
-    // Lưu vào bộ nhớ đệm
-    try {
-      const dir = path.dirname(PACKAGES_CACHE_FILE);
-      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(PACKAGES_CACHE_FILE, JSON.stringify({
-        timestamp: Date.now(),
-        packages: mapped
-      }, null, 2), 'utf8');
-    } catch {}
-
-    return mapped;
-  } catch (err) {
-    console.warn('[LicenseAdmin] Lỗi lấy gói từ catalog:', err.message);
-    if (fs.existsSync(PACKAGES_CACHE_FILE)) {
-      try {
-        const cached = JSON.parse(fs.readFileSync(PACKAGES_CACHE_FILE, 'utf8'));
-        if (cached && Array.isArray(cached.packages) && cached.packages.length > 0) {
-          return cached.packages;
-        }
-      } catch {}
+      mapped.sort((a, b) => (a.duration_days || 0) - (b.duration_days || 0) || (a.price || 0) - (b.price || 0));
+      return mapped;
     }
-    // Gói dự phòng mặc định khớp với license server
-    return [
-      {
-        id: '51f31667-7c8c-46d7-82e8-95f2bf3fc64c',
-        code: 'PRO_MONTHLY',
-        name: 'OmniBrowser Plus',
-        tag: 'Phổ Biến',
-        badge: '500 Hồ Sơ',
-        description: 'Gói Plus 30 ngày cho cá nhân và đội ngũ (Tối đa 500 hồ sơ)',
-        duration_days: 30,
-        price: 199000,
-        original_price: 399000,
-        price_formatted: '199.000 đ / 30 ngày',
-        max_profiles: 500,
-        max_threads: 20,
-        team_members: 5,
-        sync_actions: true,
-        chromium_153: true,
-        features: [
-          '500 Hồ sơ Antidetect cao cấp độc lập',
-          'Chạy đồng thời tối đa 20 luồng độc lập',
-          'Tối đa 5 thành viên Đội Ngũ (Workspace Team)',
-          'Đồng bộ hóa thao tác chuột & bàn phím',
-          'Tự động tích hợp Proxy xoay 4G / IPv6',
-          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
-          'Hỗ trợ kỹ thuật qua Telegram / Zalo'
-        ]
-      },
-      {
-        id: '1f23582e-e1eb-4db5-b40e-7781b61021af',
-        code: 'PRO',
-        name: 'OmniBrowser Pro',
-        tag: 'VIP Trọn Đời',
-        badge: '2.000 Hồ Sơ',
-        description: 'Gói Pro không giới hạn 3650 ngày (Tối đa 2000 hồ sơ)',
-        duration_days: 3650,
-        price: 1990000,
-        original_price: 4990000,
-        price_formatted: '1.990.000 đ / trọn đời (10 năm)',
-        max_profiles: 2000,
-        max_threads: 50,
-        team_members: 50,
-        sync_actions: true,
-        chromium_153: true,
-        features: [
-          '2.000 Hồ sơ Antidetect cao cấp độc lập',
-          'Chạy đồng thời tối đa 50 luồng độc lập',
-          'Tối đa 50 thành viên Đội Ngũ (Workspace Team)',
-          'Đồng bộ hóa thao tác chuột & bàn phím',
-          'Tự động tích hợp Proxy xoay 4G / IPv6',
-          'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
-          'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev'
-        ]
-      }
-    ];
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi lấy gói từ catalog admin:', err.message);
   }
+
+  // 3. Fallback cache file
+  if (fs.existsSync(PACKAGES_CACHE_FILE)) {
+    try {
+      const cached = JSON.parse(fs.readFileSync(PACKAGES_CACHE_FILE, 'utf8'));
+      if (cached && Array.isArray(cached.packages) && cached.packages.length > 0) {
+        return cached.packages;
+      }
+    } catch {}
+  }
+
+  // Gói dự phòng mặc định khớp với license server
+  return [
+    {
+      id: '51f31667-7c8c-46d7-82e8-95f2bf3fc64c',
+      code: 'PRO_MONTHLY',
+      name: 'OmniBrowser Plus',
+      tag: 'Phổ Biến',
+      badge: '500 Hồ Sơ',
+      description: 'Gói Plus 30 ngày cho cá nhân và đội ngũ (Tối đa 500 hồ sơ)',
+      duration_days: 30,
+      price: 3000,
+      original_price: 399000,
+      price_formatted: '3.000 đ / 30 ngày',
+      max_profiles: 500,
+      max_threads: 20,
+      team_members: 5,
+      sync_actions: true,
+      chromium_153: true,
+      features: [
+        '500 Hồ sơ Antidetect cao cấp độc lập',
+        'Chạy đồng thời tối đa 20 luồng độc lập',
+        'Tối đa 5 thành viên Đội Ngũ (Workspace Team)',
+        'Đồng bộ hóa thao tác chuột & bàn phím',
+        'Tự động tích hợp Proxy xoay 4G / IPv6',
+        'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+        'Hỗ trợ kỹ thuật qua Telegram / Zalo'
+      ]
+    },
+    {
+      id: '1f23582e-e1eb-4db5-b40e-7781b61021af',
+      code: 'PRO',
+      name: 'OmniBrowser Pro',
+      tag: 'Gói Pro',
+      badge: '2.000 Hồ Sơ',
+      description: 'Gói Pro 30 ngày (Tối đa 2000 hồ sơ)',
+      duration_days: 30,
+      price: 3000,
+      original_price: 4990000,
+      price_formatted: '3.000 đ / 30 ngày',
+      max_profiles: 2000,
+      max_threads: 50,
+      team_members: 50,
+      sync_actions: true,
+      chromium_153: true,
+      features: [
+        '2.000 Hồ sơ Antidetect cao cấp độc lập',
+        'Chạy đồng thời tối đa 50 luồng độc lập',
+        'Tối đa 50 thành viên Đội Ngũ (Workspace Team)',
+        'Đồng bộ hóa thao tác chuột & bàn phím',
+        'Tự động tích hợp Proxy xoay 4G / IPv6',
+        'Nhân Chromium 153 Core (Pass 100% Iphey & Pixelscan)',
+        'Ưu tiên hỗ trợ kỹ thuật 24/7 trực tiếp từ CGT Dev'
+      ]
+    }
+  ];
 }
 
 async function getCatalogSettings({ forceRefresh = false } = {}) {
+  // 1. Public store API
+  try {
+    const res = await fetch(`${DEFAULT_ADMIN.serverUrl}/api/store/products`, {
+      headers: { 'Accept': 'application/json' },
+      signal: AbortSignal.timeout(6000)
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.payment) {
+        return {
+          bank_bin: data.payment.bank_bin,
+          bank_account: data.payment.bank_account,
+          bank_account_name: data.payment.bank_account_name,
+          sales_zalo: data.payment.zalo,
+          support_email: 'phamduccgt18@gmail.com'
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[LicenseAdmin] Lỗi lấy settings từ store API:', err.message);
+  }
+
+  // 2. Admin session
   try {
     const session = await getAdminSession(forceRefresh);
     if (session.catalog && session.catalog.settings) {
@@ -378,11 +482,6 @@ async function getCatalogSettings({ forceRefresh = false } = {}) {
   return null;
 }
 
-
-/**
- * Tạo đơn hàng trên Store của lic.cgtdev.space
- * Đơn hàng sẽ xuất hiện trực tiếp trong mục "Đơn hàng" trên trang quản trị license server
- */
 async function createRemoteOrder({ planId, name, email, phone }) {
   try {
     let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
