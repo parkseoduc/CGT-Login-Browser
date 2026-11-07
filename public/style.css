@@ -210,7 +210,8 @@ body::after {
   line-height: 1.2;
 }
 
-.brand-badge.vip {
+.brand-badge.vip,
+.brand-badge.team {
   background: rgba(16, 185, 129, 0.15) !important;
   color: #10B981 !important;
   border-color: rgba(16, 185, 129, 0.35) !important;
@@ -220,6 +221,12 @@ body::after {
   background: rgba(37, 99, 235, 0.15) !important;
   color: #2563EB !important;
   border-color: rgba(37, 99, 235, 0.35) !important;
+}
+
+.brand-badge.plus {
+  background: rgba(59, 130, 246, 0.15) !important;
+  color: #60A5FA !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
 }
 
 .brand-badge.free {

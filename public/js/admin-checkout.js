@@ -944,6 +944,7 @@
       const code = String(user.plan_code || '').toUpperCase();
       const name = String(user.plan || '').toUpperCase();
       if (code === 'FREE' || code === 'FREE_TRIAL' || name.includes('FREE')) return 'FREE_TRIAL';
+      if (code.includes('TEAM') || name.includes('TEAM') || code.includes('STAFF') || code.includes('LEADER')) return 'TEAM_MEMBER';
       if (code === 'PRO_MONTHLY' || code === 'PLUS' || name.includes('PLUS')) return 'PRO_MONTHLY';
       if (code === 'PRO' || code === 'VIP_LIFETIME' || code === 'VIP' || name.includes('PRO') || name.includes('VIP')) return 'PRO';
     }
@@ -954,11 +955,37 @@
     const container = document.getElementById('packages-plan-grid');
     if (!container) return;
 
+    const user = window.currentUser || null;
     const activeKey = getActivePlanKey();
 
-    // 1. Thẻ Gói Free Thử Nghiệm
+    let html = '';
+
+    // Nếu tài khoản thuộc Đội Ngũ (Team Member), hiển thị banner nổi bật thông báo rõ ràng
+    if (activeKey === 'TEAM_MEMBER') {
+      html += `
+        <div style="grid-column: 1 / -1; background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(37, 99, 235, 0.05) 100%); border: 1.5px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 14px 18px; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 38px; height: 38px; border-radius: 50%; background: rgba(16, 185, 129, 0.15); display: flex; align-items: center; justify-content: center; color: #10B981; font-weight: 800; font-size: 18px;">
+              ★
+            </div>
+            <div>
+              <div style="font-weight: 800; font-size: 14.5px; color: #10B981; display: flex; align-items: center; gap: 8px;">
+                <span>Tài khoản đang hoạt động theo gói Team Member (Vĩnh Viễn)</span>
+                <span class="badge badge-active-green" style="font-size: 11px;">ĐANG SỬ DỤNG</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-muted); margin-top: 3px;">
+                Hạn mức <strong>${user?.max_profiles || 100} hồ sơ</strong> độc lập • Hưởng trọn quyền lợi VIP Antidetect • Chế độ Safe Launch bảo vệ Cookie MMO
+              </div>
+            </div>
+          </div>
+          <span class="badge badge-emerald-solid" style="padding: 5px 12px; font-weight: 700; font-size: 12px;">TEAM VIP</span>
+        </div>
+      `;
+    }
+
+    // 1. Thẻ Gói Free Thử Nghiệm: Chỉ active khi người dùng THỰC SỰ đang dùng Free
     const isFreeActive = activeKey === 'FREE_TRIAL';
-    let html = `
+    html += `
       <div class="plan-card ${isFreeActive ? 'active' : ''}" data-plan="Free Trial" style="position: relative;">
         <div class="plan-header-row">
           <span class="plan-tag">Dùng Thử</span>

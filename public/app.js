@@ -69,17 +69,30 @@ function formatVnDate(dateInput) {
 }
 window.formatVnDate = formatVnDate;
 
-function formatShortBadge(planStr) {
+function formatShortBadge(planStr, userObj) {
+  const user = userObj || window.currentUser;
+  if (user) {
+    const code = String(user.plan_code || '').toUpperCase();
+    const name = String(user.plan || '').toUpperCase();
+    if (code === 'FREE' || code === 'FREE_TRIAL' || name.includes('FREE')) return 'FREE';
+    if (user.is_lifetime || code.includes('VIP') || name.includes('VIP') || code.includes('LIFE') || name.includes('LIFE')) return 'VIP';
+    if (code.includes('TEAM') || name.includes('TEAM') || code.includes('STAFF') || code.includes('LEADER')) return 'VIP';
+    if (code.includes('PRO') || name.includes('PRO')) return 'PRO';
+    if (code.includes('PLUS') || name.includes('PLUS')) return 'PLUS';
+  }
   if (!planStr) return 'FREE';
   const str = String(planStr).toUpperCase();
-  if (str.includes('VIP')) return 'VIP';
+  if (str.includes('FREE')) return 'FREE';
+  if (str.includes('VIP') || str.includes('LIFE')) return 'VIP';
+  if (str.includes('TEAM') || str.includes('STAFF') || str.includes('MEMBER')) return 'VIP';
   if (str.includes('PRO')) return 'PRO';
+  if (str.includes('PLUS')) return 'PLUS';
   return 'FREE';
 }
 
-function updateBrandBadge(planStr) {
+function updateBrandBadge(planStr, userObj) {
   if (!brandLicenseBadge) return;
-  const shortText = formatShortBadge(planStr);
+  const shortText = formatShortBadge(planStr, userObj);
   brandLicenseBadge.textContent = shortText;
   brandLicenseBadge.className = 'brand-badge ' + shortText.toLowerCase();
 }
@@ -577,7 +590,9 @@ async function fetchStatus() {
 
 async function fetchLicense() {
   try {
-    const res = await fetch(`${API_BASE}/license`);
+    const token = getAuthToken();
+    const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+    const res = await fetch(`${API_BASE}/license`, { headers });
     const data = await res.json();
     if (data.success && data.license) {
       licenseInfo = data.license;
@@ -593,14 +608,18 @@ function updateLicenseUI(info) {
   const user = window.currentUser || null;
   const planName = info.plan || (user ? user.plan : 'Free Trial');
   const planCode = info.plan_code || (user ? user.plan_code : 'FREE_TRIAL');
-  const isFree = planCode === 'FREE_TRIAL' || String(planName).toUpperCase().includes('FREE') || info.mode === 'free';
-  const isPlus = planCode === 'PRO_MONTHLY' || String(planName).toUpperCase().includes('PLUS');
-  const isVip = Boolean(info.is_lifetime || String(planName).toUpperCase().includes('VIP') || planCode === 'PRO' || planCode === 'VIP_LIFETIME');
+  const codeUpper = String(planCode).toUpperCase();
+  const nameUpper = String(planName).toUpperCase();
+
+  const isFree = codeUpper === 'FREE_TRIAL' || codeUpper === 'FREE' || nameUpper.includes('FREE') || info.mode === 'free';
+  const isTeam = !isFree && (codeUpper.includes('TEAM') || nameUpper.includes('TEAM') || codeUpper.includes('STAFF') || codeUpper.includes('LEADER'));
+  const isPlus = !isFree && !isTeam && (codeUpper === 'PRO_MONTHLY' || codeUpper.includes('PLUS') || nameUpper.includes('PLUS'));
+  const isVip = !isFree && (Boolean(info.is_lifetime || user?.is_lifetime || nameUpper.includes('VIP') || codeUpper === 'PRO' || codeUpper === 'VIP_LIFETIME' || isTeam));
 
   if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${planName}`;
   if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
   if (sidebarPlanExpires) {
-    if (isVip) {
+    if (isVip || isTeam) {
       sidebarPlanExpires.innerText = 'Vĩnh viễn (10 năm)';
     } else if (info.expires_at) {
       sidebarPlanExpires.innerText = formatVnDate(info.expires_at);
@@ -610,10 +629,10 @@ function updateLicenseUI(info) {
   }
   const sidebarBadge = document.getElementById('sidebar-plan-badge');
   if (sidebarBadge) {
-    sidebarBadge.textContent = isVip ? 'VIP' : (isPlus ? 'PLUS' : 'FREE');
-    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPlus ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+    sidebarBadge.textContent = isVip || isTeam ? 'VIP' : (isPlus ? 'PLUS' : 'FREE');
+    sidebarBadge.className = 'badge ' + (isVip || isTeam ? 'badge-emerald-subtle' : (isPlus ? 'badge-subtle-blue' : 'badge-subtle-gray'));
   }
-  updateBrandBadge(planName);
+  updateBrandBadge(planName, user);
   if (statQuota) statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
 
   const hwidEl = document.getElementById('license-hwid-text');
@@ -626,7 +645,7 @@ function updateLicenseUI(info) {
   if (deviceMax) deviceMax.innerText = `${info.max_profiles} Profiles`;
 
   const deviceExp = document.getElementById('device-expires');
-  if (deviceExp) deviceExp.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString('vi-VN') : (isVip ? 'Vĩnh viễn (10 năm)' : 'Vô hạn');
+  if (deviceExp) deviceExp.innerText = info.expires_at ? new Date(info.expires_at).toLocaleDateString('vi-VN') : (isVip || isTeam ? 'Vĩnh viễn (10 năm)' : 'Vô hạn');
 
   // Update License Summary Card in Bản Quyền & Gói
   const priceTotal = document.getElementById('price-total');
@@ -637,10 +656,14 @@ function updateLicenseUI(info) {
   if (priceTotal) {
     if (isFree) {
       priceTotal.innerText = 'Gói Free Thử Nghiệm (Miễn Phí)';
+    } else if (isTeam) {
+      priceTotal.innerText = `Gói Team Member (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
     } else if (isPlus) {
       priceTotal.innerText = `OmniBrowser Plus (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
+    } else if (isVip) {
+      priceTotal.innerText = `OmniBrowser VIP Lifetime (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
     } else {
-      priceTotal.innerText = `OmniBrowser Pro (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
+      priceTotal.innerText = `${planName} (${info.current_profiles}/${info.max_profiles} Hồ Sơ)`;
     }
   }
 
@@ -648,6 +671,9 @@ function updateLicenseUI(info) {
     if (isFree) {
       licenseStatusBadge.textContent = 'FREE TRIAL';
       licenseStatusBadge.className = 'badge badge-subtle-gray';
+    } else if (isTeam) {
+      licenseStatusBadge.textContent = 'TEAM VIP ACTIVE';
+      licenseStatusBadge.className = 'badge badge-active-green';
     } else if (isPlus) {
       licenseStatusBadge.textContent = 'PLUS ACTIVE';
       licenseStatusBadge.className = 'badge badge-subtle-blue';
@@ -660,6 +686,8 @@ function updateLicenseUI(info) {
   if (licenseStatusDetails) {
     if (isFree) {
       licenseStatusDetails.innerHTML = `Hạn mức: <strong>${info.current_profiles}/${info.max_profiles}</strong> hồ sơ • Kích hoạt gói <strong>Plus</strong> hoặc <strong>Pro</strong> để mở khóa tính năng Đội Ngũ (Team).`;
+    } else if (isTeam) {
+      licenseStatusDetails.innerHTML = `Bản quyền: <strong>Thành viên Đội Ngũ (Team Member)</strong> • Hạn mức <strong>${info.max_profiles} hồ sơ</strong> độc lập • Thời hạn: <strong>Vĩnh viễn (10 năm)</strong> • Tối đa <strong>50 luồng</strong> độc lập.`;
     } else if (isPlus) {
       const expStr = info.expires_at ? formatVnDate(info.expires_at) : '30 ngày';
       licenseStatusDetails.innerHTML = `Thời hạn đến: <strong>${expStr}</strong> • Tối đa <strong>20 luồng</strong> độc lập • Hỗ trợ <strong>5 thành viên Team</strong>.`;
@@ -5462,11 +5490,16 @@ function renderPolyUserProfile(user) {
   }
 
   // Update sidebar plan card with real user info
+  const isTeam = String(user.plan_code || '').includes('TEAM') || String(user.plan || '').includes('Team');
+  const isVip = Boolean(user.is_lifetime || String(user.plan_code).includes('VIP') || isTeam);
+  const isPro = String(user.plan_code).includes('PRO');
+  const currentCount = (typeof allProfiles !== 'undefined' && Array.isArray(allProfiles)) ? allProfiles.length : (window.currentProfilesCount || 0);
+
   if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${user.plan || 'Free Trial'}`;
-  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `0/${user.max_profiles || 50}`;
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${currentCount}/${user.max_profiles || 50}`;
   if (sidebarPlanExpires) {
-    if (user.is_lifetime || String(user.plan_code).includes('VIP')) {
-      sidebarPlanExpires.innerText = 'Vĩnh viễn';
+    if (isVip || isTeam) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn (10 năm)';
     } else if (user.expires_at) {
       sidebarPlanExpires.innerText = formatVnDate(user.expires_at);
     } else {
@@ -5475,10 +5508,8 @@ function renderPolyUserProfile(user) {
   }
   const sidebarBadge = document.getElementById('sidebar-plan-badge');
   if (sidebarBadge) {
-    const isVip = Boolean(user.is_lifetime || String(user.plan_code).includes('VIP'));
-    const isPro = String(user.plan_code).includes('PRO');
-    sidebarBadge.textContent = isVip ? 'VIP' : (isPro ? 'PRO' : 'FREE');
-    sidebarBadge.className = 'badge ' + (isVip ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+    sidebarBadge.textContent = isVip || isTeam ? 'VIP' : (isPro ? 'PRO' : 'FREE');
+    sidebarBadge.className = 'badge ' + (isVip || isTeam ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
   }
 
   const initial = (user.name || user.email || 'P').trim()[0].toUpperCase();
@@ -5497,7 +5528,7 @@ function renderPolyUserProfile(user) {
   }
   const daysEl = document.getElementById('poly-plan-days');
   if (daysEl) {
-    if (user.is_lifetime || String(user.plan_code).includes('VIP')) {
+    if (user.is_lifetime || String(user.plan_code).includes('VIP') || isTeam) {
       daysEl.textContent = 'VIP';
       daysEl.style.color = '#10b981';
       daysEl.style.background = 'rgba(16, 185, 129, 0.12)';
@@ -5530,7 +5561,15 @@ function renderPolyUserProfile(user) {
   }
 
   if (brandLicenseBadge) {
-    updateBrandBadge(user.plan_code || user.plan);
+    updateBrandBadge(user.plan_code || user.plan, user);
+  }
+
+  // Refresh package cards highlight & license UI
+  if (typeof renderPackagesGridUI === 'function') {
+    renderPackagesGridUI();
+  }
+  if (typeof licenseInfo !== 'undefined' && licenseInfo) {
+    updateLicenseUI(licenseInfo);
   }
 }
 
