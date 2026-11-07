@@ -6585,16 +6585,23 @@ function initPolyLoginAuth() {
         });
         const data = await res.json();
         if (data.success) {
-          showToast(data.message || 'Mã xác nhận 6 số đã được gửi về email của bạn', 'success');
+          showToast(data.message || 'Mã xác nhận 6 số đã được gửi về email của bạn', data.isMock ? 'warning' : 'success');
           startOtpCountdown(60);
-          if (data.debugOtp && otpInput) {
-            otpInput.value = data.debugOtp;
-            if (otpHint) {
-              otpHint.textContent = `✓ Đã tự điền mã thử nghiệm: ${data.debugOtp}`;
+          if (otpInput) {
+            otpInput.value = '';
+            otpInput.focus();
+          }
+          if (otpHint) {
+            if (data.isMock) {
+              otpHint.innerHTML = `⚠️ Thử nghiệm (Chưa cấu hình Gmail gửi thật): Mã OTP là <strong>${data.debugOtp}</strong>. Để nhận thư vào Inbox thật, vui lòng cấu hình Gmail SMTP.`;
+              otpHint.style.color = '#eab308';
+              otpHint.style.display = 'block';
+            } else {
+              otpHint.textContent = '✓ Vui lòng kiểm tra hòm thư đến (hoặc mục Spam) để lấy mã xác nhận 6 số.';
+              otpHint.style.color = '#10b981';
               otpHint.style.display = 'block';
             }
           }
-          if (otpInput) otpInput.focus();
         } else {
           btnSendOtp.disabled = false;
           btnSendOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
