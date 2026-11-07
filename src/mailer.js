@@ -298,8 +298,114 @@ async function sendThankYouEmail({ customerName, customerEmail, planName, planCo
   return true;
 }
 
+
+/**
+ * Tạo nội dung HTML gửi mã xác nhận bảo mật OTP 6 số
+ */
+function buildOtpHtml({ toEmail, otpCode, minutes = 5 }) {
+  return `<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Mã xác nhận bảo mật OmniBrowser</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
+    .card { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #ffffff; padding: 26px 24px; text-align: center; }
+    .header h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: -0.5px; }
+    .header p { margin: 6px 0 0; font-size: 13px; opacity: 0.9; }
+    .content { padding: 30px 26px; }
+    .otp-box { background: #f8fafc; border: 2px dashed #93c5fd; border-radius: 12px; padding: 20px; text-align: center; margin: 22px 0; }
+    .otp-label { font-size: 12px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .otp-code { font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 36px; font-weight: 800; color: #2563eb; letter-spacing: 8px; margin: 4px 0; }
+    .otp-expiry { font-size: 12.5px; color: #64748b; margin-top: 6px; }
+    .note { font-size: 13px; color: #475569; line-height: 1.6; }
+    .warning { font-size: 12.5px; color: #dc2626; background: #fef2f2; border-left: 3px solid #ef4444; padding: 10px 14px; border-radius: 6px; margin: 18px 0; font-weight: 500; }
+    .footer { background: #f8fafc; padding: 16px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <h1>OmniBrowser Antidetect</h1>
+      <p>Hệ Thống Trình Duyệt Antidetect Tự Động Hóa</p>
+    </div>
+    <div class="content">
+      <p style="font-size: 15px; font-weight: 600; margin-top: 0;">Xin chào bạn,</p>
+      <p class="note">
+        Bạn đang yêu cầu mã xác nhận để đăng ký tài khoản trên hệ thống <strong>OmniBrowser</strong> với hòm thư: <strong>${toEmail}</strong>.
+      </p>
+      <div class="otp-box">
+        <div class="otp-label">MÃ XÁC NHẬN CỦA BẠN (OTP)</div>
+        <div class="otp-code">${otpCode}</div>
+        <div class="otp-expiry">Hiệu lực trong <strong>${minutes} phút</strong></div>
+      </div>
+      <div class="warning">
+        🔒 Lưu ý bảo mật: Tuyệt đối không chia sẻ mã này cho bất kỳ ai để đảm bảo an toàn tài khoản và quyền lợi gói bản quyền của bạn.
+      </div>
+      <p class="note" style="font-size: 12.5px; color: #94a3b8;">
+        Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua thư này.
+      </p>
+    </div>
+    <div class="footer">
+      <div>Hệ thống Bản quyền & Quản lý: <a href="https://lic.cgtdev.space" target="_blank" style="color: #2563eb; text-decoration: none;">lic.cgtdev.space</a></div>
+      <div style="margin-top: 4px;">&copy; 2026 OmniBrowser Antidetect. All rights reserved.</div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Gửi mã OTP xác nhận đăng ký về email
+ */
+async function sendOtpEmail({ toEmail, otpCode }) {
+  if (!toEmail || !toEmail.includes('@')) return { success: false, error: 'Email không hợp lệ' };
+
+  const subject = `[OmniBrowser] Mã xác nhận đăng ký tài khoản: ${otpCode}`;
+  const html = buildOtpHtml({ toEmail, otpCode, minutes: 5 });
+  const smtp = getSmtpConfig();
+
+  const record = {
+    id: 'otp_' + Date.now(),
+    to: toEmail,
+    otp_code: otpCode,
+    subject,
+    sent_at: new Date().toISOString(),
+    status: 'SENT'
+  };
+
+  const isMock = !smtp.user || !smtp.pass;
+
+  try {
+    const result = await sendRawSmtp({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
+      user: smtp.user,
+      pass: smtp.pass,
+      from: smtp.from,
+      to: toEmail,
+      subject,
+      html
+    });
+
+    record.smtp_result = result.message;
+    console.log(`[Mailer] ✅ Đã gửi mã OTP (${otpCode}) tới: ${toEmail}`);
+  } catch (err) {
+    console.warn(`[Mailer] Gửi OTP SMTP lỗi:`, err.message);
+    record.status = 'QUEUED_LOGGED';
+    record.error = err.message;
+  }
+
+  logSentEmail(record);
+  return { success: true, isMock, message: isMock ? 'Mã xác nhận đã tạo (chế độ demo/mock)' : 'Đã gửi qua SMTP' };
+}
+
 module.exports = {
   getSmtpConfig,
   sendThankYouEmail,
-  buildThankYouHtml
+  buildThankYouHtml,
+  sendOtpEmail,
+  buildOtpHtml
 };

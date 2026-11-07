@@ -6513,6 +6513,106 @@ function initPolyLoginAuth() {
 
   initPolyEmailListeners();
 
+  // OTP Verification Code Handling for Registration
+  const btnSendOtp = document.getElementById('poly-btn-send-otp');
+  let otpCountdownTimer = null;
+
+  function startOtpCountdown(seconds = 60) {
+    if (!btnSendOtp) return;
+    btnSendOtp.disabled = true;
+    let remain = seconds;
+    btnSendOtp.innerHTML = `<span>Gửi lại sau (${remain}s)</span>`;
+    if (otpCountdownTimer) clearInterval(otpCountdownTimer);
+    otpCountdownTimer = setInterval(() => {
+      remain--;
+      if (remain <= 0) {
+        clearInterval(otpCountdownTimer);
+        otpCountdownTimer = null;
+        btnSendOtp.disabled = false;
+        btnSendOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+      } else {
+        btnSendOtp.innerHTML = `<span>Gửi lại sau (${remain}s)</span>`;
+      }
+    }, 1000);
+  }
+
+  if (btnSendOtp) {
+    btnSendOtp.onclick = async () => {
+      const regEmailInput = document.getElementById('poly-reg-input-email');
+      const regEmailContainer = document.getElementById('poly-reg-email-container');
+      const regEmailError = document.getElementById('poly-reg-email-error');
+      const otpInput = document.getElementById('poly-reg-input-otp');
+      const otpError = document.getElementById('poly-reg-otp-error');
+      const otpHint = document.getElementById('poly-reg-otp-hint');
+
+      const email = (regEmailInput?.value || '').trim();
+      if (!email) {
+        if (regEmailInput) regEmailInput.focus();
+        if (regEmailContainer) {
+          regEmailContainer.classList.add('state-red', 'shake');
+          setTimeout(() => regEmailContainer.classList.remove('shake'), 400);
+        }
+        if (regEmailError) {
+          regEmailError.textContent = 'Vui lòng nhập địa chỉ email trước khi lấy mã xác nhận';
+          regEmailError.style.display = 'block';
+        }
+        return showToast('⚠️ Vui lòng nhập email trước', 'warning');
+      }
+
+      if (!EMAIL_FORMAT_REGEX.test(email)) {
+        if (regEmailInput) regEmailInput.focus();
+        if (regEmailContainer) {
+          regEmailContainer.classList.add('state-red', 'shake');
+          setTimeout(() => regEmailContainer.classList.remove('shake'), 400);
+        }
+        if (regEmailError) {
+          regEmailError.textContent = 'Email không đúng định dạng';
+          regEmailError.style.display = 'block';
+        }
+        return showToast('⚠️ Email không đúng định dạng', 'warning');
+      }
+
+      btnSendOtp.disabled = true;
+      btnSendOtp.innerHTML = '<span>Đang gửi mã...</span>';
+      if (otpError) otpError.style.display = 'none';
+      if (otpHint) otpHint.style.display = 'none';
+
+      try {
+        const res = await originalFetch(`${API_BASE}/auth/send-otp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, purpose: 'register' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || 'Mã xác nhận 6 số đã được gửi về email của bạn', 'success');
+          startOtpCountdown(60);
+          if (data.debugOtp && otpInput) {
+            otpInput.value = data.debugOtp;
+            if (otpHint) {
+              otpHint.textContent = `✓ Đã tự điền mã thử nghiệm: ${data.debugOtp}`;
+              otpHint.style.display = 'block';
+            }
+          }
+          if (otpInput) otpInput.focus();
+        } else {
+          btnSendOtp.disabled = false;
+          btnSendOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+          if (otpError) {
+            otpError.textContent = data.error || 'Gửi mã thất bại';
+            otpError.style.display = 'block';
+          }
+          showToast('⚠️ ' + (data.error || 'Gửi mã thất bại'), 'danger');
+        }
+      } catch (err) {
+        btnSendOtp.disabled = false;
+        btnSendOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+        showToast('⚠️ Lỗi kết nối gửi mã OTP: ' + err.message, 'danger');
+      }
+    };
+  }
+
+
   initPasswordStrengthListeners();
 
   // PolyLogin Form Submit - REGISTER
@@ -6555,6 +6655,24 @@ function initPolyLoginAuth() {
       return showToast('⚠️ Email không đúng định dạng (ví dụ: name@gmail.com)', 'warning');
     }
 
+    const otpInput = document.getElementById('poly-reg-input-otp');
+    const otp = (otpInput?.value || '').trim();
+    const otpContainer = document.getElementById('poly-reg-otp-container');
+    const otpError = document.getElementById('poly-reg-otp-error');
+
+    if (!otp) {
+      if (otpInput) otpInput.focus();
+      if (otpContainer) {
+        otpContainer.classList.add('state-red', 'shake');
+        setTimeout(() => otpContainer.classList.remove('shake'), 400);
+      }
+      if (otpError) {
+        otpError.textContent = 'Vui lòng nhập mã xác nhận 6 số gửi về email';
+        otpError.style.display = 'block';
+      }
+      return showToast('⚠️ Vui lòng nhập mã xác nhận 6 số', 'warning');
+    }
+
     const evalResult = evaluatePassword(password);
     // Vàng hoặc Xanh là hợp lệ để tạo tài khoản ("vàng là pass rồi")
     if (!evalResult.isPass) {
@@ -6592,7 +6710,7 @@ function initPolyLoginAuth() {
       const res = await originalFetch(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, name })
+        body: JSON.stringify({ email, password, name, otp })
       });
       const data = await res.json();
       if (data.success && data.token) {

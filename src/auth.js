@@ -5,6 +5,64 @@ const db = require('./db');
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
+// In-memory OTP Cache: email -> { code, expiresAt, lastSentAt }
+const otpCache = new Map();
+
+function sendRegistrationOtp(email) {
+  if (!email || typeof email !== 'string') {
+    throw new Error('Vui lòng nhập email');
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(cleanEmail)) {
+    throw new Error('Email không đúng định dạng. Vui lòng nhập đúng địa chỉ email (ví dụ: name@gmail.com)');
+  }
+
+  const existing = db.getUserByEmail(cleanEmail);
+  if (existing) {
+    throw new Error('Email này đã được đăng ký trong hệ thống. Vui lòng chuyển sang Đăng nhập!');
+  }
+
+  const now = Date.now();
+  const cached = otpCache.get(cleanEmail);
+  if (cached && (now - cached.lastSentAt < 60000)) {
+    const waitSeconds = Math.ceil((60000 - (now - cached.lastSentAt)) / 1000);
+    throw new Error(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã xác nhận.`);
+  }
+
+  // Generate 6-digit OTP code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = now + 5 * 60 * 1000; // 5 minutes
+
+  otpCache.set(cleanEmail, {
+    code,
+    expiresAt,
+    lastSentAt: now
+  });
+
+  return { code, expiresAt };
+}
+
+function verifyRegistrationOtp(email, inputCode) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cached = otpCache.get(cleanEmail);
+  if (!cached) {
+    throw new Error('Chưa có mã xác nhận nào được gửi đến email này. Vui lòng bấm "Lấy mã xác nhận"!');
+  }
+
+  if (Date.now() > cached.expiresAt) {
+    otpCache.delete(cleanEmail);
+    throw new Error('Mã xác nhận đã hết hạn (5 phút). Vui lòng bấm "Lấy mã xác nhận" để nhận mã mới.');
+  }
+
+  if (String(cached.code).trim() !== String(inputCode).trim()) {
+    throw new Error('Mã xác nhận không chính xác. Vui lòng kiểm tra lại trong hòm thư của bạn.');
+  }
+
+  // Consume OTP upon successful verification
+  otpCache.delete(cleanEmail);
+  return true;
+}
+
 function hashPassword(password) {
   if (!password || typeof password !== 'string' || password.length < 6) {
     throw new Error('Mật khẩu phải có ít nhất 6 ký tự');
@@ -93,7 +151,7 @@ function publicUser(user) {
   };
 }
 
-async function register({ email, password, name }) {
+async function register({ email, password, name, otp }) {
   if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
     throw new Error('Email không đúng định dạng. Vui lòng nhập đúng địa chỉ email (ví dụ: name@gmail.com)');
   }
@@ -103,6 +161,12 @@ async function register({ email, password, name }) {
   if (existing) {
     throw new Error('Email này đã được đăng ký trong hệ thống');
   }
+
+  // Bắt buộc xác thực OTP 6 chữ số
+  if (!otp || !String(otp).trim()) {
+    throw new Error('Vui lòng nhập mã xác nhận 6 số gửi về email');
+  }
+  verifyRegistrationOtp(cleanEmail, otp);
 
   const WEAK_PASSWORDS = new Set([
     '123456', '12345678', '123456789', '1234567890',
@@ -565,6 +629,8 @@ async function googleAuth({ credential, accessToken, googleProfile, email, name,
 }
 
 module.exports = {
+  sendRegistrationOtp,
+  verifyRegistrationOtp,
   googleAuth,
   getGoogleConfig,
   saveGoogleConfig,

@@ -8,6 +8,7 @@ const license = require('./license-manager');
 const licenseAdmin = require('./license-admin');
 const auth = require('./auth');
 const checkout = require('./checkout');
+const mailer = require('./mailer');
 const fingerprint = require('./fingerprint');
 const proxy = require('./proxy');
 const synchronizer = require('./synchronizer');
@@ -630,6 +631,65 @@ function createServer() {
 
       
       // ----------------- AUTH & USER ACCOUNT API ----------------- //
+      // API Gửi mã OTP xác nhận email đăng ký
+      if (method === 'POST' && pathname === '/api/v1/auth/send-otp') {
+        const body = await parseJsonBody(req);
+        try {
+          const { code } = auth.sendRegistrationOtp(body.email);
+          const mailResult = await mailer.sendOtpEmail({ toEmail: body.email, otpCode: code });
+          return sendJson(res, 200, {
+            success: true,
+            message: mailResult.isMock
+              ? `Mã xác nhận: ${code} (Hệ thống đang chạy chế độ thử nghiệm nội bộ, mã hiển thị tại đây để bạn tiện test)`
+              : 'Mã xác nhận 6 số đã được gửi đến hòm thư của bạn. Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam).',
+            isMock: mailResult.isMock,
+            debugOtp: mailResult.isMock ? code : undefined
+          });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // API Cấu hình SMTP Email (Hỗ trợ cấu hình Gmail gửi thư)
+      if (method === 'GET' && pathname === '/api/v1/system/smtp-config') {
+        const cfg = mailer.getSmtpConfig();
+        return sendJson(res, 200, {
+          success: true,
+          config: {
+            host: cfg.host,
+            port: cfg.port,
+            secure: cfg.secure,
+            user: cfg.user,
+            pass: cfg.pass ? '••••••••' : '',
+            from: cfg.from,
+            isConfigured: Boolean(cfg.user && cfg.pass)
+          }
+        });
+      }
+
+      if (method === 'POST' && pathname === '/api/v1/system/smtp-config') {
+        const adminUser = await requireAdmin(req, res);
+        if (!adminUser) return;
+        try {
+          const body = await parseJsonBody(req);
+          const smtpConfigFile = path.join(__dirname, '..', 'data', 'smtp_config.json');
+          const current = mailer.getSmtpConfig();
+          const updated = {
+            ...current,
+            host: body.host || current.host || 'smtp.gmail.com',
+            port: Number(body.port) || current.port || 465,
+            secure: body.secure !== undefined ? Boolean(body.secure) : current.secure,
+            user: body.user !== undefined ? body.user.trim() : current.user,
+            pass: body.pass ? body.pass.trim() : current.pass,
+            from: body.from ? body.from.trim() : (body.user ? `OmniBrowser <${body.user.trim()}>` : current.from)
+          };
+          fs.writeFileSync(smtpConfigFile, JSON.stringify(updated, null, 2), 'utf8');
+          return sendJson(res, 200, { success: true, message: 'Đã lưu cấu hình Gmail SMTP thành công', isConfigured: Boolean(updated.user && updated.pass) });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
       if (method === 'POST' && pathname === '/api/v1/auth/register') {
         const body = await parseJsonBody(req);
         try {
