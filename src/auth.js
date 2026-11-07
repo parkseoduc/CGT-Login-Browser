@@ -3,6 +3,8 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const db = require('./db');
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 function hashPassword(password) {
   if (!password || typeof password !== 'string' || password.length < 6) {
     throw new Error('Mật khẩu phải có ít nhất 6 ký tự');
@@ -92,8 +94,8 @@ function publicUser(user) {
 }
 
 async function register({ email, password, name }) {
-  if (!email || !email.includes('@')) {
-    throw new Error('Email không hợp lệ');
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    throw new Error('Email không đúng định dạng. Vui lòng nhập đúng địa chỉ email (ví dụ: name@gmail.com)');
   }
   const cleanEmail = email.trim().toLowerCase();
   
@@ -301,8 +303,8 @@ function getUserFromRequest(req) {
 }
 
 async function createTeamMemberAccount({ ownerId, email, password, fullName, role, assignedGroups, permissions }) {
-  if (!email || !email.includes('@')) {
-    throw new Error('Email thành viên không hợp lệ');
+  if (!email || typeof email !== 'string' || !EMAIL_REGEX.test(email.trim())) {
+    throw new Error('Email thành viên không đúng định dạng');
   }
   const cleanEmail = email.trim().toLowerCase();
   const existingMember = db.getTeamMemberByEmail(cleanEmail);

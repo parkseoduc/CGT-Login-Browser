@@ -6171,11 +6171,39 @@ function initPolyLoginAuth() {
   const btnLoginAction = document.getElementById('poly-btn-login-action');
 
   const executePolyLogin = async () => {
-    const email = (document.getElementById('poly-login-input-email')?.value || '').trim();
+    const emailInput = document.getElementById('poly-login-input-email');
+    const email = (emailInput?.value || '').trim();
+    const emailContainer = document.getElementById('poly-login-email-container');
+    const emailError = document.getElementById('poly-login-email-error');
     const password = document.getElementById('poly-login-input-password')?.value || '';
     const btnSubmit = document.getElementById('poly-btn-login-action');
 
-    if (!email) return showToast('⚠️ Vui lòng nhập email đăng nhập', 'warning');
+    if (!email) {
+      if (emailInput) emailInput.focus();
+      if (emailContainer) {
+        emailContainer.classList.add('state-red', 'shake');
+        setTimeout(() => emailContainer.classList.remove('shake'), 400);
+      }
+      if (emailError) {
+        emailError.textContent = 'Vui lòng nhập email đăng nhập';
+        emailError.style.display = 'block';
+      }
+      return showToast('⚠️ Vui lòng nhập email đăng nhập', 'warning');
+    }
+
+    if (!EMAIL_FORMAT_REGEX.test(email)) {
+      if (emailInput) emailInput.focus();
+      if (emailContainer) {
+        emailContainer.classList.add('state-red', 'shake');
+        setTimeout(() => emailContainer.classList.remove('shake'), 400);
+      }
+      if (emailError) {
+        emailError.textContent = 'Email không đúng định dạng';
+        emailError.style.display = 'block';
+      }
+      return showToast('⚠️ Email không đúng định dạng', 'warning');
+    }
+
     if (!password) return showToast('⚠️ Vui lòng nhập mật khẩu', 'warning');
 
     if (btnSubmit) {
@@ -6393,6 +6421,98 @@ function initPolyLoginAuth() {
   }
 
   // Auto initialize when PolyLogin is mounted
+  const EMAIL_FORMAT_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  function validateEmailInput(inputEl, containerEl, errorEl) {
+    if (!inputEl) return false;
+    const val = (inputEl.value || '').trim();
+    if (!val) {
+      if (containerEl) {
+        containerEl.classList.remove('state-red', 'state-green');
+      }
+      if (errorEl) errorEl.style.display = 'none';
+      return false;
+    }
+    const isValid = EMAIL_FORMAT_REGEX.test(val);
+    if (!isValid) {
+      if (containerEl) {
+        containerEl.classList.add('state-red');
+        containerEl.classList.remove('state-green');
+      }
+      if (errorEl) {
+        errorEl.textContent = 'Email không đúng định dạng';
+        errorEl.style.display = 'block';
+      }
+    } else {
+      if (containerEl) {
+        containerEl.classList.remove('state-red');
+        containerEl.classList.add('state-green');
+      }
+      if (errorEl) errorEl.style.display = 'none';
+    }
+    return isValid;
+  }
+
+  function initPolyEmailListeners() {
+    const regEmailInput = document.getElementById('poly-reg-input-email');
+    const regEmailContainer = document.getElementById('poly-reg-email-container');
+    const regEmailError = document.getElementById('poly-reg-email-error');
+
+    if (regEmailInput) {
+      regEmailInput.addEventListener('input', () => {
+        validateEmailInput(regEmailInput, regEmailContainer, regEmailError);
+      });
+      regEmailInput.addEventListener('blur', () => {
+        if ((regEmailInput.value || '').trim()) {
+          validateEmailInput(regEmailInput, regEmailContainer, regEmailError);
+        }
+      });
+    }
+
+    const loginEmailInput = document.getElementById('poly-login-input-email');
+    const loginEmailContainer = document.getElementById('poly-login-email-container');
+    const loginEmailError = document.getElementById('poly-login-email-error');
+
+    if (loginEmailInput) {
+      loginEmailInput.addEventListener('input', () => {
+        if (loginEmailContainer && loginEmailContainer.classList.contains('state-red')) {
+          validateEmailInput(loginEmailInput, loginEmailContainer, loginEmailError);
+        }
+      });
+      loginEmailInput.addEventListener('blur', () => {
+        if ((loginEmailInput.value || '').trim()) {
+          validateEmailInput(loginEmailInput, loginEmailContainer, loginEmailError);
+        }
+      });
+    }
+  }
+
+  // Clear email error when switching views
+  const oldBtnSwitchToReg = document.getElementById('poly-switch-to-reg');
+  if (oldBtnSwitchToReg) {
+    const origSwitchReg = oldBtnSwitchToReg.onclick;
+    oldBtnSwitchToReg.onclick = (e) => {
+      const loginErr = document.getElementById('poly-login-email-error');
+      const loginBox = document.getElementById('poly-login-email-container');
+      if (loginErr) loginErr.style.display = 'none';
+      if (loginBox) loginBox.classList.remove('state-red', 'state-green');
+      if (typeof origSwitchReg === 'function') origSwitchReg(e);
+    };
+  }
+  const oldBtnSwitchToLogin = document.getElementById('poly-switch-to-login');
+  if (oldBtnSwitchToLogin) {
+    const origSwitchLogin = oldBtnSwitchToLogin.onclick;
+    oldBtnSwitchToLogin.onclick = (e) => {
+      const regErr = document.getElementById('poly-reg-email-error');
+      const regBox = document.getElementById('poly-reg-email-container');
+      if (regErr) regErr.style.display = 'none';
+      if (regBox) regBox.classList.remove('state-red', 'state-green');
+      if (typeof origSwitchLogin === 'function') origSwitchLogin(e);
+    };
+  }
+
+  initPolyEmailListeners();
+
   initPasswordStrengthListeners();
 
   // PolyLogin Form Submit - REGISTER
@@ -6401,13 +6521,38 @@ function initPolyLoginAuth() {
 
   const executePolyRegister = async () => {
     const name = (document.getElementById('poly-reg-input-name')?.value || '').trim();
-    const email = (document.getElementById('poly-reg-input-email')?.value || '').trim();
+    const emailInput = document.getElementById('poly-reg-input-email');
+    const email = (emailInput?.value || '').trim();
+    const emailContainer = document.getElementById('poly-reg-email-container');
+    const emailError = document.getElementById('poly-reg-email-error');
     const password = document.getElementById('poly-reg-input-password')?.value || '';
     const confirm = document.getElementById('poly-reg-input-confirm')?.value || '';
     const btnSubmit = document.getElementById('poly-btn-reg-action');
 
-    if (!email || !email.includes('@')) {
-      return showToast('⚠️ Vui lòng nhập email hợp lệ (ví dụ: name@example.com)', 'warning');
+    if (!email) {
+      if (emailInput) emailInput.focus();
+      if (emailContainer) {
+        emailContainer.classList.add('state-red', 'shake');
+        setTimeout(() => emailContainer.classList.remove('shake'), 400);
+      }
+      if (emailError) {
+        emailError.textContent = 'Vui lòng nhập địa chỉ email';
+        emailError.style.display = 'block';
+      }
+      return showToast('⚠️ Vui lòng nhập email đăng ký', 'warning');
+    }
+
+    if (!EMAIL_FORMAT_REGEX.test(email)) {
+      if (emailInput) emailInput.focus();
+      if (emailContainer) {
+        emailContainer.classList.add('state-red', 'shake');
+        setTimeout(() => emailContainer.classList.remove('shake'), 400);
+      }
+      if (emailError) {
+        emailError.textContent = 'Email không đúng định dạng';
+        emailError.style.display = 'block';
+      }
+      return showToast('⚠️ Email không đúng định dạng (ví dụ: name@gmail.com)', 'warning');
     }
 
     const evalResult = evaluatePassword(password);
