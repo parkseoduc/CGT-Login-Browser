@@ -1638,14 +1638,18 @@ function createServer() {
       if (groupMatch) {
         const groupId = groupMatch[1];
         if (method === 'GET' && !groupId) {
-          return sendJson(res, 200, { success: true, groups: db.listGroups() });
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          return sendJson(res, 200, { success: true, groups: db.listGroups(effectiveUserId) });
         }
         if (method === 'POST' && !groupId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : '');
           const body = await parseJsonBody(req);
           if (!body.name || !body.name.trim()) {
             return sendJson(res, 400, { success: false, error: 'Tên nhóm không được để trống' });
           }
-          const group = db.createGroup(body.name.trim(), body.color || '#1890ff', body.notes || '');
+          const group = db.createGroup(body.name.trim(), body.color || '#1890ff', body.notes || '', effectiveUserId);
           return sendJson(res, 201, { success: true, group });
         }
         if (method === 'GET' && groupId) {
@@ -1779,6 +1783,8 @@ function createServer() {
 
         // Create or Batch Import proxies
         if (method === 'POST' && !proxyId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : '');
           const body = await parseJsonBody(req);
           
           // Bulk text import (lines)
@@ -1796,6 +1802,7 @@ function createServer() {
                   port: parsed.port,
                   username: parsed.username,
                   password: parsed.password,
+                  user_id: effectiveUserId
                 });
                 created.push(item);
               }
@@ -1812,6 +1819,7 @@ function createServer() {
           if (!parsedData.host || !parsedData.port) {
             return sendJson(res, 400, { success: false, error: 'Host và Port của proxy là bắt buộc' });
           }
+          parsedData.user_id = effectiveUserId;
           const created = db.createProxy(parsedData);
           return sendJson(res, 201, { success: true, proxy: created });
         }

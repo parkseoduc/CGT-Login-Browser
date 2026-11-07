@@ -626,23 +626,15 @@ function bulkCreateProfiles(options = {}) {
 
 function listGroups(userId = null) {
   const db = getDb();
-  if (userId) {
-    return db.prepare(`
-      SELECT g.*, COUNT(p.id) AS profile_count
-      FROM groups g
-      LEFT JOIN profiles p ON p.group_id = g.id
-      WHERE g.user_id = ? OR g.user_id = '' OR g.user_id IS NULL
-      GROUP BY g.id
-      ORDER BY g.created_at ASC
-    `).all(userId);
-  }
+  if (!userId) return [];
   return db.prepare(`
     SELECT g.*, COUNT(p.id) AS profile_count
     FROM groups g
     LEFT JOIN profiles p ON p.group_id = g.id
+    WHERE g.user_id = ?
     GROUP BY g.id
     ORDER BY g.created_at ASC
-  `).all();
+  `).all(userId);
 }
 
 function getGroup(id) {
@@ -683,23 +675,15 @@ function deleteGroup(id) {
 
 function listProxies(userId = null) {
   const db = getDb();
-  if (userId) {
-    return db.prepare(`
-      SELECT pr.*, COUNT(p.id) AS profile_count
-      FROM proxies pr
-      LEFT JOIN profiles p ON p.proxy_id = pr.id
-      WHERE pr.user_id = ? OR pr.user_id = '' OR pr.user_id IS NULL
-      GROUP BY pr.id
-      ORDER BY pr.created_at DESC
-    `).all(userId);
-  }
+  if (!userId) return [];
   return db.prepare(`
     SELECT pr.*, COUNT(p.id) AS profile_count
     FROM proxies pr
     LEFT JOIN profiles p ON p.proxy_id = pr.id
+    WHERE pr.user_id = ?
     GROUP BY pr.id
     ORDER BY pr.created_at DESC
-  `).all();
+  `).all(userId);
 }
 
 function getProxy(id) {
@@ -711,8 +695,8 @@ function createProxy(data) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   db.prepare(`
-    INSERT INTO proxies (id, name, type, host, port, username, password, rotation_api_url, status, ping, ip, country, city, isp, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO proxies (id, name, type, host, port, username, password, rotation_api_url, status, ping, ip, country, city, isp, user_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     data.name || `${data.host}:${data.port}`,
@@ -728,6 +712,7 @@ function createProxy(data) {
     data.country || '',
     data.city || '',
     data.isp || '',
+    data.user_id || '',
     now
   );
   return getProxy(id);

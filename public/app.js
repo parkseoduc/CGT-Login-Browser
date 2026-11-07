@@ -5730,6 +5730,8 @@ function initAuthControls() {
         await checkAuthState();
         await fetchLicense();
         await fetchProfiles();
+        await fetchGroups();
+        await fetchProxies();
       } else {
         showToast(data.error || 'Đăng nhập thất bại', 'danger');
       }
@@ -5809,6 +5811,8 @@ function initAuthControls() {
         await checkAuthState();
         await fetchLicense();
         await fetchProfiles();
+        await fetchGroups();
+        await fetchProxies();
       } else {
         showToast(data.error || 'Đăng ký thất bại', 'danger');
       }
@@ -6225,6 +6229,8 @@ function initPolyLoginAuth() {
         await checkAuthState();
         await fetchLicense();
         await fetchProfiles();
+        await fetchGroups();
+        await fetchProxies();
       } else {
         showToast('⚠️ ' + (data.error || 'Đăng nhập thất bại. Vui lòng kiểm tra lại email hoặc mật khẩu.'), 'danger');
       }
@@ -6727,6 +6733,8 @@ function initPolyLoginAuth() {
         await checkAuthState();
         await fetchLicense();
         await fetchProfiles();
+        await fetchGroups();
+        await fetchProxies();
       } else {
         showToast('⚠️ ' + (data.error || 'Đăng ký thất bại. Vui lòng thử lại!'), 'danger');
       }
