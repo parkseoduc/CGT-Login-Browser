@@ -302,12 +302,18 @@ async function sendThankYouEmail({ customerName, customerEmail, planName, planCo
 /**
  * Tạo nội dung HTML gửi mã xác nhận bảo mật OTP 6 số
  */
-function buildOtpHtml({ toEmail, otpCode, minutes = 5 }) {
+function buildOtpHtml({ toEmail, otpCode, minutes = 5, actionType = 'register' }) {
+  const isReset = actionType === 'reset_password';
+  const actionTitle = isReset ? 'Đặt Lại Mật Khẩu' : 'Đăng Ký Tài Khoản';
+  const actionDesc = isReset
+    ? `Bạn đang yêu cầu đặt lại mật khẩu cho tài khoản <strong>OmniBrowser</strong> với hòm thư: <strong>${toEmail}</strong>.`
+    : `Bạn đang yêu cầu mã xác nhận để đăng ký tài khoản trên hệ thống <strong>OmniBrowser</strong> với hòm thư: <strong>${toEmail}</strong>.`;
+
   return `<!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Mã xác nhận bảo mật OmniBrowser</title>
+  <title>Mã xác nhận bảo mật OmniBrowser - ${actionTitle}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }
     .card { max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.06); overflow: hidden; }
@@ -333,7 +339,7 @@ function buildOtpHtml({ toEmail, otpCode, minutes = 5 }) {
     <div class="content">
       <p style="font-size: 15px; font-weight: 600; margin-top: 0;">Xin chào bạn,</p>
       <p class="note">
-        Bạn đang yêu cầu mã xác nhận để đăng ký tài khoản trên hệ thống <strong>OmniBrowser</strong> với hòm thư: <strong>${toEmail}</strong>.
+        ${actionDesc}
       </p>
       <div class="otp-box">
         <div class="otp-label">MÃ XÁC NHẬN CỦA BẠN (OTP)</div>
@@ -344,7 +350,7 @@ function buildOtpHtml({ toEmail, otpCode, minutes = 5 }) {
         🔒 Lưu ý bảo mật: Tuyệt đối không chia sẻ mã này cho bất kỳ ai để đảm bảo an toàn tài khoản và quyền lợi gói bản quyền của bạn.
       </div>
       <p class="note" style="font-size: 12.5px; color: #94a3b8;">
-        Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua thư này.
+        Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua thư này hoặc đổi mật khẩu ngay để bảo vệ tài khoản.
       </p>
     </div>
     <div class="footer">
@@ -357,19 +363,23 @@ function buildOtpHtml({ toEmail, otpCode, minutes = 5 }) {
 }
 
 /**
- * Gửi mã OTP xác nhận đăng ký về email
+ * Gửi mã OTP xác nhận về email (hỗ trợ cả đăng ký và đặt lại mật khẩu)
  */
-async function sendOtpEmail({ toEmail, otpCode }) {
+async function sendOtpEmail({ toEmail, otpCode, actionType = 'register' }) {
   if (!toEmail || !toEmail.includes('@')) return { success: false, error: 'Email không hợp lệ' };
 
-  const subject = `[OmniBrowser] Mã xác nhận đăng ký tài khoản: ${otpCode}`;
-  const html = buildOtpHtml({ toEmail, otpCode, minutes: 5 });
+  const isReset = actionType === 'reset_password';
+  const subject = isReset
+    ? `[OmniBrowser] Mã xác nhận đặt lại mật khẩu: ${otpCode}`
+    : `[OmniBrowser] Mã xác nhận đăng ký tài khoản: ${otpCode}`;
+  const html = buildOtpHtml({ toEmail, otpCode, minutes: 5, actionType });
   const smtp = getSmtpConfig();
 
   const record = {
     id: 'otp_' + Date.now(),
     to: toEmail,
     otp_code: otpCode,
+    action_type: actionType,
     subject,
     sent_at: new Date().toISOString(),
     status: 'SENT'

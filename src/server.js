@@ -300,19 +300,21 @@ function createServer() {
       if (pathname === '/api/v1/profiles/import-zip' && method === 'POST') {
         const contentType = req.headers['content-type'] || '';
         try {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
           let created = null;
           if (contentType.includes('application/json')) {
             const body = await parseJsonBody(req);
             if (!body.filePath) {
               return sendJson(res, 400, { success: false, error: 'Đường dẫn file zip (filePath) là bắt buộc' });
             }
-            created = await profileBackup.importProfileFromZip(body.filePath, body.name);
+            created = await profileBackup.importProfileFromZip(body.filePath, body.name, effectiveUserId);
           } else {
             const buffer = await parseBufferBody(req);
             if (!buffer || buffer.length === 0) {
               return sendJson(res, 400, { success: false, error: 'Dữ liệu file zip trống' });
             }
-            created = await profileBackup.importProfileFromZip(buffer);
+            created = await profileBackup.importProfileFromZip(buffer, '', effectiveUserId);
           }
           return sendJson(res, 201, { success: true, profile: created });
         } catch (err) {
@@ -645,6 +647,36 @@ function createServer() {
             isMock: mailResult.isMock,
             debugOtp: mailResult.isMock ? code : undefined
           });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // API Gửi mã OTP Quên / Đặt lại mật khẩu
+      if (method === 'POST' && pathname === '/api/v1/auth/forgot-password/send-otp') {
+        const body = await parseJsonBody(req);
+        try {
+          const { code } = auth.sendPasswordResetOtp(body.email);
+          const mailResult = await mailer.sendOtpEmail({ toEmail: body.email, otpCode: code, actionType: 'reset_password' });
+          return sendJson(res, 200, {
+            success: true,
+            message: mailResult.isMock
+              ? `Mã xác nhận đặt lại mật khẩu: ${code} (Mã demo)`
+              : 'Mã xác nhận 6 số đã được gửi đến hòm thư của bạn. Vui lòng kiểm tra hộp thư đến (hoặc thư mục Spam).',
+            isMock: mailResult.isMock,
+            debugOtp: mailResult.isMock ? code : undefined
+          });
+        } catch (err) {
+          return sendJson(res, 400, { success: false, error: err.message });
+        }
+      }
+
+      // API Xác nhận mã OTP và Cập nhật mật khẩu mới
+      if (method === 'POST' && pathname === '/api/v1/auth/forgot-password/reset') {
+        const body = await parseJsonBody(req);
+        try {
+          const result = auth.resetPasswordWithOtp(body.email, body.code, body.newPassword);
+          return sendJson(res, 200, result);
         } catch (err) {
           return sendJson(res, 400, { success: false, error: err.message });
         }
@@ -1607,8 +1639,13 @@ function createServer() {
 
         // Get single profile
         if (method === 'GET' && !action) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
           const profile = db.getProfile(profileId);
           if (!profile) return sendJson(res, 404, { success: false, error: 'Profile not found' });
+          if (profile.user_id && effectiveUserId && profile.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền truy cập hồ sơ này' });
+          }
           return sendJson(res, 200, {
             success: true,
             profile: { ...profile, isRunning: launcher.isProfileRunning(profileId) }
@@ -1617,14 +1654,26 @@ function createServer() {
 
         // Update single profile
         if (method === 'PUT' && !action) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const profile = db.getProfile(profileId);
+          if (!profile) return sendJson(res, 404, { success: false, error: 'Profile not found' });
+          if (profile.user_id && effectiveUserId && profile.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền chỉnh sửa hồ sơ này' });
+          }
           const body = await parseJsonBody(req);
           const updated = db.updateProfile(profileId, body);
-          if (!updated) return sendJson(res, 404, { success: false, error: 'Profile not found' });
           return sendJson(res, 200, { success: true, profile: updated });
         }
 
         // Delete single profile
         if (method === 'DELETE' && !action) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const profile = db.getProfile(profileId);
+          if (profile && profile.user_id && effectiveUserId && profile.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền xoá hồ sơ này' });
+          }
           if (launcher.isProfileRunning(profileId)) {
             await launcher.stopProfile(profileId);
           }
@@ -1653,17 +1702,34 @@ function createServer() {
           return sendJson(res, 201, { success: true, group });
         }
         if (method === 'GET' && groupId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
           const group = db.getGroup(groupId);
           if (!group) return sendJson(res, 404, { success: false, error: 'Group not found' });
+          if (group.user_id && effectiveUserId && group.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền truy cập nhóm này' });
+          }
           return sendJson(res, 200, { success: true, group });
         }
         if (method === 'PUT' && groupId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const group = db.getGroup(groupId);
+          if (!group) return sendJson(res, 404, { success: false, error: 'Group not found' });
+          if (group.user_id && effectiveUserId && group.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền sửa nhóm này' });
+          }
           const body = await parseJsonBody(req);
           const updated = db.updateGroup(groupId, body);
-          if (!updated) return sendJson(res, 404, { success: false, error: 'Group not found' });
           return sendJson(res, 200, { success: true, group: updated });
         }
         if (method === 'DELETE' && groupId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const group = db.getGroup(groupId);
+          if (group && group.user_id && effectiveUserId && group.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền xoá nhóm này' });
+          }
           db.deleteGroup(groupId);
           return sendJson(res, 200, { success: true, message: 'Group deleted' });
         }
@@ -1700,7 +1766,9 @@ function createServer() {
       }
 
       if (method === 'POST' && pathname === '/api/v1/proxies/check-all') {
-        const list = db.listProxies();
+        const user = await auth.getUserFromRequest(req);
+        const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+        const list = db.listProxies(effectiveUserId);
         const results = [];
         for (const p of list) {
           const checkRes = await proxy.checkProxy(p);
@@ -1826,21 +1894,38 @@ function createServer() {
 
         // Get single proxy
         if (method === 'GET' && proxyId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
           const p = db.getProxy(proxyId);
           if (!p) return sendJson(res, 404, { success: false, error: 'Proxy not found' });
+          if (p.user_id && effectiveUserId && p.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền truy cập proxy này' });
+          }
           return sendJson(res, 200, { success: true, proxy: p });
         }
 
         // Update single proxy
         if (method === 'PUT' && proxyId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const p = db.getProxy(proxyId);
+          if (!p) return sendJson(res, 404, { success: false, error: 'Proxy not found' });
+          if (p.user_id && effectiveUserId && p.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền sửa proxy này' });
+          }
           const body = await parseJsonBody(req);
           const updated = db.updateProxy(proxyId, body);
-          if (!updated) return sendJson(res, 404, { success: false, error: 'Proxy not found' });
           return sendJson(res, 200, { success: true, proxy: updated });
         }
 
         // Delete single proxy
         if (method === 'DELETE' && proxyId) {
+          const user = await auth.getUserFromRequest(req);
+          const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+          const p = db.getProxy(proxyId);
+          if (p && p.user_id && effectiveUserId && p.user_id !== effectiveUserId && user.role !== 'admin') {
+            return sendJson(res, 403, { success: false, error: 'Bạn không có quyền xoá proxy này' });
+          }
           db.deleteProxy(proxyId);
           return sendJson(res, 200, { success: true, message: 'Proxy deleted' });
         }

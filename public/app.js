@@ -6111,21 +6111,209 @@ function initPolyLoginAuth() {
 
   const viewLogin = document.getElementById('poly-view-login');
   const viewReg = document.getElementById('poly-view-register');
+  const viewForgot = document.getElementById('poly-view-forgot');
   const btnSwitchToReg = document.getElementById('poly-switch-to-reg');
   const btnSwitchToLogin = document.getElementById('poly-switch-to-login');
+  const btnForgotPass = document.getElementById('poly-login-forgot-btn');
+  const btnSwitchToLoginFromForgot = document.getElementById('poly-switch-to-login-from-forgot');
+
+  function showAuthView(viewName) {
+    if (viewLogin) viewLogin.style.display = viewName === 'login' ? 'block' : 'none';
+    if (viewReg) viewReg.style.display = viewName === 'register' ? 'block' : 'none';
+    if (viewForgot) viewForgot.style.display = viewName === 'forgot' ? 'block' : 'none';
+  }
 
   if (btnSwitchToReg) {
     btnSwitchToReg.onclick = (e) => {
       e.preventDefault();
-      if (viewLogin) viewLogin.style.display = 'none';
-      if (viewReg) viewReg.style.display = 'block';
+      showAuthView('register');
     };
   }
   if (btnSwitchToLogin) {
     btnSwitchToLogin.onclick = (e) => {
       e.preventDefault();
-      if (viewReg) viewReg.style.display = 'none';
-      if (viewLogin) viewLogin.style.display = 'block';
+      showAuthView('login');
+    };
+  }
+  if (btnForgotPass) {
+    btnForgotPass.onclick = (e) => {
+      e.preventDefault();
+      showAuthView('forgot');
+    };
+  }
+  const authForgotLink = document.getElementById('auth-forgot-pass-link');
+  if (authForgotLink) {
+    authForgotLink.onclick = (e) => {
+      e.preventDefault();
+      const modal = document.getElementById('auth-modal');
+      if (modal) modal.style.display = 'none';
+      const polyWrap = document.getElementById('polylogin-auth-screen');
+      if (polyWrap) polyWrap.style.display = 'flex';
+      showAuthView('forgot');
+    };
+  }
+  if (btnSwitchToLoginFromForgot) {
+    btnSwitchToLoginFromForgot.onclick = (e) => {
+      e.preventDefault();
+      showAuthView('login');
+    };
+  }
+
+  // Google SSO Feedback
+  const googleBtns = [
+    document.getElementById('poly-btn-google-login'),
+    document.getElementById('poly-btn-google-register'),
+    document.getElementById('btn-google-login'),
+    document.getElementById('btn-google-register')
+  ];
+  googleBtns.forEach(btn => {
+    if (btn) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        showToast('ℹ️ Đăng nhập Google SSO đang trong quá trình xét duyệt của Google Cloud. Vui lòng đăng nhập / đăng ký bằng Email & OTP bảo mật.', 'warning');
+      };
+    }
+  });
+
+  // Forgot Password Eye Toggle
+  const toggleForgotEye = document.getElementById('poly-toggle-forgot-eye');
+  const inputForgotPass = document.getElementById('poly-forgot-input-password');
+  if (toggleForgotEye && inputForgotPass) {
+    toggleForgotEye.onclick = () => {
+      const isPlain = inputForgotPass.classList.contains('show-plain') || inputForgotPass.type === 'text';
+      if (inputForgotPass.classList.contains('poly-password-masked')) {
+        inputForgotPass.classList.toggle('show-plain');
+        toggleForgotEye.style.color = inputForgotPass.classList.contains('show-plain') ? '#2563eb' : '#94a3b8';
+      } else {
+        inputForgotPass.type = isPlain ? 'password' : 'text';
+        toggleForgotEye.style.color = !isPlain ? '#2563eb' : '#94a3b8';
+      }
+    };
+  }
+
+  // Forgot Password Send OTP
+  const btnSendForgotOtp = document.getElementById('poly-btn-send-forgot-otp');
+  const inputForgotEmail = document.getElementById('poly-forgot-input-email');
+  const forgotEmailErr = document.getElementById('poly-forgot-email-error');
+  const forgotOtpErr = document.getElementById('poly-forgot-otp-error');
+  const forgotOtpHint = document.getElementById('poly-forgot-otp-hint');
+  let forgotCooldownTimer = null;
+
+  if (btnSendForgotOtp && inputForgotEmail) {
+    btnSendForgotOtp.onclick = async () => {
+      const email = inputForgotEmail.value.trim().toLowerCase();
+      if (!EMAIL_REGEX.test(email)) {
+        if (forgotEmailErr) {
+          forgotEmailErr.textContent = 'Vui lòng nhập đúng định dạng email trước khi lấy mã';
+          forgotEmailErr.style.display = 'block';
+        }
+        return;
+      }
+      if (forgotEmailErr) forgotEmailErr.style.display = 'none';
+
+      btnSendForgotOtp.disabled = true;
+      btnSendForgotOtp.innerHTML = '<span>Đang gửi...</span>';
+
+      try {
+        const res = await fetch('/api/v1/auth/forgot-password/send-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        if (!data.success) {
+          showToast('❌ ' + (data.error || 'Gửi mã xác nhận thất bại'), 'danger');
+          btnSendForgotOtp.disabled = false;
+          btnSendForgotOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+          return;
+        }
+
+        showToast('✉️ ' + (data.message || 'Mã xác nhận đã được gửi về email của bạn'), 'success');
+        if (forgotOtpHint) {
+          forgotOtpHint.textContent = '✓ Đã gửi mã xác nhận đến: ' + email;
+          forgotOtpHint.style.display = 'block';
+        }
+
+        // 60s countdown
+        let remaining = 60;
+        btnSendForgotOtp.innerHTML = `<span>Gửi lại sau (${remaining}s)</span>`;
+        clearInterval(forgotCooldownTimer);
+        forgotCooldownTimer = setInterval(() => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearInterval(forgotCooldownTimer);
+            btnSendForgotOtp.disabled = false;
+            btnSendForgotOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+          } else {
+            btnSendForgotOtp.innerHTML = `<span>Gửi lại sau (${remaining}s)</span>`;
+          }
+        }, 1000);
+      } catch (err) {
+        showToast('❌ Lỗi kết nối máy chủ khi gửi mã xác nhận', 'danger');
+        btnSendForgotOtp.disabled = false;
+        btnSendForgotOtp.innerHTML = '<span>Lấy mã xác nhận</span>';
+      }
+    };
+  }
+
+  // Forgot Password Submit
+  const btnForgotAction = document.getElementById('poly-btn-forgot-action');
+  const inputForgotOtp = document.getElementById('poly-forgot-input-otp');
+  const inputForgotConfirm = document.getElementById('poly-forgot-input-confirm');
+
+  if (btnForgotAction) {
+    btnForgotAction.onclick = async () => {
+      const email = inputForgotEmail ? inputForgotEmail.value.trim().toLowerCase() : '';
+      const code = inputForgotOtp ? inputForgotOtp.value.trim() : '';
+      const newPassword = inputForgotPass ? inputForgotPass.value : '';
+      const confirmPass = inputForgotConfirm ? inputForgotConfirm.value : '';
+
+      if (!email || !EMAIL_REGEX.test(email)) {
+        showToast('Vui lòng nhập email hợp lệ', 'warning');
+        return;
+      }
+      if (!code || code.length !== 6) {
+        showToast('Vui lòng nhập đủ 6 chữ số mã xác nhận OTP', 'warning');
+        return;
+      }
+      if (!newPassword || newPassword.length < 6) {
+        showToast('Mật khẩu mới phải có ít nhất 6 ký tự', 'warning');
+        return;
+      }
+      if (newPassword !== confirmPass) {
+        showToast('Mật khẩu xác nhận không trùng khớp', 'warning');
+        return;
+      }
+
+      btnForgotAction.disabled = true;
+      btnForgotAction.innerHTML = '<span>Đang xử lý...</span>';
+
+      try {
+        const res = await fetch('/api/v1/auth/forgot-password/reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, code, newPassword })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('🎉 Đặt lại mật khẩu thành công! Vui lòng đăng nhập.', 'success');
+          showAuthView('login');
+          const loginEmail = document.getElementById('poly-login-input-email');
+          if (loginEmail) loginEmail.value = email;
+          const loginPass = document.getElementById('poly-login-input-password');
+          if (loginPass) {
+            loginPass.value = '';
+            loginPass.focus();
+          }
+        } else {
+          showToast('⚠️ ' + (data.error || 'Đặt lại mật khẩu thất bại'), 'danger');
+        }
+      } catch (err) {
+        showToast('❌ Lỗi kết nối khi đặt lại mật khẩu', 'danger');
+      } finally {
+        btnForgotAction.disabled = false;
+        btnForgotAction.innerHTML = '<span>Xác nhận đổi mật khẩu</span>';
+      }
     };
   }
 

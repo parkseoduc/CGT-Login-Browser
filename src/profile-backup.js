@@ -65,7 +65,7 @@ async function exportProfileToZip(profileId) {
 /**
  * Khôi phục Profile từ file zip
  */
-async function importProfileFromZip(zipBufferOrPath, customName = '') {
+async function importProfileFromZip(zipBufferOrPath, customName = '', userId = null) {
   let zipPath = '';
   let needCleanup = false;
 
@@ -106,6 +106,7 @@ async function importProfileFromZip(zipBufferOrPath, customName = '') {
 
     const created = db.createProfile({
       id: newProfileId,
+      user_id: userId || importedData.user_id || '',
       name: customName || (importedData.name ? `${importedData.name} (Imported)` : `Restored Profile ${newProfileId.slice(0, 8)}`),
       group_id: importedData.group_id || null,
       kernel_path: importedData.kernel_path || config.getDefaultKernelPath(),

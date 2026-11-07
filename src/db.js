@@ -319,19 +319,22 @@ function autoRepairKernelPaths() {
 
 function listProfiles(userId = null) {
   const db = getDb();
-  if (userId) {
-    return db.prepare(`
-      SELECT p.*, g.name AS group_name, g.color AS group_color,
-             pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
-             pr.username AS proxy_user, pr.password AS proxy_pass,
-             pr.rotation_api_url AS proxy_rotation_api_url
-      FROM profiles p
-      LEFT JOIN groups g ON p.group_id = g.id
-      LEFT JOIN proxies pr ON p.proxy_id = pr.id
-      WHERE p.user_id = ?
-      ORDER BY p.created_at DESC
-    `).all(userId);
-  }
+  if (!userId) return [];
+  return db.prepare(`
+    SELECT p.*, g.name AS group_name, g.color AS group_color,
+           pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
+           pr.username AS proxy_user, pr.password AS proxy_pass,
+           pr.rotation_api_url AS proxy_rotation_api_url
+    FROM profiles p
+    LEFT JOIN groups g ON p.group_id = g.id
+    LEFT JOIN proxies pr ON p.proxy_id = pr.id
+    WHERE p.user_id = ?
+    ORDER BY p.created_at DESC
+  `).all(userId);
+}
+
+function listAllProfiles() {
+  const db = getDb();
   return db.prepare(`
     SELECT p.*, g.name AS group_name, g.color AS group_color,
            pr.type AS proxy_type, pr.host AS proxy_host, pr.port AS proxy_port,
@@ -401,6 +404,7 @@ function createProfile(data) {
         port: parsed.port,
         username: parsed.username,
         password: parsed.password,
+        user_id: data.user_id || '',
       });
       proxyId = createdProxy.id;
     }
@@ -568,6 +572,7 @@ function bulkCreateProfiles(options = {}) {
           port: parsed.port,
           username: parsed.username,
           password: parsed.password,
+          user_id: options.user_id || '',
         });
         assignedProxies.push(created.id);
       }
@@ -598,6 +603,7 @@ function bulkCreateProfiles(options = {}) {
 
     const profile = createProfile({
       name: profileName,
+      user_id: options.user_id || '',
       group_id: groupId,
       proxy_id: assignedProxyId,
       user_agent: fp.userAgent,
@@ -1161,6 +1167,7 @@ module.exports = {
   deleteAutomationScript,
   getDb,
   listProfiles,
+  listAllProfiles,
   getProfile,
   createProfile,
   bulkCreateProfiles,

@@ -63,6 +63,73 @@ function verifyRegistrationOtp(email, inputCode) {
   return true;
 }
 
+// In-memory Password Reset OTP Cache
+const resetOtpCache = new Map();
+
+function sendPasswordResetOtp(email) {
+  if (!email || typeof email !== 'string') {
+    throw new Error('Vui lòng nhập email');
+  }
+  const cleanEmail = email.trim().toLowerCase();
+  if (!EMAIL_REGEX.test(cleanEmail)) {
+    throw new Error('Email không đúng định dạng. Vui lòng nhập đúng địa chỉ email');
+  }
+
+  const existing = db.getUserByEmail(cleanEmail);
+  if (!existing) {
+    throw new Error('Email này chưa được đăng ký trong hệ thống!');
+  }
+
+  const now = Date.now();
+  const cached = resetOtpCache.get(cleanEmail);
+  if (cached && (now - cached.lastSentAt < 60000)) {
+    const waitSeconds = Math.ceil((60000 - (now - cached.lastSentAt)) / 1000);
+    throw new Error(`Vui lòng đợi ${waitSeconds} giây trước khi yêu cầu gửi lại mã xác nhận.`);
+  }
+
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = now + 5 * 60 * 1000; // 5 minutes
+
+  resetOtpCache.set(cleanEmail, {
+    code,
+    expiresAt,
+    lastSentAt: now
+  });
+
+  return { code, expiresAt };
+}
+
+function resetPasswordWithOtp(email, inputCode, newPassword) {
+  const cleanEmail = String(email || '').trim().toLowerCase();
+  const cached = resetOtpCache.get(cleanEmail);
+  if (!cached) {
+    throw new Error('Chưa có mã xác nhận nào được gửi đến email này. Vui lòng bấm "Lấy mã xác nhận"!');
+  }
+
+  if (Date.now() > cached.expiresAt) {
+    resetOtpCache.delete(cleanEmail);
+    throw new Error('Mã xác nhận đã hết hạn (5 phút). Vui lòng gửi lại mã mới.');
+  }
+
+  if (String(cached.code).trim() !== String(inputCode).trim()) {
+    throw new Error('Mã xác nhận không chính xác. Vui lòng kiểm tra lại trong hòm thư của bạn.');
+  }
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+  }
+
+  const user = db.getUserByEmail(cleanEmail);
+  if (!user) {
+    throw new Error('Người dùng không tồn tại.');
+  }
+
+  const newHash = hashPassword(newPassword);
+  db.resetUserPassword(user.id, newHash);
+  resetOtpCache.delete(cleanEmail);
+  return { success: true, message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập với mật khẩu mới.' };
+}
+
 function hashPassword(password) {
   if (!password || typeof password !== 'string' || password.length < 6) {
     throw new Error('Mật khẩu phải có ít nhất 6 ký tự');
@@ -631,6 +698,8 @@ async function googleAuth({ credential, accessToken, googleProfile, email, name,
 module.exports = {
   sendRegistrationOtp,
   verifyRegistrationOtp,
+  sendPasswordResetOtp,
+  resetPasswordWithOtp,
   googleAuth,
   getGoogleConfig,
   saveGoogleConfig,

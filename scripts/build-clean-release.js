@@ -18,7 +18,7 @@ rawDb.prepare('DELETE FROM proxies').run();
 // Thu gọn dung lượng database (VACUUM)
 rawDb.prepare('VACUUM').run();
 
-const remainingProfiles = db.listProfiles();
+const remainingProfiles = db.listAllProfiles();
 const remainingGroups = db.listGroups();
 const remainingProxies = db.listProxies();
 const extensions = db.listExtensions();

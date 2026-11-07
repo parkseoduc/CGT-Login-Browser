@@ -101,7 +101,8 @@ function getFallbackStatus() {
 }
 
 function getLicenseStatus(user = null) {
-  const profileCount = db.listProfiles().length;
+  const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
+  const profileCount = effectiveUserId ? db.listProfiles(effectiveUserId).length : 0;
   if (user) {
     const isAllowed = user.plan_code !== 'FREE_TRIAL';
     return {
