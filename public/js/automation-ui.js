@@ -476,20 +476,50 @@
       } else if (step.type === 'click') {
         inputsHtml = `
           <div style="width: 100%;">
-            <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">CSS Selector phần tử cần nhấp (Click):</label>
-            <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="Ví dụ: button.btn-login hoặc #submit-btn" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 0;">🎯 Vị trí hoặc Tên nút cần nhấp (Click):</label>
+              <a href="javascript:void(0)" class="btn-open-selector-guide" style="font-size: 11.5px; color: #0284c7; font-weight: 600; text-decoration: underline;">❓ Không biết mã thì điền gì?</a>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="Ví dụ: Đăng nhập, Tìm kiếm, hoặc dán mã #id..." style="font-size: 13px; padding: 8px 12px; flex: 1;">
+              <select class="poly-input quick-selector-preset" data-idx="${idx}" style="font-size: 12px; padding: 8px 10px; width: auto; max-width: 160px; background: #f0f9ff; color: #0369a1; font-weight: 600; border-color: #bae6fd;">
+                <option value="">⚡ Chọn mẫu...</option>
+                <option value="button[type='submit'], input[type='submit']">🔘 Nút Gửi / Submit</option>
+                <option value="button, div[role='button']">🔘 Nút bấm đầu tiên</option>
+                <option value="a[href]">🔗 Link đầu tiên</option>
+                <option value="custom">✏️ Nhập chữ trên nút</option>
+              </select>
+            </div>
+            <div style="font-size: 11px; color: #64748b; margin-top: 5px;">
+              💡 <em>Mẹo cực dễ: Bạn chỉ cần gõ đúng chữ hiển thị trên nút (Ví dụ: <strong>Đăng nhập</strong>, <strong>Tìm kiếm</strong>, <strong>Theo dõi</strong>) — hệ thống sẽ tự tìm và bấm trúng!</em>
+            </div>
           </div>
         `;
       } else if (step.type === 'type') {
         inputsHtml = `
-          <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 14px; width: 100%;">
+          <div style="display: grid; grid-template-columns: 1.2fr 1.5fr; gap: 14px; width: 100%;">
             <div>
-              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">CSS Selector ô nhập:</label>
-              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="input[type='text'] hoặc #prompt-box" style="font-size: 13px; padding: 8px 12px; width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 0;">🎯 Vị trí ô cần gõ:</label>
+                <a href="javascript:void(0)" class="btn-open-selector-guide" style="font-size: 11.5px; color: #0284c7; font-weight: 600; text-decoration: underline;">❓ Hướng dẫn</a>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="selector" value="${escapeHtml(step.selector || '')}" placeholder="Ví dụ: Tìm kiếm, hoặc dán mã #id..." style="font-size: 13px; padding: 8px 12px; flex: 1;">
+                <select class="poly-input quick-selector-preset" data-idx="${idx}" style="font-size: 12px; padding: 8px 10px; width: auto; max-width: 160px; background: #f0f9ff; color: #0369a1; font-weight: 600; border-color: #bae6fd;">
+                  <option value="">⚡ Chọn mẫu...</option>
+                  <option value="input[type='search'], input[name='q'], input[name='search']">🔍 Ô tìm kiếm</option>
+                  <option value="textarea, [contenteditable='true'], #prompt-box">💬 Khung chat AI</option>
+                  <option value="input:not([type='hidden']), textarea">✍️ Ô nhập đầu tiên</option>
+                  <option value="custom">✏️ Nhập chữ gợi ý</option>
+                </select>
+              </div>
+              <div style="font-size: 11px; color: #64748b; margin-top: 5px;">
+                💡 <em>Mẹo: Bạn có thể chọn nhanh từ mục <strong>⚡ Chọn mẫu</strong> hoặc gõ chữ gợi ý trong ô (Ví dụ: <strong>Tìm kiếm</strong>).</em>
+              </div>
             </div>
             <div>
-              <label style="font-size: 11.5px; font-weight: 700; color: #475569; margin-bottom: 4px; display: block;">Nội dung văn bản (Gõ như người thật):</label>
-              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="text" value="${escapeHtml(step.text || '')}" placeholder="Nhập văn bản cần điền..." style="font-size: 13px; padding: 8px 12px; width: 100%;">
+              <label style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 6px; display: block;">✍️ Nội dung văn bản cần gõ:</label>
+              <input type="text" class="poly-input step-field" data-idx="${idx}" data-field="text" value="${escapeHtml(step.text || '')}" placeholder="Nhập từ khóa tìm kiếm, bình luận, prompt..." style="font-size: 13px; padding: 8px 12px; width: 100%;">
             </div>
           </div>
         `;
@@ -598,6 +628,30 @@
       input.addEventListener('change', onFieldChange);
     });
 
+    // Quick selector preset selection
+    list.querySelectorAll('.quick-selector-preset').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const idx = parseInt(sel.dataset.idx, 10);
+        if (sel.value && sel.value !== 'custom') {
+          const input = list.querySelector(`.step-field[data-idx="${idx}"][data-field="selector"]`);
+          if (input) {
+            input.value = sel.value;
+            if (automationState.builderSteps[idx]) {
+              automationState.builderSteps[idx].selector = sel.value;
+            }
+          }
+        }
+      });
+    });
+
+    // Open Selector Guide Modal
+    list.querySelectorAll('.btn-open-selector-guide').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSelectorGuideModal();
+      });
+    });
+
     list.querySelectorAll('.btn-step-move-up').forEach(btn => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx, 10);
@@ -631,7 +685,83 @@
     });
   }
 
-    async function saveBuilderScript() {
+    function showSelectorGuideModal() {
+    let guideModal = document.getElementById('modal-selector-guide');
+    if (!guideModal) {
+      guideModal = document.createElement('div');
+      guideModal.id = 'modal-selector-guide';
+      guideModal.style.cssText = 'position: fixed; inset: 0; background: rgba(15,23,42,0.65); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px;';
+      guideModal.innerHTML = `
+        <div style="background: #ffffff; border-radius: 16px; max-width: 580px; width: 100%; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); overflow: hidden; animation: popIn 0.2s ease;">
+          <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+              </div>
+              <div>
+                <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: #ffffff;">Hướng Dẫn Chọn Nút & Ô Nhập Dễ Hiểu</h3>
+                <p style="margin: 2px 0 0; font-size: 12px; opacity: 0.9;">Dành cho người dùng không rành lập trình / viết code</p>
+              </div>
+            </div>
+            <button type="button" id="btn-close-selector-guide" style="background: none; border: none; color: #ffffff; cursor: pointer; padding: 4px; border-radius: 6px; display: flex;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div style="padding: 22px 24px; max-height: 70vh; overflow-y: auto; font-size: 13px; line-height: 1.6; color: #334155;">
+            
+            <div style="margin-bottom: 16px; padding: 14px; background: #f0fdf4; border-radius: 10px; border-left: 4px solid #16a34a;">
+              <div style="font-weight: 700; color: #166534; font-size: 13.5px; margin-bottom: 4px;">✅ Cách 1: Điền thẳng chữ tiếng Việt trên màn hình (Dễ nhất - Khuyên dùng)</div>
+              <div>Hệ thống OmniBrowser được trang bị cơ chế <strong>nhận diện thông minh</strong>. Bạn không cần biết mã CSS:</div>
+              <ul style="margin: 6px 0 0; padding-left: 18px;">
+                <li>Muốn bấm nút <strong>Đăng nhập</strong> 👉 Chỉ cần gõ chữ: <code style="background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:4px; font-weight:bold;">Đăng nhập</code></li>
+                <li>Muốn bấm nút <strong>Tìm kiếm</strong> 👉 Chỉ cần gõ chữ: <code style="background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:4px; font-weight:bold;">Tìm kiếm</code></li>
+                <li>Muốn gõ vào ô tìm kiếm 👉 Gõ chữ gợi ý có sẵn trong ô: <code style="background:#dcfce7; color:#15803d; padding:2px 6px; border-radius:4px; font-weight:bold;">Tìm kiếm</code></li>
+              </ul>
+            </div>
+
+            <div style="margin-bottom: 16px; padding: 14px; background: #f0f9ff; border-radius: 10px; border-left: 4px solid #0284c7;">
+              <div style="font-weight: 700; color: #075985; font-size: 13.5px; margin-bottom: 4px;">⚡ Cách 2: Chọn từ danh sách "⚡ Chọn mẫu" có sẵn</div>
+              <div>Ngay cạnh ô nhập có nút chọn nhanh mẫu thông dụng:</div>
+              <ul style="margin: 6px 0 0; padding-left: 18px;">
+                <li><strong>🔍 Ô tìm kiếm</strong>: Tự động gõ vào ô tìm kiếm của Google, Youtube, Facebook...</li>
+                <li><strong>💬 Khung chat AI</strong>: Tự động tìm khung chat Muse AI, ChatGPT...</li>
+                <li><strong>🔘 Nút Gửi / Submit</strong>: Tự động nhấn nút xác nhận form chính của trang web.</li>
+              </ul>
+            </div>
+
+            <div style="padding: 14px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0;">
+              <div style="font-weight: 700; color: #1e293b; font-size: 13.5px; margin-bottom: 4px;">🎯 Cách 3: Copy chính xác 100% bằng chuột phải (Nâng cao)</div>
+              <div>Khi trên trang web có nhiều nút cùng tên, bạn muốn máy bấm đích danh 1 nút:</div>
+              <ol style="margin: 6px 0 0; padding-left: 18px;">
+                <li>Trên cửa sổ trình duyệt, <strong>bấm chuột phải</strong> vào nút hoặc ô bạn muốn chọn.</li>
+                <li>Chọn dòng cuối cùng: <strong>Kiểm tra</strong> (Inspect).</li>
+                <li>Tại dòng mã màu xanh được chọn, bấm chuột phải $\rightarrow$ Chọn <strong>Sao chép</strong> (Copy) $\rightarrow$ Chọn <strong>Sao chép bộ chọn</strong> (Copy selector).</li>
+                <li>Quay lại đây và <strong>dán (Ctrl + V)</strong> vào ô là xong!</li>
+              </ol>
+            </div>
+
+          </div>
+
+          <div style="padding: 14px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: right;">
+            <button type="button" id="btn-guide-confirm-ok" class="uiv-cta-emerald" style="padding: 8px 22px; font-size: 13px;">Đã hiểu</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(guideModal);
+
+      const closeBtn = document.getElementById('btn-close-selector-guide');
+      const okBtn = document.getElementById('btn-guide-confirm-ok');
+      if (closeBtn) closeBtn.onclick = () => { guideModal.style.display = 'none'; };
+      if (okBtn) okBtn.onclick = () => { guideModal.style.display = 'none'; };
+      guideModal.onclick = (e) => {
+        if (e.target === guideModal) guideModal.style.display = 'none';
+      };
+    }
+    guideModal.style.display = 'flex';
+  }
+
+  async function saveBuilderScript() {
     const nameInput = document.getElementById('builder-script-name');
     const descInput = document.getElementById('builder-script-desc');
     const catSelect = document.getElementById('builder-script-category');

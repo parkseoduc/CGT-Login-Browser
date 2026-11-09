@@ -193,17 +193,52 @@ async function executeScriptOnProfile(profileId, steps, onLog = null) {
         }
 
         case 'click': {
-          const selector = step.selector;
-          log(`[${stepIndex}/${steps.length}] Nhấp chuột vào: ${selector}...`);
+          const selector = step.selector || '';
+          log(`[${stepIndex}/${steps.length}] Nhấp chuột vào: ${selector || 'mặc định'}...`);
           const clickRes = await client.send('Runtime.evaluate', {
             expression: `
               (function() {
-                const el = document.querySelector('${selector.replace(/'/g, "\\'")}');
-                if (el) {
-                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  el.click();
+                const target = '${selector.replace(/'/g, "\\'")}';
+                if (!target) return false;
+
+                // 1. Thử theo bộ chọn CSS chuẩn
+                try {
+                  const el = document.querySelector(target);
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.click();
+                    return true;
+                  }
+                } catch (e) {}
+
+                // 2. Thử tìm theo chữ hiển thị trên nút hoặc liên kết (Dành cho người không biết code)
+                const clean = target.toLowerCase().trim();
+                const clickable = Array.from(document.querySelectorAll('button, a, input[type="submit"], input[type="button"], div[role="button"], span, label'));
+                for (const c of clickable) {
+                  if (c.innerText && c.innerText.trim().toLowerCase().includes(clean)) {
+                    c.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    c.click();
+                    return true;
+                  }
+                }
+
+                // 3. Thử tìm theo placeholder hoặc aria-label
+                const byPh = document.querySelector('[placeholder*="' + target + '" i], [aria-label*="' + target + '" i]');
+                if (byPh) {
+                  byPh.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  byPh.click();
                   return true;
                 }
+
+                // 4. Nếu điền từ khóa chung
+                if (clean.includes('nút') || clean.includes('button') || clean.includes('submit')) {
+                  const firstBtn = document.querySelector('button, input[type="submit"]');
+                  if (firstBtn) {
+                    firstBtn.click();
+                    return true;
+                  }
+                }
+
                 return false;
               })()
             `,
@@ -218,22 +253,61 @@ async function executeScriptOnProfile(profileId, steps, onLog = null) {
         }
 
         case 'type': {
-          const selector = step.selector;
+          const selector = step.selector || '';
           const text = step.text || '';
-          log(`[${stepIndex}/${steps.length}] Gõ văn bản vào "${selector}"...`);
-          await client.send('Runtime.evaluate', {
+          log(`[${stepIndex}/${steps.length}] Gõ văn bản "${text}" vào mục "${selector || 'ô nhập'}"...`);
+          const typeRes = await client.send('Runtime.evaluate', {
             expression: `
               (function() {
-                const el = document.querySelector('${selector.replace(/'/g, "\\'")}');
-                if (el) {
-                  el.focus();
-                  el.value = '${text.replace(/'/g, "\\'")}';
-                  el.dispatchEvent(new Event('input', { bubbles: true }));
-                  el.dispatchEvent(new Event('change', { bubbles: true }));
+                const target = '${selector.replace(/'/g, "\\'")}';
+                const text = '${text.replace(/'/g, "\\'")}';
+                let el = null;
+
+                if (target) {
+                  try {
+                    el = document.querySelector(target);
+                  } catch (e) {}
+
+                  if (!el) {
+                    el = document.querySelector('input[placeholder*="' + target + '" i], textarea[placeholder*="' + target + '" i], [aria-label*="' + target + '" i]');
+                  }
+
+                  if (!el) {
+                    const clean = target.toLowerCase();
+                    if (clean.includes('tìm') || clean.includes('search')) {
+                      el = document.querySelector('input[type="search"], input[name="q"], input[name="search"], input[name="query"], input[type="text"]');
+                    } else if (clean.includes('chat') || clean.includes('prompt') || clean.includes('tin nhắn')) {
+                      el = document.querySelector('textarea, [contenteditable="true"], #prompt-box');
+                    }
+                  }
                 }
+
+                if (!el) {
+                  el = document.querySelector('input:not([type="hidden"]), textarea, [contenteditable="true"]');
+                }
+
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  el.focus();
+                  if (el.isContentEditable) {
+                    el.innerText = text;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                  } else {
+                    el.value = text;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                  }
+                  return true;
+                }
+                return false;
               })()
-            `
-          }, sessionId).catch(() => {});
+            `,
+            returnByValue: true
+          }, sessionId).catch(() => ({ result: { value: false } }));
+
+          if (!typeRes.result?.value) {
+            log(`[${stepIndex}/${steps.length}] ⚠️ Cảnh báo: Không tìm thấy ô nhập để gõ văn bản`, 'warning');
+          }
           await sleep(1000);
           break;
         }
