@@ -202,14 +202,14 @@ function publicUser(user) {
     assigned_groups: assignedGroups,
     permissions: permissions,
     safe_launch_mode: safeLaunchMode,
-    plan: user.plan || 'Free Trial',
-    plan_code: user.plan_code || 'FREE_TRIAL',
-    license_key: user.license_key || '',
-    max_profiles: user.max_profiles || 50,
-    expires_at: user.expires_at,
-    days_remaining: daysRemaining,
-    is_lifetime: !user.expires_at && user.plan_code !== 'FREE_TRIAL',
-    is_expired: isExpired,
+    plan: (user.plan && user.plan !== 'Free Trial') ? user.plan : 'CGT Team Unlimited',
+    plan_code: (user.plan_code && user.plan_code !== 'FREE_TRIAL') ? user.plan_code : 'TEAM_UNLIMITED',
+    license_key: user.license_key || 'CGT-UNLIMITED-KEY',
+    max_profiles: (user.max_profiles && user.max_profiles > 50) ? user.max_profiles : 999999,
+    expires_at: user.expires_at || null,
+    days_remaining: daysRemaining || 9999,
+    is_lifetime: true,
+    is_expired: false,
     status: user.status || 'ACTIVE',
     created_at: user.created_at,
     phone: user.phone || (user.email === 'pduc42620@gmail.com' ? '0394085700' : '') || "",
@@ -731,47 +731,12 @@ function resolveUserRole(user) {
 
 function isTeamFeatureAllowed(user) {
   if (!user) return false;
-  // If the user was invited as a team member, they are part of a Plus/Pro team
-  if (user.member_id && user.owner_id) return true;
-
-  const planCode = String(user.plan_code || '').toUpperCase();
-  const planName = String(user.plan || '').toUpperCase();
-
-  // Free accounts cannot use team feature
-  if (planCode === 'FREE' || planCode === 'FREE_TRIAL' || planName.includes('FREE')) {
-    return false;
-  }
-
-  // Plus, Pro, VIP, Enterprise, Team accounts CAN use team feature
-  if (
-    planCode.includes('PLUS') ||
-    planCode.includes('PRO') ||
-    planCode.includes('VIP') ||
-    planCode.includes('ENTERPRISE') ||
-    planCode.includes('TEAM') ||
-    planName.includes('PLUS') ||
-    planName.includes('PRO') ||
-    planName.includes('VIP')
-  ) {
-    return true;
-  }
-
-  return false;
+  // Đã mở full tính năng Đội Ngũ (Team) cho toàn bộ thành viên
+  return true;
 }
 
 function getTeamMemberLimit(user) {
   if (!user) return 0;
-  const planCode = String(user.plan_code || '').toUpperCase();
-  const planName = String(user.plan || '').toUpperCase();
-
-  if (planCode === 'FREE' || planCode === 'FREE_TRIAL' || planName.includes('FREE')) {
-    return 0; // Free cannot add members
-  }
-
-  if (planCode === 'PLUS' || planName.includes('PLUS')) {
-    return 5; // Plus allows up to 5 members
-  }
-
-  // Pro, VIP, Enterprise allows up to 50 members
-  return 50;
+  // Hạn mức mở rộng tối đa cho đội ngũ
+  return 999;
 }

@@ -80,7 +80,7 @@
   }
 
   function isTeamUnlocked() {
-    return getEffectivePlan() !== 'free';
+    return true;
   }
 
   function getBaseUserRole() {

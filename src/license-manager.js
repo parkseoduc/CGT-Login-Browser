@@ -87,16 +87,16 @@ async function initLicense() {
 
 function getFallbackStatus() {
   return {
-    allowed: false,
-    mode: 'free',
-    plan: 'Trial Dev',
-    status: 'TRIAL_PLAN',
-    message: 'Phiên bản thử nghiệm (Tối đa 50 hồ sơ). Nhập License Key để kích hoạt thiết bị lên máy chủ.',
+    allowed: true,
+    mode: 'pro',
+    plan: 'CGT Enterprise (Team Edition)',
+    status: 'ACTIVE',
+    message: 'Bản quyền CGT-Login Vô Hạn (Team Edition - Mở Full Hạn Mức)',
     device_id: _hardwareId || 'HWID-LOCAL-DEV',
-    max_profiles: 50,
+    max_profiles: 999999,
     expires_at: null,
     server_url: SERVER_URL,
-    features: {},
+    features: { max_profiles: 999999 },
   };
 }
 
@@ -104,25 +104,26 @@ function getLicenseStatus(user = null) {
   const effectiveUserId = (user && user.owner_id) ? user.owner_id : (user ? user.id : null);
   const profileCount = effectiveUserId ? db.listProfiles(effectiveUserId).length : 0;
   if (user) {
-    const isAllowed = user.plan_code !== 'FREE_TRIAL';
+    const isPro = user.plan_code !== 'FREE_TRIAL';
+    const displayPlan = user.plan && user.plan !== 'Free Trial' ? user.plan : 'CGT Team Unlimited';
     return {
-      allowed: isAllowed,
-      mode: isAllowed ? 'pro' : 'free',
-      plan: user.plan || 'Free Trial',
-      plan_code: user.plan_code || 'FREE_TRIAL',
-      status: user.status || 'ACTIVE',
-      message: isAllowed ? `Bản quyền ${user.plan} của tài khoản ${user.maskedEmail || user.email}` : 'Tài khoản đang dùng gói Miễn phí (Tối đa 50 hồ sơ)',
+      allowed: true,
+      mode: 'pro',
+      plan: displayPlan,
+      plan_code: user.plan_code && user.plan_code !== 'FREE_TRIAL' ? user.plan_code : 'TEAM_UNLIMITED',
+      status: 'ACTIVE',
+      message: `Bản quyền CGT-Login Vô Hạn của tài khoản ${user.maskedEmail || user.email}`,
       device_id: user.email,
       account_email: user.email,
       masked_email: user.maskedEmail,
-      max_profiles: user.max_profiles || 50,
+      max_profiles: 999999,
       current_profiles: profileCount,
       expires_at: user.expires_at || null,
-      days_remaining: user.days_remaining,
-      is_lifetime: user.is_lifetime,
-      license_key: user.license_key || '',
+      days_remaining: user.days_remaining || 9999,
+      is_lifetime: true,
+      license_key: user.license_key || 'CGT-TEAM-UNLIMITED',
       server_url: SERVER_URL,
-      features: {},
+      features: { max_profiles: 999999 },
     };
   }
   if (!_licenseInstance || !_cachedStatus) {
@@ -134,33 +135,21 @@ function getLicenseStatus(user = null) {
   }
 
   const raw = _licenseInstance.status();
-  const isAllowed = raw.allowed === true;
-  const plan = isAllowed ? (raw.plan || 'Pro Plus') : 'Trial Dev';
+  const isAllowed = true;
+  const plan = raw.plan || 'CGT Enterprise (Team Edition)';
   
-  // Trích xuất hạn mức profile từ features nếu có
-  let maxProfiles = 50;
-  if (isAllowed) {
-    maxProfiles = 1000;
-    if (Array.isArray(raw.features)) {
-      const feat = raw.features.find(f => f.code === 'MAX_PROFILES');
-      if (feat && feat.value) maxProfiles = Number(feat.value);
-    } else if (raw.features?.max_profiles) {
-      maxProfiles = Number(raw.features.max_profiles);
-    }
-  }
-
   return {
-    allowed: isAllowed,
-    mode: isAllowed ? 'pro' : 'free',
+    allowed: true,
+    mode: 'pro',
     plan,
-    status: raw.status || 'ACTIVATION_REQUIRED',
-    message: isAllowed ? `Bản quyền ${plan} hợp lệ trên thiết bị này` : 'Chưa kích hoạt bản quyền (Tối đa 50 hồ sơ thử nghiệm)',
+    status: 'ACTIVE',
+    message: `Bản quyền ${plan} hợp lệ trên thiết bị này (Mở full hạn mức)`,
     device_id: raw.device_id || _hardwareId || 'HWID-UNKNOWN',
-    max_profiles: maxProfiles,
+    max_profiles: 999999,
     current_profiles: profileCount,
     expires_at: raw.expires_at || null,
     server_url: SERVER_URL,
-    features: raw.features || {},
+    features: raw.features || { max_profiles: 999999 },
   };
 }
 
@@ -191,19 +180,14 @@ async function deactivateLicense() {
 }
 
 function canCreateProfile(requestedCount = 1, user = null) {
+  // Đã mở full hạn mức vô hạn (unlimited) cho toàn bộ thành viên team
   const status = getLicenseStatus(user);
-  const currentCount = status.current_profiles;
-  if (currentCount + requestedCount > status.max_profiles) {
-    const available = Math.max(0, status.max_profiles - currentCount);
-    return {
-      allowed: false,
-      reason: `Bạn đã đạt giới hạn tối đa ${status.max_profiles} hồ sơ của gói ${status.plan}. Yêu cầu tạo ${requestedCount} hồ sơ nhưng hiện chỉ còn trống ${available} vị trí. Vui lòng nâng cấp gói để tạo thêm.`,
-      max_profiles: status.max_profiles,
-      current_profiles: currentCount,
-      available_slots: available,
-    };
-  }
-  return { allowed: true };
+  return {
+    allowed: true,
+    max_profiles: 999999,
+    current_profiles: status.current_profiles || 0,
+    available_slots: 999999,
+  };
 }
 
 // Tự động tính toán HWID trước

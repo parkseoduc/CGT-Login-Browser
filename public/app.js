@@ -616,11 +616,12 @@ function updateLicenseUI(info) {
   const isPlus = !isFree && !isTeam && (codeUpper === 'PRO_MONTHLY' || codeUpper.includes('PLUS') || nameUpper.includes('PLUS'));
   const isVip = !isFree && (Boolean(info.is_lifetime || user?.is_lifetime || nameUpper.includes('VIP') || codeUpper === 'PRO' || codeUpper === 'VIP_LIFETIME' || isTeam));
 
+  const maxDisplay = (info.max_profiles >= 999999) ? 'Vô hạn' : info.max_profiles;
   if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${planName}`;
-  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${info.current_profiles}/${maxDisplay}`;
   if (sidebarPlanExpires) {
-    if (isVip || isTeam) {
-      sidebarPlanExpires.innerText = 'Vĩnh viễn (10 năm)';
+    if (isVip || isTeam || info.max_profiles >= 999999) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn (Trọn đời)';
     } else if (info.expires_at) {
       sidebarPlanExpires.innerText = formatVnDate(info.expires_at);
     } else {
@@ -629,11 +630,11 @@ function updateLicenseUI(info) {
   }
   const sidebarBadge = document.getElementById('sidebar-plan-badge');
   if (sidebarBadge) {
-    sidebarBadge.textContent = isVip || isTeam ? 'VIP' : (isPlus ? 'PLUS' : 'FREE');
-    sidebarBadge.className = 'badge ' + (isVip || isTeam ? 'badge-emerald-subtle' : (isPlus ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+    sidebarBadge.textContent = (info.max_profiles >= 999999 || isVip || isTeam) ? 'UNLIMITED' : (isPlus ? 'PLUS' : 'FREE');
+    sidebarBadge.className = 'badge ' + ((info.max_profiles >= 999999 || isVip || isTeam) ? 'badge-emerald-subtle' : (isPlus ? 'badge-subtle-blue' : 'badge-subtle-gray'));
   }
   updateBrandBadge(planName, user);
-  if (statQuota) statQuota.innerText = `${info.current_profiles}/${info.max_profiles}`;
+  if (statQuota) statQuota.innerText = `${info.current_profiles}/${maxDisplay}`;
 
   const hwidEl = document.getElementById('license-hwid-text');
   if (hwidEl) hwidEl.innerText = info.device_id || 'HWID-LOCAL';
@@ -1109,8 +1110,9 @@ function renderProfiles() {
   statRunning.innerText = runningCount;
 
   if (licenseInfo) {
-    statQuota.innerText = `${allProfiles.length}/${licenseInfo.max_profiles}`;
-    sidebarPlanQuota.innerText = `${allProfiles.length}/${licenseInfo.max_profiles}`;
+    const maxQ = (licenseInfo.max_profiles >= 999999) ? 'Vô hạn' : licenseInfo.max_profiles;
+    statQuota.innerText = `${allProfiles.length}/${maxQ}`;
+    sidebarPlanQuota.innerText = `${allProfiles.length}/${maxQ}`;
   }
 
   updateActiveProfileIndicator();
@@ -5495,11 +5497,14 @@ function renderPolyUserProfile(user) {
   const isPro = String(user.plan_code).includes('PRO');
   const currentCount = (typeof allProfiles !== 'undefined' && Array.isArray(allProfiles)) ? allProfiles.length : (window.currentProfilesCount || 0);
 
-  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${user.plan || 'Free Trial'}`;
-  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${currentCount}/${user.max_profiles || 50}`;
+  const maxLimit = user.max_profiles || 999999;
+  const maxDisplay = (maxLimit >= 999999) ? 'Vô hạn' : maxLimit;
+
+  if (sidebarPlanName) sidebarPlanName.innerText = `Gói ${user.plan || 'CGT Team Unlimited'}`;
+  if (sidebarPlanQuota) sidebarPlanQuota.innerText = `${currentCount}/${maxDisplay}`;
   if (sidebarPlanExpires) {
-    if (isVip || isTeam) {
-      sidebarPlanExpires.innerText = 'Vĩnh viễn (10 năm)';
+    if (isVip || isTeam || maxLimit >= 999999) {
+      sidebarPlanExpires.innerText = 'Vĩnh viễn (Trọn đời)';
     } else if (user.expires_at) {
       sidebarPlanExpires.innerText = formatVnDate(user.expires_at);
     } else {
@@ -5508,8 +5513,8 @@ function renderPolyUserProfile(user) {
   }
   const sidebarBadge = document.getElementById('sidebar-plan-badge');
   if (sidebarBadge) {
-    sidebarBadge.textContent = isVip || isTeam ? 'VIP' : (isPro ? 'PRO' : 'FREE');
-    sidebarBadge.className = 'badge ' + (isVip || isTeam ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
+    sidebarBadge.textContent = (maxLimit >= 999999 || isVip || isTeam) ? 'UNLIMITED' : (isPro ? 'PRO' : 'FREE');
+    sidebarBadge.className = 'badge ' + ((maxLimit >= 999999 || isVip || isTeam) ? 'badge-emerald-subtle' : (isPro ? 'badge-subtle-blue' : 'badge-subtle-gray'));
   }
 
   const initial = (user.name || user.email || 'P').trim()[0].toUpperCase();
@@ -5929,7 +5934,8 @@ function initAuthControls() {
       }
       document.getElementById('key-modal-account-email').textContent = currentUser.email;
       document.getElementById('key-modal-plan-badge').textContent = currentUser.plan;
-      document.getElementById('key-modal-quota').textContent = `${allProfiles.length} / ${currentUser.max_profiles}`;
+      const maxQ = (currentUser.max_profiles >= 999999) ? 'Vô hạn' : currentUser.max_profiles;
+      document.getElementById('key-modal-quota').textContent = `${allProfiles.length} / ${maxQ}`;
       document.getElementById('key-modal-expiry').textContent = currentUser.is_lifetime ? 'Vĩnh viễn (Trọn đời)' : (currentUser.days_remaining !== null ? `${currentUser.days_remaining} ngày` : 'Chưa kích hoạt');
       openModalEl(keyModal);
     };
