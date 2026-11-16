@@ -35,10 +35,15 @@
 ### Cách 1: Sử dụng Bản Đóng Gói Sẵn Portable (Khuyên Dùng Cho Team - Không Cần Cài Môi Trường)
 1. Tải file đóng gói `CGT-Login-v1.0.0-Portable-x64.zip` về máy tính.
 2. Chuột phải vào file zip, chọn **Extract All...** để giải nén ra thư mục bất kỳ (ví dụ: `Desktop\CGT-Login` hoặc `D:\CGT-Login`).
-3. Mở thư mục vừa giải nén và click đúp vào file:
-   👉 **`start-desktop.bat`** (Khởi chạy cửa sổ ứng dụng Desktop riêng biệt - Khuyên dùng cho team).
-   👉 Hoặc **`start-web.bat`** (Khởi chạy trên trình duyệt Web).
+3. Mở thư mục vừa giải nén và click đúp vào một trong các file sau để mở app:
+   👉 **`start-desktop.bat`** hoặc **`Khoi_Dong_CGT_Login.bat`** (Khởi chạy cửa sổ ứng dụng Desktop riêng biệt - Khuyên dùng cho team).
+   👉 Hoặc **`start-web.bat`** (Khởi chạy trên tab trình duyệt Web: Chrome, Edge, Cốc Cốc).
 4. Hệ thống đã tích hợp sẵn Node Portable và Chromium 153 Core nên **máy tính mới tinh không cần cài đặt thêm môi trường gì**, app sẽ tự khởi chạy và mở giao diện ngay lập tức.
+
+### Cách 2: Sử Dụng Bộ Cài Đặt Tự Động (Setup .exe)
+1. Tải bộ cài `OmniBrowser-Setup-v1.0.0.exe` từ Google Drive về máy.
+2. Nhấp đúp vào file để cài đặt (Next -> Next -> Finish).
+3. Ứng dụng sẽ tự động tạo biểu tượng ngoài màn hình Desktop để mở app tiện lợi 1 chạm như Zalo, Telegram.
 
 ### Cách 2: Chạy Từ Mã Nguồn (Dành Cho Kỹ Sư Phát Triển)
 ```bash

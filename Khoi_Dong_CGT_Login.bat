@@ -1,79 +1,89 @@
 @echo off
-chcp 65001 >nul
-title CGT-Login Antidetect Profile Manager - Khởi Động
+title CGT-Login Antidetect Hub - Desktop Launcher
 cd /d "%~dp0"
 
-:: 1. Kiểm tra xem có đang chạy trực tiếp từ WinRAR / 7-Zip không
+:: 1. Kiem tra xem co dang chay truc tiep trong file nen WinRAR / 7-Zip khong
 echo %CD% | findstr /i /c:"\AppData\Local\Temp" >nul
 if not errorlevel 1 goto :in_temp
 goto :find_node
 
 :in_temp
 echo ============================================================
-echo  ⚠️ CẢNH BÁO: BẠN ĐANG CHẠY TRỰC TIẾP TRONG FILE NÉN ZIP!
+echo  CANH BAO: BAN DANG CHAY TRUC TIEP TRONG WINRAR HOAC ZIP!
 echo ============================================================
 echo.
-echo Vui lòng GIẢI NÉN toàn bộ thư mục ra ổ đĩa (Desktop/Ổ D/Ổ E) trước khi dùng.
-echo  - Bước 1: Chuột phải vào file zip, chọn "Extract All" (Giải nén toàn bộ).
-echo  - Bước 2: Mở thư mục vừa giải nén.
-echo  - Bước 3: Chạy lại file Khoi_Dong_CGT_Login.bat!
+echo Vui long GIAI NEN toan bo thu muc ra Desktop hoac o dia truoc khi dung.
+echo  - Buoc 1: Trong WinRAR, bam nut Extract To de giai nen.
+echo  - Buoc 2: Chon thu muc luu vi du nhu Desktop hoac Downloads.
+echo  - Buoc 3: Mo thu muc da giai nen va chay lai start-desktop.bat hoac Khoi_Dong_CGT_Login.bat!
 echo ============================================================
 pause
 exit /b 1
 
 :find_node
-:: 2. Tìm kiếm Node.js runtime (Ưu tiên bin\node\node.exe -> Node hệ thống)
+:: 2. Tim kiem Node.js runtime (Uu tien bin\node\node.exe -> Node he thong)
 set "NODE_EXE="
 if exist "bin\node\node.exe" set "NODE_EXE=bin\node\node.exe"
-if defined NODE_EXE goto :run_app
+if defined NODE_EXE goto :run_desktop
 
 where node >nul 2>&1
 if not errorlevel 1 (
     set "NODE_EXE=node"
-    goto :run_app
+    goto :run_desktop
 )
 
 :download_node
-:: 3. Tự động tải Node portable nếu máy mới chưa có
+:: 3. Neu may trang chua co Node.js -> Tu dong tai Node Portable 1-Click
 echo ============================================================
-echo   CGT-LOGIN WORKSTATION - CÀI ĐẶT MÔI TRƯỜNG TỰ ĐỘNG
+echo   CGT-LOGIN ANTIDETECT WORKSTATION - CAI DAT TU DONG
 echo ============================================================
-echo [Thông Báo] Phát hiện máy chưa có Node.js Runtime.
-echo [Đang Xử Lý] Đang tải tự động Node.js Portable siêu nhẹ về bin\node\node.exe ...
+echo.
+echo [Thong Bao] Phat hien may tinh moi chua co san Node.js Runtime.
+echo [Dang Xu Ly] He thong dang tu dong tai Node.js Portable sieu nhe
+echo               truc tiep ve thu muc bin\node\node.exe ...
+echo.
+
 if not exist "bin\node" mkdir "bin\node"
 
 curl.exe -V >nul 2>&1
-if not errorlevel 1 (
-    curl.exe -L -# -o "bin\node\node.exe" "https://nodejs.org/dist/v22.11.0/win-x64/node.exe"
-    goto :check_result
-)
+if not errorlevel 1 goto :download_curl
+goto :download_ps
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (New-Object System.Net.WebClient).DownloadFile('https://nodejs.org/dist/v22.11.0/win-x64/node.exe', 'bin\node\node.exe')"
+:download_curl
+curl.exe -L -# -o "bin\node\node.exe" "https://nodejs.org/dist/v22.11.0/win-x64/node.exe"
+goto :check_download_result
 
-:check_result
+:download_ps
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Write-Host 'Dang tai node.exe portable...'; (New-Object System.Net.WebClient).DownloadFile('https://nodejs.org/dist/v22.11.0/win-x64/node.exe', 'bin\node\node.exe')"
+goto :check_download_result
+
+:check_download_result
 if exist "bin\node\node.exe" (
-    echo [Thành Công] Đã thiết lập Node.js Runtime thành công!
+    echo.
+    echo [Thanh Cong] Da thiet lap Node.js Portable thanh cong!
     set "NODE_EXE=bin\node\node.exe"
-    goto :run_app
+    goto :run_desktop
 ) else (
-    echo [Lỗi] Không thể tải Node.js. Vui lòng cài Node.js từ https://nodejs.org
+    echo.
+    echo [Loi] Khong the tu dong tai Node.js.
+    echo Vui long kiem tra ket noi Internet hoac tai Node.js tu: https://nodejs.org
     pause
     exit /b 1
 )
 
-:run_app
-:: 4. Cấp quyền Low Integrity Sandbox cho bin\chromium để chống STATUS_BREAKPOINT
+:run_desktop
+:: 4. Tu dong cap quyen Windows Low Integrity Sandbox cho bin\chromium de chong loi STATUS_BREAKPOINT
 if exist "bin\chromium" (
     icacls "bin\chromium" /grant "*S-1-15-2-1:(OI)(CI)(RX)" /grant "Users:(OI)(CI)(RX)" /T /Q >nul 2>&1
 )
 
-echo [CGT-Login] Đang khởi chạy hệ thống CGT-Login...
+echo [CGT-Login] He thong dang khoi chay giao dien Desktop...
 "%NODE_EXE%" --experimental-sqlite desktop/launcher.js
 if errorlevel 1 goto :error_exit
 exit /b 0
 
 :error_exit
 echo.
-echo [Thông Báo] Tiến trình đã dừng. Nhấn phím bất kỳ để thoát.
+echo [Thong Bao] Tien trinh da dung. Nhan phim bat ky de thoat.
 pause
 exit /b 1
