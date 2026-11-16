@@ -90,6 +90,13 @@ if (fs.existsSync(cleanDbSource)) {
 }
 console.log('✓ Đã nạp cơ sở dữ liệu mẫu trắng sạch (0 profile, full hạn mức 999,999)');
 
+// Sao chép cấu hình Google SSO mặc định
+const googleSsoFile = path.join(ROOT_DIR, 'data', '.google_sso_config.json');
+if (fs.existsSync(googleSsoFile)) {
+  fs.copyFileSync(googleSsoFile, path.join(dataDest, '.google_sso_config.json'));
+  console.log('✓ Đã nhúng cấu hình Google Client ID cho tính năng Đăng nhập Google');
+}
+
 // Sao chép bin (node portable + nhân Chromium antidetect 153)
 console.log('\n[4/5] Sao chép Node Portable & Nhân Chromium 153 Core...');
 const binDest = path.join(stagingDir, 'bin');
