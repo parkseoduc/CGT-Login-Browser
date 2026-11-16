@@ -32,12 +32,13 @@
 
 ## 3. HƯỚNG DẪN KHỞI ĐỘNG NHANH (QUICK START)
 
-### Cách 1: Sử dụng Bản Đóng Gói Sẵn (Khuyên Dùng Cho Team)
+### Cách 1: Sử dụng Bản Đóng Gói Sẵn Portable (Khuyên Dùng Cho Team - Không Cần Cài Môi Trường)
 1. Tải file đóng gói `CGT-Login-v1.0.0-Portable-x64.zip` về máy tính.
 2. Chuột phải vào file zip, chọn **Extract All...** để giải nén ra thư mục bất kỳ (ví dụ: `Desktop\CGT-Login` hoặc `D:\CGT-Login`).
 3. Mở thư mục vừa giải nén và click đúp vào file:
-   👉 **`Khoi_Dong_CGT_Login.bat`** (hoặc file thực thi **`CGT-Login.exe`**).
-4. Hệ thống sẽ tự động khởi tạo backend và mở giao diện ứng dụng quản trị ngay lập tức.
+   👉 **`start-desktop.bat`** (Khởi chạy cửa sổ ứng dụng Desktop riêng biệt - Khuyên dùng cho team).
+   👉 Hoặc **`start-web.bat`** (Khởi chạy trên trình duyệt Web).
+4. Hệ thống đã tích hợp sẵn Node Portable và Chromium 153 Core nên **máy tính mới tinh không cần cài đặt thêm môi trường gì**, app sẽ tự khởi chạy và mở giao diện ngay lập tức.
 
 ### Cách 2: Chạy Từ Mã Nguồn (Dành Cho Kỹ Sư Phát Triển)
 ```bash

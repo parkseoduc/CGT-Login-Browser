@@ -101,13 +101,14 @@ console.log('  ✓ Đã sao chép bin/node/node.exe');
 copyFolderRecursive(path.join(ROOT_DIR, 'bin', 'chromium'), path.join(binDest, 'chromium'), ['test_user']);
 console.log('  ✓ Đã sao chép bin/chromium/ (Nhân Chromium 153 antidetect đầy đủ)');
 
-// Nén gói ZIP tối ưu
-console.log('\n[5/5] Tiến hành nén file ZIP bằng PowerShell Optimal Compression...');
+// Nén gói ZIP chuẩn Quốc tế (Forward Slashes / tương thích 100% Windows Explorer, WinRAR, 7-Zip)
+console.log('\n[5/5] Tiến hành nén file ZIP chuẩn bằng PowerShell (Tương thích 100% Windows Explorer)...');
 if (fs.existsSync(targetZip)) {
   fs.unlinkSync(targetZip);
 }
 
-const psCmd = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory('${stagingDir}', '${targetZip}', [System.IO.Compression.CompressionLevel]::Optimal, $false)"`;
+const zipScript = path.join(ROOT_DIR, 'scripts', 'make-standard-zip.ps1');
+const psCmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${zipScript}" -SourceDir "${stagingDir}" -ZipPath "${targetZip}"`;
 execSync(psCmd, { stdio: 'inherit' });
 
 // Xóa thư mục staging tạm
