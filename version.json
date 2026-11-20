@@ -1,0 +1,8 @@
+{
+  "version": "3.1.5",
+  "releasedAt": "2026-11-20T09:56:10.882Z",
+  "sizeBytes": 11006447,
+  "sha256": "62ed2a9e74dd70e2b3f2d6e2533877363df232404944b983fc1aa6588a362897",
+  "downloadUrl": "https://raw.githubusercontent.com/parkseoduc/CGT-Login-Browser/ota-updates/ota-patch.zip",
+  "notes": "Khắc phục tải trùng nhân 153, tự nhận diện Chromium 153 và loại bỏ trang chào mừng start.html khi mở profile"
+}
